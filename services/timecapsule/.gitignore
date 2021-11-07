@@ -1,0 +1,16 @@
+bin/
+obj/
+out/
+Properties/
+
+settings/
+data/
+
+data.db
+
+.idea/
+.vs/
+
+*.user
+*.suo
+*.log
