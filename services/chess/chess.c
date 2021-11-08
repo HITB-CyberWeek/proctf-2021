@@ -79,7 +79,7 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
             // PAWN
             if (is_usual_move) {
                 if (start_x != end_x) {
-                    return 1;
+                    return 0;
                 }
                 if (is_white_turn) {
                     if (end_y - start_y == 1) {
@@ -142,7 +142,7 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
             }
             if(end_y == start_y) {
                 int all_ok = 1;
-                if (start_x < end_y) {
+                if (start_x < end_x) {
                     for (int x = start_x+1; x < end_x; x += 1) {
                         if (board[8*start_y + x] % 8 != 0) {
                             all_ok = 0;
@@ -251,13 +251,10 @@ int parse_move(char *move, int *start_x, int *start_y, int *end_x, int *end_y) {
     *start_x = start_x_letter - 'a';
     *end_x = end_x_letter - 'a';
 
-    if (*start_y < 0 || *start_y > 7) {
-        return 0;
-    }
-    if (*end_y < 0 || *end_y > 7) {
-        return 0;
-    }
     if (*start_x > 7 || *end_x > 7) {
+        return 0;
+    }
+    if (*start_y > 7 || *end_y > 7) {
         return 0;
     }
 
@@ -267,17 +264,11 @@ int parse_move(char *move, int *start_x, int *start_y, int *end_x, int *end_y) {
 
 
 
-int make_move(char* board, int *is_white_turn, char *move) {
-    int start_x, start_y, end_x, end_y;
-
-    if (!parse_move(move, &start_x, &start_y, &end_x, &end_y)) {
-        return 0;
-    }
-
+int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int end_x, int end_y, int pretend) {
     // printf("%d %d %d %d\n", start_x, start_y, end_x, end_y);
 
-
     if (!is_move_valid(board, *is_white_turn, start_x, start_y, end_x, end_y)) {
+        // printf("BAD %d %d %d %d\n", start_x, start_y, end_x, end_y);
         return 0;
     }
 
@@ -296,12 +287,14 @@ int make_move(char* board, int *is_white_turn, char *move) {
     // check for check
     for (int y = 0; y < 8; y += 1) {
         for (int x = 0; x < 8; x += 1) {
-            if (board[8*y + x] % 8 == 6 && (board[8*y + x] / 8) % 2 == !is_white_turn) {
+            if (board[8*y + x] % 8 == 6 && ((board[8*y + x] / 8) % 2 == (*is_white_turn))) {
                 king_x = x;
                 king_y = y;
             }
         }
     }
+
+    // printf("king_x %d king_y %d is_white_turn %d\n", king_x, king_y, *is_white_turn);
 
     if (king_x == -1 || king_y == -1) {
         return 0;
@@ -310,7 +303,7 @@ int make_move(char* board, int *is_white_turn, char *move) {
     for (int y = 0; y < 8; y += 1) {
         for (int x = 0; x < 8; x += 1) {
             if (is_move_valid(board, *is_white_turn, x, y, king_x, king_y)) {
-                printf("king on check %d %d\n", x, y);
+                // printf("king on check %d %d\n", x, y);
                 // revert move
                 board[8*start_y + start_x] = start_figure;
                 board[8*end_y + end_x] = end_figure;
@@ -320,6 +313,46 @@ int make_move(char* board, int *is_white_turn, char *move) {
         }
     }
 
+    if (pretend) {
+        // rollback
+        board[8*start_y + start_x] = start_figure;
+        board[8*end_y + end_x] = end_figure;
+        *is_white_turn ^= 1;
+    }
+
+    return 1;
+}
+
+int make_move(char* board, int *is_white_turn, char *move, int pretend) {
+    int start_x, start_y, end_x, end_y;
+
+    if (!parse_move(move, &start_x, &start_y, &end_x, &end_y)) {
+        return 0;
+    }
+
+    return make_raw_move(board, is_white_turn, start_x, start_y, end_x, end_y, pretend);
+}
+
+int is_checkmate(char *board, int is_white_turn) {
+    for (int start_y = 0; start_y < 8; start_y += 1) {
+        for (int start_x = 0; start_x < 8; start_x += 1) {
+            if ((board[8*start_y + start_x] / 8) % 2 == (is_white_turn)) {
+                continue;
+            }
+
+            // printf("start_x %d start_y %d\n", start_x, start_y);
+
+            for (int end_x = 0; end_x < 8; end_x += 1) {
+                for (int end_y = 0; end_y < 8; end_y += 1) {
+                    // printf("end_x %d end_y %d\n", end_x, end_y);
+                    if (make_raw_move(board, &is_white_turn, start_x, start_y, end_x, end_y, 1)) {
+                        printf("good %d %d %d %d!\n", start_x, start_y, end_x, end_y);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
     return 1;
 }
 
@@ -329,71 +362,93 @@ int make_move(char* board, int *is_white_turn, char *move) {
 
 
 int main() {
+    // ASK NAME
+    char name_buf[64] = "NAME HERE";
+    char pass_buf[64] = "PASS HERE";
+
     char board[64] = {};
     int is_white_turn = 1;
 
-
-
-    // ASK NAME
     init_board(board);
     print_board(board);
 
+    printf("is_checkmate %d is_white_turn %d\n", is_checkmate(board, is_white_turn), is_white_turn);
 
-    int ok = make_move(board, &is_white_turn, "e2-e4");
-    if (!ok) {
-        printf("Bad move\n");
-    }
+    if (!make_move(board, &is_white_turn, "e2-e4", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "e7-e5", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "d1-h5", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "b8-c6", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "f1-c4", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "g8-f6", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    if (!make_move(board, &is_white_turn, "h5-f7", 0)) { printf("Bad move\n"); }
+    print_board(board);
+    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
+    // if (!make_move(board, &is_white_turn, "e8-f7", 0)) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "c4-f7", 0)) { printf("Bad move\n"); }
+    // print_board(board);
 
-    print_board(board);
 
-    if (!make_move(board, &is_white_turn, "e7-e5")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f2-f4")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "e5-f4")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "g2-g3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f4-f3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "e1-f2")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "h7-h5")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "a2-a4")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "h8-h7")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "a1-a3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "h7-h6")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "a3-f3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "h6-f6")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "b2-b3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f6-f3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f2-f3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "a7-a6")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "d1-e1")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f8-a3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "f1-h3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "d8-h4")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "b1-c3")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "b8-c6")) { printf("Bad move\n"); }
-    print_board(board);
-    if (!make_move(board, &is_white_turn, "g1-e2")) { printf("Bad move\n"); }
-    print_board(board);
+    // if (!make_move(board, &is_white_turn, "f2-f4")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "e5-f4")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "g2-g3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "f4-f3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "e1-f2")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "h7-h5")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "a2-a4")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "h8-h7")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "a1-a3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "h7-h6")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "a3-f3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "h6-f6")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "b2-b3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "f6-f3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "f2-f3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "a7-a6")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "d1-e1")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "f8-a3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "f1-h3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "d8-h4")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "b1-c3")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "b8-c6")) { printf("Bad move\n"); }
+    // print_board(board);
+    // if (!make_move(board, &is_white_turn, "g1-e2")) { printf("Bad move\n"); }
+    // print_board(board);
+
+     // __asm__("int3");
 
     return 0;
 
