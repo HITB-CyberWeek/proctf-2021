@@ -20,7 +20,7 @@ namespace timecapsule
 		[HttpPost("signup")]
 		public async Task<IActionResult> SignUp(string login, string password)
 		{
-			if(string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password) || login.Length < 3 || Encoding.UTF8.GetByteCount(login) > 64 || password.Length > 256)
+			if(string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password) || login.Length < 3 || Encoding.UTF8.GetByteCount(login) > 255)
 				return StatusCode(400, "bad login or password");
 
 			var user = new UserContainer
@@ -47,14 +47,14 @@ namespace timecapsule
 		[HttpPost("signin")]
 		public async Task<IActionResult> SignIn(string login, string password)
 		{
-			var user = await dbCtx.Users.FindAsync(new object[] { login.ToLower() }, HttpContext.RequestAborted);
+			var user = await dbCtx.Users.FindAsync(new object[] { login?.Trim().ToLower() }, HttpContext.RequestAborted);
 			if(user?.Secret == null || !SecureEquals(user.Secret.Value, ComputeHash(password)))
 				return StatusCode(403, "user not found or bad password");
 
 			user = new UserContainer
 			{
 				CreateDate = DateTime.UtcNow,
-				Author = login
+				Author = login?.Trim()
 			};
 
 			await AuthMiddleware.SetAuthCookie(HttpContext, user);

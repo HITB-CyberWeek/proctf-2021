@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,8 @@ namespace timecapsule
 
 		protected override void OnConfiguring(DbContextOptionsBuilder builder)
 		{
-			builder.UseSqlite("filename=data.db");
+			Directory.CreateDirectory("data");
+			builder.UseSqlite("filename=data/data.db");
 		}
 
 		protected override void OnModelCreating(ModelBuilder builder)

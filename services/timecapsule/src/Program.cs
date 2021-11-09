@@ -19,8 +19,8 @@ namespace timecapsule
 					options.Listen(IPAddress.Loopback, 7007);
 					options.AddServerHeader = false;
 					options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(30.0);
-					options.Limits.MaxRequestBodySize = 4096L;
-					options.Limits.MaxRequestLineSize = 4096;
+					options.Limits.MaxRequestBodySize = 2048L;
+					options.Limits.MaxRequestLineSize = 2048;
 					options.Limits.MaxRequestHeaderCount = 64;
 					options.Limits.MaxRequestHeadersTotalSize = 8192;
 					options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(3.0);
