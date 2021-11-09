@@ -1,5 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/stat.h>
 
 
 void print_board(char* board) {
@@ -313,11 +318,22 @@ int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int
         }
     }
 
+    char figure;
     if (pretend) {
         // rollback
         board[8*start_y + start_x] = start_figure;
         board[8*end_y + end_x] = end_figure;
         *is_white_turn ^= 1;
+    } else {
+        for (int x = 0; x < 8; x += 1) {
+            // promote
+            if (board[8*0 + x] % 8 == 1) {
+                board[8*0 + x] = 13;
+            }
+            if (board[8*7 + x] % 8 == 1) {
+                board[8*7 + x] = 5;
+            }
+        }
     }
 
     return 1;
@@ -346,7 +362,7 @@ int is_checkmate(char *board, int is_white_turn) {
                 for (int end_y = 0; end_y < 8; end_y += 1) {
                     // printf("end_x %d end_y %d\n", end_x, end_y);
                     if (make_raw_move(board, &is_white_turn, start_x, start_y, end_x, end_y, 1)) {
-                        printf("good %d %d %d %d!\n", start_x, start_y, end_x, end_y);
+                        // printf("good %d %d %d %d!\n", start_x, start_y, end_x, end_y);
                         return 0;
                     }
                 }
@@ -357,96 +373,78 @@ int is_checkmate(char *board, int is_white_turn) {
 }
 
 
+int try_to_login(char* name, char *pass) {
+    FILE* file = fopen("data/flags.txt", "a+");
+    if (file == NULL) {
+        fprintf(stderr, "failed to open data/flags.txt\n");
+        return 0;
+    }
+
+    char name_buf[64] = {0};
+    char pass_buf[64] = {0};
+
+    while (fscanf(file, "%63s %63s\n", name_buf, pass_buf) == 2) {
+        if (!strcmp(name, name_buf)) {
+            return strcmp(pass, pass_buf) == 0;
+        }
+    }
+
+    return fprintf(file, "%s %s\n", name, pass) >= 0;
+}
+
 // figures empty, pawn, rook, knight, bishop, queen, king
 //         0 X    1 P   2 R   3 N     4 B     5 Q    6 K
 
 
 int main() {
+    umask(0077);
+    alarm(60);
+
     // ASK NAME
-    char name_buf[64] = "NAME HERE";
-    char pass_buf[64] = "PASS HERE";
+    char name_buf[64] = {0};
+    char pass_buf[64] = {0};
+    char move_buf[64] = {0};
 
     char board[64] = {};
     int is_white_turn = 1;
 
+    printf("Enter your name: ");
+    if (scanf("%63s", name_buf) != 1) {
+        return 1;
+    }
+
+    printf("Enter your password: ");
+    if (scanf("%63s", pass_buf) != 1) {
+        return 1;
+    }
+
+    if(!try_to_login(name_buf, pass_buf)) {
+        printf("Bad auth\n");
+        return 1;
+    }
+
+    printf("Ok, let's play the game\n");
     init_board(board);
-    print_board(board);
 
-    printf("is_checkmate %d is_white_turn %d\n", is_checkmate(board, is_white_turn), is_white_turn);
+    for(;;) {
+        print_board(board);
+        printf("%s turn. Enter your move (e.g. e2-e4):", is_white_turn ? "White": "Black");
 
-    if (!make_move(board, &is_white_turn, "e2-e4", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "e7-e5", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "d1-h5", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "b8-c6", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "f1-c4", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "g8-f6", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    if (!make_move(board, &is_white_turn, "h5-f7", 0)) { printf("Bad move\n"); }
-    print_board(board);
-    printf("is_checkmate %d\n", is_checkmate(board, is_white_turn));
-    // if (!make_move(board, &is_white_turn, "e8-f7", 0)) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "c4-f7", 0)) { printf("Bad move\n"); }
-    // print_board(board);
+        if (scanf("%63s", move_buf) != 1) {
+            exit(1);
+        }
 
+        if (!make_move(board, &is_white_turn, move_buf, 0)) {
+            printf("Bad move\n");
+            continue;
+        }
 
-    // if (!make_move(board, &is_white_turn, "f2-f4")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "e5-f4")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "g2-g3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "f4-f3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "e1-f2")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "h7-h5")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "a2-a4")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "h8-h7")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "a1-a3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "h7-h6")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "a3-f3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "h6-f6")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "b2-b3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "f6-f3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "f2-f3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "a7-a6")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "d1-e1")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "f8-a3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "f1-h3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "d8-h4")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "b1-c3")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "b8-c6")) { printf("Bad move\n"); }
-    // print_board(board);
-    // if (!make_move(board, &is_white_turn, "g1-e2")) { printf("Bad move\n"); }
-    // print_board(board);
+        if (is_checkmate(board, is_white_turn)) {
+            printf("Checkmate! %s wins\n", is_white_turn ? "Black": "White");
+            return 0;
+        }
+
+    }
 
      // __asm__("int3");
 
