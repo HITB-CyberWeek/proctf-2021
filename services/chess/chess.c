@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 
 
-void print_board(char* board) {
+void print_board(unsigned char* board) {
     char mapping[16] = ".prnbqkX.PRNBQKX";
 
     printf("   A B C D E F G H\n");
@@ -15,12 +15,13 @@ void print_board(char* board) {
         printf("%d  ", y+1);
 
         for (int x = 0; x < 8; x += 1) {
-            printf("%c ", mapping[board[y*8 + x] % 16]);
+            printf("%c ", mapping[board[y*8 + x]]);
         }
         printf(" %d\n", y+1);
     }
     printf("   A B C D E F G H\n\n");
 
+    // for(int i=0; i < 256; i+=1) printf("i=%d %x\n", i, (unsigned char)mapping[i]);
 }
 
 void init_board(char* board) {
@@ -54,17 +55,18 @@ void init_board(char* board) {
 }
 
 int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int end_x, int end_y) {
-    char start_figure = board[8*start_y + start_x];
-    char start_fig_color = (start_figure / 8) % 2;
-    char start_fig_type = start_figure % 8;
+    int start_idx = 8*start_y + start_x;
+    unsigned char start_figure = board[start_idx];
+    unsigned char start_fig_color = (start_figure / 8) % 2;
 
     if  (start_fig_color == is_white_turn) {
         // wrong turn
         return 0;
     }
 
-    char end_figure = board[8*end_y + end_x];
-    char end_fig_color = (end_figure / 8) % 2;
+    int end_idx = 8*end_y + end_x;
+    unsigned char end_figure = board[end_idx];
+    unsigned char end_fig_color = (end_figure / 8) % 2;
     char end_fig_type = end_figure % 8;
 
     int is_usual_move = (end_fig_type == 0);
@@ -76,11 +78,13 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
 
     int dx, dy;
 
-    switch(start_fig_type) {
+    switch(start_figure) {
         case 0:
+        case 8:
             // EMPTY SPACE
             return 0;
         case 1:
+        case 9:
             // PAWN
             if (is_usual_move) {
                 if (start_x != end_x) {
@@ -118,24 +122,25 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
             }
             return 0;
         case 5:
+        case 13:
             // QUEEN
         case 2:
+        case 10:
             // ROOK
-            // dx = end_x - start_x > 0 ? 1: -1;
-            // dy = end_y - start_y > 0 ? 1: -1;
-
             if(end_x == start_x) {
                 int all_ok = 1;
                 if (start_y < end_y) {
                     for (int y = start_y+1; y < end_y; y += 1) {
-                        if (board[8*y + start_x] % 8 != 0) {
+                        int idx = 8*y + start_x;
+                        if (board[idx] % 8 != 0) {
                             all_ok = 0;
                             break;
                         }
                     }
                 } else {
                     for (int y = start_y-1; y > end_y; y -= 1) {
-                        if (board[8*y + start_x] % 8 != 0) {
+                        int idx = 8*y + start_x;
+                        if (board[idx] % 8 != 0) {
                             all_ok = 0;
                             break;
                         }
@@ -167,17 +172,17 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
                 }
             }
 
-            if (start_fig_type == 2) {
+            if (start_figure == 2 || start_figure == 10) {
                 // ROOK
                 return 0;
             }
             [[fallthrough]];
         case 4:
+        case 12:
             // bishop
             if (abs(end_x - start_x) != abs(end_y - start_y)) {
                 return 0;
             }
-
 
             if (start_x < end_x && start_y < end_y) {
                 for (int x = start_x + 1, y = start_y + 1; x < end_x && y < end_y; x += 1, y += 1) {
@@ -206,8 +211,13 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
             }
 
             return 1;
-        case 3:
+        case 6:
+        case 14:
+            // KING
+            return (abs(end_y - start_y) <= 1) && (abs(end_x - start_x) <= 1);
+        default:
             // KNIGHT
+            // printf("BAY DIFF %d\n", abs(end_y - start_y));
             if (abs(end_x - start_x) == 1) {
                 if (abs(end_y - start_y) == 2) {
                     return 1;
@@ -219,15 +229,8 @@ int is_move_valid(char* board, int is_white_turn, int start_x, int start_y, int 
                 }
             }
             return 0;
-
-        case 6:
-            // KING
-            return (abs(end_y - start_y) <= 1) && (abs(end_x - start_x) <= 1);
     }
-
-    //
     return 0;
-
 }
 
 int parse_move(char *move, int *start_x, int *start_y, int *end_x, int *end_y) {
@@ -270,16 +273,13 @@ int parse_move(char *move, int *start_x, int *start_y, int *end_x, int *end_y) {
 
 
 int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int end_x, int end_y, int pretend) {
-    // printf("%d %d %d %d\n", start_x, start_y, end_x, end_y);
-
     if (!is_move_valid(board, *is_white_turn, start_x, start_y, end_x, end_y)) {
-        // printf("BAD %d %d %d %d\n", start_x, start_y, end_x, end_y);
         return 0;
     }
 
     // make move
-    char start_figure = board[8*start_y + start_x];
-    char end_figure = board[8*end_y + end_x];
+    unsigned char start_figure = board[8*start_y + start_x];
+    unsigned char end_figure = board[8*end_y + end_x];
 
     board[8*start_y + start_x] = 0;
     board[8*end_y + end_x] = start_figure;
@@ -292,14 +292,13 @@ int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int
     // check for check
     for (int y = 0; y < 8; y += 1) {
         for (int x = 0; x < 8; x += 1) {
-            if (board[8*y + x] % 8 == 6 && ((board[8*y + x] / 8) % 2 == (*is_white_turn))) {
+            if ((board[8*y + x] == 6 || board[8*y + x] == 14) &&
+                ((board[8*y + x] / 8) % 2 == (*is_white_turn))) {
                 king_x = x;
                 king_y = y;
             }
         }
     }
-
-    // printf("king_x %d king_y %d is_white_turn %d\n", king_x, king_y, *is_white_turn);
 
     if (king_x == -1 || king_y == -1) {
         return 0;
@@ -308,7 +307,6 @@ int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int
     for (int y = 0; y < 8; y += 1) {
         for (int x = 0; x < 8; x += 1) {
             if (is_move_valid(board, *is_white_turn, x, y, king_x, king_y)) {
-                // printf("king on check %d %d\n", x, y);
                 // revert move
                 board[8*start_y + start_x] = start_figure;
                 board[8*end_y + end_x] = end_figure;
@@ -327,10 +325,10 @@ int make_raw_move(char* board, int *is_white_turn, int start_x, int start_y, int
     } else {
         for (int x = 0; x < 8; x += 1) {
             // promote
-            if (board[8*0 + x] % 8 == 1) {
+            if (board[8*0 + x] == 9) {
                 board[8*0 + x] = 13;
             }
-            if (board[8*7 + x] % 8 == 1) {
+            if (board[8*7 + x] == 1) {
                 board[8*7 + x] = 5;
             }
         }
@@ -356,13 +354,9 @@ int is_checkmate(char *board, int is_white_turn) {
                 continue;
             }
 
-            // printf("start_x %d start_y %d\n", start_x, start_y);
-
             for (int end_x = 0; end_x < 8; end_x += 1) {
                 for (int end_y = 0; end_y < 8; end_y += 1) {
-                    // printf("end_x %d end_y %d\n", end_x, end_y);
                     if (make_raw_move(board, &is_white_turn, start_x, start_y, end_x, end_y, 1)) {
-                        // printf("good %d %d %d %d!\n", start_x, start_y, end_x, end_y);
                         return 0;
                     }
                 }
@@ -395,34 +389,48 @@ int try_to_login(char* name, char *pass) {
 // figures empty, pawn, rook, knight, bishop, queen, king
 //         0 X    1 P   2 R   3 N     4 B     5 Q    6 K
 
-
-int main() {
-    umask(0077);
-    alarm(60);
-
-    // ASK NAME
+int login() {
     char name_buf[64] = {0};
     char pass_buf[64] = {0};
-    char move_buf[64] = {0};
-
-    char board[64] = {};
-    int is_white_turn = 1;
 
     printf("Enter your name: ");
     if (scanf("%63s", name_buf) != 1) {
-        return 1;
+        return 0;
     }
 
     printf("Enter your password: ");
     if (scanf("%63s", pass_buf) != 1) {
-        return 1;
+        return 0;
     }
 
     if(!try_to_login(name_buf, pass_buf)) {
         printf("Bad auth\n");
+        return 0;
+    }
+    return 1;
+}
+
+// void debug(char* board) {
+//     for(int i=-4; i < 18; i += 1) {
+//         for (int j = 0; j < 8; j+=1) {
+//             printf("%.02x", (unsigned char)board[i*8+j]);
+//         }
+//         printf("\n");
+//     }
+// }
+
+int main() {
+    alarm(30);
+    umask(0077);
+
+    char board[64] = {};
+    char move_buf[32] = {0};
+
+    int is_white_turn = 1;
+
+    if (!login()) {
         return 1;
     }
-
     printf("Ok, let's play the game\n");
     init_board(board);
 
@@ -430,9 +438,11 @@ int main() {
         print_board(board);
         printf("%s turn. Enter your move (e.g. e2-e4):", is_white_turn ? "White": "Black");
 
-        if (scanf("%63s", move_buf) != 1) {
+        if (scanf("%31s", move_buf) != 1) {
             exit(1);
         }
+
+        // debug(board);
 
         if (!make_move(board, &is_white_turn, move_buf, 0)) {
             printf("Bad move\n");
@@ -443,11 +453,6 @@ int main() {
             printf("Checkmate! %s wins\n", is_white_turn ? "Black": "White");
             return 0;
         }
-
     }
-
-     // __asm__("int3");
-
     return 0;
-
 }
