@@ -377,13 +377,24 @@ int try_to_login(char* name, char *pass) {
     char name_buf[64] = {0};
     char pass_buf[64] = {0};
 
-    while (fscanf(file, "%63s %63s\n", name_buf, pass_buf) == 2) {
-        if (!strcmp(name, name_buf)) {
-            return strcmp(pass, pass_buf) == 0;
+    char *line = NULL;
+    size_t len = 0;
+
+    while (getline(&line, &len, file) != -1) {
+        if (sscanf(line, "%63s %63s\n", name_buf, pass_buf) == 2) {
+            if (!strcmp(name, name_buf)) {
+                return strcmp(pass, pass_buf) == 0;
+            }
         }
     }
 
-    return fprintf(file, "%s %s\n", name, pass) >= 0;
+    if(line) {
+        free(line);
+    }
+
+    int success = fprintf(file, "%s %s\n", name, pass) >= 0;
+    fflush(file);
+    return success;
 }
 
 // figures empty, pawn, rook, knight, bishop, queen, king

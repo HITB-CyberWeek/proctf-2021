@@ -1,0 +1,13 @@
+version: '2.0'
+services:
+  chess:
+    build: .
+    network_mode: host
+    volumes:
+      - ./:/home/chess/
+    restart: unless-stopped
+    cap_add:
+      - LINUX_IMMUTABLE
+    ulimits:
+      core: 0
+      nproc: 1000
