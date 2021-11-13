@@ -99,14 +99,18 @@ namespace timecapsule
 			return input.Length - tag.Length - nonce.Length;
 		}
 
-		private static int Write(Span<byte> span, long val)
+		private static int Write(Span<byte> span, int val)
 		{
 			BitConverter.TryWriteBytes(span, val);
-			return sizeof(long);
+			return sizeof(int);
 		}
 
 		private static int Write(Span<byte> span, DateTime val)
-			=> Write(span, val.Ticks);
+		{
+			var ticks = val.Ticks / 10000000L;
+			span[0] = (byte)(ticks & 0xff);
+			return 1 + Write(span.Slice(1), (int)(ticks >> 8));
+		}
 
 		private static int Write(Span<byte> span, Guid? val)
 		{
@@ -122,15 +126,15 @@ namespace timecapsule
 			return 1 + len;
 		}
 
-		private static long ReadInt64(ReadOnlySpan<byte> span, ref int offset)
+		private static int ReadInt32(ReadOnlySpan<byte> span, ref int offset)
 		{
-			var value = BitConverter.ToInt64(span.Slice(offset, sizeof(long)));
-			offset += sizeof(long);
+			var value = BitConverter.ToInt32(span.Slice(offset, sizeof(int)));
+			offset += sizeof(int);
 			return value;
 		}
 
 		private static DateTime ReadDateTime(ReadOnlySpan<byte> span, ref int offset)
-			=> new(ReadInt64(span, ref offset));
+			=> new((span[offset++] + ((long)ReadInt32(span, ref offset) << 8)) * 10000000L);
 
 		private static Guid? ReadGuid(ReadOnlySpan<byte> span, ref int offset)
 		{

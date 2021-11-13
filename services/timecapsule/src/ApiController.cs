@@ -15,7 +15,7 @@ namespace timecapsule
 		public ApiController(DatabaseContext dbCtx) => this.dbCtx = dbCtx;
 
 		[HttpGet("auth")]
-		public async Task<IActionResult> CheckAuth() => Ok(User?.Identity?.Name);
+		public async Task<IActionResult> CheckAuth() => Ok(User?.Identity?.Name ?? string.Empty);
 
 		[HttpPost("signup")]
 		public async Task<IActionResult> SignUp(string login, string password)

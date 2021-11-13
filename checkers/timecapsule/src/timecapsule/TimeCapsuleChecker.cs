@@ -62,7 +62,7 @@ namespace checker.timecapsule
 			var login = RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUmlauts().RandomUpperCase();
 			var password = RndText.RandomText(RndUtil.GetInt(8, 48)).RandomLeet().RandomUmlauts().RandomUpperCase();
 
-			var result = await client.DoRequestAsync(HttpMethod.Get, ApiSignUp + $"?login={WebUtility.UrlEncode(login)}&password={WebUtility.UrlEncode(password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+			var result = await client.DoRequestAsync(HttpMethod.Post, ApiSignUp + $"?login={WebUtility.UrlEncode(login)}&password={WebUtility.UrlEncode(password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
 			if(result.StatusCode != HttpStatusCode.OK)
 				throw new CheckerException(result.StatusCode.ToExitCode(), $"post {ApiSignUp} failed: {result.StatusCode.ToReadableCode()}");
 
@@ -189,7 +189,7 @@ namespace checker.timecapsule
 			{
 				await Console.Error.WriteLineAsync($"use saved login '{put.Login}' and password '{put.Password}'").ConfigureAwait(false);
 
-				result = await client.DoRequestAsync(HttpMethod.Get, ApiSignIn + $"?login={WebUtility.UrlEncode(put.Login)}&password={WebUtility.UrlEncode(put.Password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+				result = await client.DoRequestAsync(HttpMethod.Post, ApiSignIn + $"?login={WebUtility.UrlEncode(put.Login)}&password={WebUtility.UrlEncode(put.Password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
 				if(result.StatusCode != HttpStatusCode.OK)
 					throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiSignIn} failed: {result.StatusCode.ToReadableCode()}");
 
