@@ -461,6 +461,7 @@ int main() {
         }
 
         if (is_checkmate(board, is_white_turn)) {
+            print_board(board);
             printf("Checkmate! %s wins\n", is_white_turn ? "Black": "White");
             return 0;
         }
