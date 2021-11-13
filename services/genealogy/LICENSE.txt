@@ -1,0 +1,7 @@
+Used software under MIT license:
+
+* https://github.com/taocpp/PEGTL
+* https://github.com/taocpp/json
+
+Under Boost Software license:
+* https://github.com/taocpp/taopq
