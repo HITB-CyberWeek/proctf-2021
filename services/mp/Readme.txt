@@ -1,0 +1,1 @@
+set Elastic's container vm.max_map_count to at least 262144
