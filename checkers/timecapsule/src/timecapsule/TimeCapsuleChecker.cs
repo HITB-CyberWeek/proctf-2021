@@ -14,7 +14,7 @@ namespace checker.timecapsule
 {
 	internal class TimeCapsuleChecker : IChecker
 	{
-		public Task<string> Info() => Task.FromResult("vulns: 1");
+		public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: time capsule id\n");
 
 		public async Task Check(string host)
 		{
@@ -134,8 +134,7 @@ namespace checker.timecapsule
 				TimeCapsule = capsule.TimeCapsule,
 				Cookie = Convert.ToBase64String(bytes),
 
-				PublicFlagId = capsule.Id.ToString(),
-				PublicFlagDescription = "time capsule id"
+				PublicFlagId = capsule.Id.ToString()
 			};
 		}
 
