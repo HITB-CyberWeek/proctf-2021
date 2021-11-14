@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using mp.Entities;
-using mp.Models.Searchable;
 using Newtonsoft.Json;
 
 namespace mp.Services
@@ -23,7 +22,7 @@ namespace mp.Services
         public async Task<string> IndexAsync(string userId, string document, string routing = null)
         {
             var response = await elasticLowLevelClient.IndexAsync<StringResponse>(indexName, 
-                Serialize(document),
+                SerializeString(document),
                 new IndexRequestParameters
                 {
                     Routing = routing,
@@ -34,24 +33,29 @@ namespace mp.Services
 
         public async Task<string> SearchOrdersOfProduct(string userId, string parentId, int from = 0, int size = 10)
         {
-            var request = $@"
-                {{
-                    ""from"": ""{from}"",
-                    ""size"": ""{size}"",
-                    ""query"": {{
-                        ""has_parent"": {{
-                            ""parent_type"": ""{JoinField.ProductRelationName}"",
-                            ""query"": {{
-                                ""term"": {{
-                                    ""_id"": ""{Escape(parentId)}""
-                                }}
-                            }}
-                        }}
-                    }}
-                }}";
+            var request = JsonConvert.SerializeObject(new
+                {
+                    from = from,
+                    size = size,
+                    query = new
+                    {
+                        has_parent = new
+                        {
+                            parent_type = JoinField.ProductRelationName,
+                            query = new
+                            {
+                                term = new
+                                {
+                                    _id = parentId
+                                }
+                            }
+                        }
+                    }
+                }
+            );
 
             var response = await elasticLowLevelClient.SearchAsync<StringResponse>(indexName,
-                Serialize(request),
+                SerializeString(request),
                 new SearchRequestParameters
                 {
                     RequestConfiguration = new RequestConfiguration { Headers = new() { { "Authorization", $"Bearer {CreateOpenSearchJwtTokenManually(userId)}" } } }
@@ -61,25 +65,31 @@ namespace mp.Services
 
         public async Task<string> SearchAsync(string userId, string queryString, int from = 0, int size = 10)
         {
-            var request = $@"
-                {{
-                    ""from"": ""{from}"",
-                    ""size"": ""{size}"",
-                    ""query"": {{
-                        ""bool"": {{
-                            ""must"":[
-                                {{
-                                    ""query_string"": {{
-                                        ""query"": ""{Escape(queryString)}""
-                                    }}
-                                }}
-                            ]
-                        }}
-                    }}
-                }}";
+            var request = JsonConvert.SerializeObject(new
+                {
+                    from = from,
+                    size = size,
+                    query = new
+                    {
+                        @bool = new
+                        {
+                            must = new[]
+                            {
+                                new
+                                {
+                                    query_string = new
+                                    {
+                                        query = queryString
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
 
             var response = await elasticLowLevelClient.SearchAsync<StringResponse>(indexName,
-                Serialize(request),
+                SerializeString(request),
                 new SearchRequestParameters
                 {
                     RequestConfiguration = new RequestConfiguration {Headers = new () {{"Authorization", $"Bearer {CreateOpenSearchJwtTokenManually(userId)}"}}}
@@ -97,11 +107,6 @@ namespace mp.Services
             return response.Body;
         }
 
-        private string Escape(string s)
-        {
-            return s?.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        }
-
         private const string KEY_PATH = @"..\opensearch\key.pem";
 
         private string CreateOpenSearchJwtTokenManually(string userId)
@@ -111,7 +116,7 @@ namespace mp.Services
             
             using var rsa = RSA.Create();
             rsa.ImportFromPem(File.ReadAllText(KEY_PATH));
-            var headerAndBodyBytes = Serialize($"{headerEncoded}.{bodyEncoded}");
+            var headerAndBodyBytes = SerializeString($"{headerEncoded}.{bodyEncoded}");
             var signatureBytes = rsa.SignData(headerAndBodyBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             var signatureEncoded = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(signatureBytes);
 
@@ -120,10 +125,10 @@ namespace mp.Services
 
         private string EncodeB64(object o)
         {
-            return Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(Serialize(JsonConvert.SerializeObject(o, Formatting.Indented)));
+            return Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(SerializeString(JsonConvert.SerializeObject(o, Formatting.Indented)));
         }
 
-        private byte[] Serialize(string s)
+        private byte[] SerializeString(string s)
         {
             return Encoding.GetEncoding(1251).GetBytes(s);
         }
