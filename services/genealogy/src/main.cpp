@@ -42,6 +42,10 @@ HttpResponse create_tree(const HttpRequest & request) {
     return TreesController().create_tree(request);
 }
 
+HttpResponse update_tree(const HttpRequest & request) {
+    return TreesController().update_tree(request);
+}
+
 HttpResponse create_person(const HttpRequest & request) {
     return PersonsController().create_person(request);
 }
@@ -81,6 +85,7 @@ int main() {
 
     server->add_route({HttpMethod::GET, "/tree", false}, get_tree);
     server->add_route({HttpMethod::POST, "/tree", false}, create_tree);
+    server->add_route({HttpMethod::PUT, "/tree", false}, update_tree);
 
     server->add_route({HttpMethod::POST, "/tree/persons", false}, create_person);
     server->add_route({HttpMethod::PUT, "/tree/persons", true}, update_person);

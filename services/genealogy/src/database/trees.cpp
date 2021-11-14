@@ -9,15 +9,12 @@
 #include "persons.hpp"
 
 
-TreesDatabase::TreesDatabase(
-    std::shared_ptr<tao::pq::transaction> tx,
-    std::shared_ptr<PersonsDatabase> persons
-) : _tx(tx), _persons(persons) {
+TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : _tx(tx) {
     this->_tx->connection()->prepare(
         "create_tree", "INSERT INTO genealogy_trees (user_id, person_id, title, description) VALUES ($1, $2, $3, $4) RETURNING id"
     );
     this->_tx->connection()->prepare(
-        "set_tree_person", "UPDATE genealogy_trees SET person_id = $2 WHERE id = $1"
+        "update_tree", "UPDATE genealogy_trees SET person_id = $2, title = $3, description = $4 WHERE id = $1"
     );    
     this->_tx->connection()->prepare(
         "get_tree_by_id", "SELECT * FROM genealogy_trees WHERE id = $1"
@@ -67,24 +64,30 @@ std::optional<Tree> TreesDatabase::_find_tree(const tao::pq::result & result) {
     }
     const auto tree = result[0];
     return Tree {
-        tree["id"].as<unsigned>(),
-        tree["user_id"].as<unsigned>(),
-        tree["person_id"].as<unsigned>(),
+        tree["id"].as<unsigned long long>(),
+        tree["user_id"].as<unsigned long long>(),
+        tree["person_id"].optional<unsigned long long>(),
         tree["title"].as<std::string>(),
         tree["description"].as<std::string>()
     };
 }
 
 Tree TreesDatabase::create_tree(
-    unsigned long long user_id, const std::string person_name, unsigned long long person_birth_date,
-    const std::string & title, const std::string & description
+    unsigned long long user_id,
+    const std::string & title, const std::string & description, std::optional<unsigned long long> person_id
 ) {
-    const auto result = this->_tx->execute("create_tree", user_id, tao::pq::null, title, description);
+    const auto result = this->_tx->execute("create_tree", user_id, person_id, title, description);
     assert(result.size() > 0);
-    const auto tree_id = result[0]["id"].as<unsigned>();
+    const auto tree_id = result[0]["id"].as<unsigned long long>();
 
-    const auto person = this->_persons->create_person(user_id, person_birth_date, {}, person_name);
-    this->_tx->execute("set_tree_person", tree_id, person.id);
+    return this->find_tree(tree_id).value();    
+}
+
+Tree TreesDatabase::update_tree(
+    unsigned long long tree_id,
+    const std::string & title, const std::string & description, std::optional<unsigned long long> person_id
+) {
+    this->_tx->execute("update_tree", tree_id, person_id, title, description);
 
     return this->find_tree(tree_id).value();
 }
@@ -95,7 +98,7 @@ std::vector<Link> TreesDatabase::get_links(unsigned long long tree_id) {
     std::vector<Link> links;
     for (const auto& row: result) {
         links.push_back(Link {
-            (LinkType) row["type"].as<unsigned>(),
+            (LinkType) row["type"].as<unsigned long long>(),
             row["value"].as<std::string>()
         });
     }
@@ -114,7 +117,7 @@ std::vector<unsigned long long> TreesDatabase::get_owners(unsigned long long tre
     const auto result = this->_tx->execute("get_owners", tree_id);
     std::vector<unsigned long long> owners;
     for (const auto& row: result) {
-        owners.push_back(row["user_id"].as<unsigned>());
+        owners.push_back(row["user_id"].as<unsigned long long>());
     }
     return owners;
 }

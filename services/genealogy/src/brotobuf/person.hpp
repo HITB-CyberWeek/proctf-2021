@@ -3,6 +3,8 @@
 #ifndef _PERSON_HPP_
 #define _PERSON_HPP_
 #include "broto.hpp"
+#include <optional>
+#include <vector>
 namespace brotobuf {
 class Person : public _AbstractMessage {
 public:

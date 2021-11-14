@@ -5,6 +5,8 @@
 #include "broto.hpp"
 #include "link.hpp"
 #include "person.hpp"
+#include <optional>
+#include <vector>
 namespace brotobuf {
 class GenealogyTree : public _AbstractMessage {
 public:
@@ -12,7 +14,7 @@ public:
   std::string title;
   std::string description;
   std::vector<unsigned long long> owners;
-  Person person;
+  std::optional<Person> person;
   std::vector<Link> links;
   GenealogyTree();
   void serialize(OutputStream &stream) const;

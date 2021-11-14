@@ -1,0 +1,2 @@
+httpx==0.20.0
+pwntools==4.6.0

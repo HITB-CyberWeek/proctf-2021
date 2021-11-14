@@ -44,8 +44,8 @@ std::optional<Person> PersonsDatabase::find_person(unsigned long long id) {
     }
     const auto tree = result[0];
     return Person {
-        tree["id"].as<unsigned>(),
-        tree["owner_id"].as<unsigned>(),
+        tree["id"].as<unsigned long long>(),
+        tree["owner_id"].as<unsigned long long>(),
         tree["birth_date"].as<unsigned long long>(),
         tree["death_date"].as< std::optional<unsigned long long> >(),
         tree["name"].as<std::string>()
@@ -62,7 +62,7 @@ Person PersonsDatabase::create_person(
         owner_id, birth_date, death_date, name
     );
     assert(result.size() > 0);
-    const auto person_id = result[0]["id"].as<unsigned>();
+    const auto person_id = result[0]["id"].as<unsigned long>();
 
     return this->find_person(person_id).value();
 }
@@ -96,12 +96,12 @@ std::vector<unsigned long long> PersonsDatabase::get_parents(unsigned long long 
     const auto result = this->_tx->execute("get_parents", person_id);
     std::vector<unsigned long long> parents;
     for (const auto& row: result) {
-        parents.push_back(row["parent_id"].as<unsigned>());
+        parents.push_back(row["parent_id"].as<unsigned long long>());
     }
     return parents;
 }
 
-tao::json::value PersonsDatabase::build_person_object(unsigned long long person_id) {
+tao::json::value PersonsDatabase::build_person_json(unsigned long long person_id) {
     const auto found_person = this->find_person(person_id);
     if (!found_person.has_value()) {
         return tao::json::null;
@@ -110,7 +110,7 @@ tao::json::value PersonsDatabase::build_person_object(unsigned long long person_
 
     std::vector<tao::json::value> parents;
     for (auto parent_id: this->get_parents(person_id)) {
-        parents.push_back(this->build_person_object(parent_id));
+        parents.push_back(this->build_person_json(parent_id));
     }
 
     return {

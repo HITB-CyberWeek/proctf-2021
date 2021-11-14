@@ -3,6 +3,8 @@
 #ifndef _LINK_HPP_
 #define _LINK_HPP_
 #include "broto.hpp"
+#include <optional>
+#include <vector>
 namespace brotobuf {
 class Link : public _AbstractMessage {
 public:

@@ -47,7 +47,7 @@ HttpResponse PersonsController::create_person(const HttpRequest &request) {
         this->_persons_database->mark_as_parent(person.id, second_parent_id.value());
     }
 
-    const auto person_object = this->_persons_database->build_person_object(person.id);
+    const auto person_object = this->_persons_database->build_person_json(person.id);
 
     this->_persons_database->transaction()->commit();
 
@@ -104,7 +104,7 @@ HttpResponse PersonsController::update_person(const HttpRequest & request) {
         this->_persons_database->mark_as_parent(person->id, second_parent_id.value());
     }
 
-    const auto person_object = this->_persons_database->build_person_object(person->id);
+    const auto person_object = this->_persons_database->build_person_json(person->id);
 
     this->_persons_database->transaction()->commit();
 

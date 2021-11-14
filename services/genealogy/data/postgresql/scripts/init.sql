@@ -10,8 +10,8 @@ CREATE SEQUENCE person_id_seq;
 CREATE TABLE genealogy_tree_persons (	
 	id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('person_id_seq'),
 	owner_id INTEGER NOT NULL,
-	birth_date INTEGER NOT NULL,
-	death_date INTEGER,
+	birth_date BIGINT NOT NULL,
+	death_date BIGINT,
 	name VARCHAR(100) NOT NULL
 );
 ALTER SEQUENCE person_id_seq OWNED by genealogy_tree_persons.id;
@@ -21,7 +21,7 @@ CREATE SEQUENCE tree_id_seq;
 CREATE TABLE genealogy_trees (
 	id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('tree_id_seq'),
 	user_id INTEGER NOT NULL UNIQUE,
-	person_id INTEGER UNIQUE,
+	person_id INTEGER,
 	title TEXT NOT NULL,
 	description TEXT NOT NULL
 );
@@ -48,7 +48,7 @@ CREATE INDEX genealogy_tree_person_parents_child_id ON genealogy_tree_person_par
 
 CREATE TABLE genealogy_tree_owners (
 	tree_id INTEGER NOT NULL,
-	user_id INTEGER NOT NULL
+	user_id BIGINT NOT NULL
 );
 
 CREATE INDEX genealogy_tree_owners_tree_id ON genealogy_tree_owners (tree_id);
