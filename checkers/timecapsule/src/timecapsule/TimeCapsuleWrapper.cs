@@ -63,9 +63,9 @@ namespace checker.timecapsule
 
 		private static int Encrypt(Guid enckey, ReadOnlySpan<byte> input, Span<byte> output)
 		{
-			var tag = output.Slice(0, AesGcm.TagByteSizes.MaxSize);
-			var nonce = output.Slice(AesGcm.TagByteSizes.MaxSize, AesGcm.NonceByteSizes.MaxSize);
-			var cipher = output.Slice(AesGcm.TagByteSizes.MaxSize + AesGcm.NonceByteSizes.MaxSize, input.Length);
+			var nonce = output.Slice(0, AesGcm.NonceByteSizes.MaxSize);
+			var cipher = output.Slice(nonce.Length, input.Length);
+			var tag = output.Slice(nonce.Length + cipher.Length, AesGcm.TagByteSizes.MaxSize);
 
 			RandomNumberGenerator.Fill(nonce);
 
@@ -80,9 +80,9 @@ namespace checker.timecapsule
 
 		private static int Decrypt(Guid key, ReadOnlySpan<byte> input, Span<byte> output)
 		{
-			var tag = input.Slice(0, AesGcm.TagByteSizes.MaxSize);
-			var nonce = input.Slice(AesGcm.TagByteSizes.MaxSize, AesGcm.NonceByteSizes.MaxSize);
-			var cipher = input.Slice(AesGcm.TagByteSizes.MaxSize + AesGcm.NonceByteSizes.MaxSize);
+			var nonce = input.Slice(0, AesGcm.NonceByteSizes.MaxSize);
+			var cipher = input.Slice(nonce.Length, input.Length - nonce.Length - AesGcm.TagByteSizes.MaxSize);
+			var tag = input.Slice(input.Length - AesGcm.TagByteSizes.MaxSize, AesGcm.TagByteSizes.MaxSize);
 
 			Span<byte> k = stackalloc byte[16];
 			key.TryWriteBytes(k);

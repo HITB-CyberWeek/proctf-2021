@@ -63,7 +63,10 @@ namespace timecapsule
 
 		[HttpGet("capsule/{id}")]
 		public async Task<IActionResult> FindTimeCapsule(Guid id)
-			=> Ok(RemoveSecretFields(await dbCtx.FindAsync<TextContainer>(id), User?.Identity?.Name, DateTime.UtcNow));
+		{
+			var capsule = RemoveSecretFields(await dbCtx.FindAsync<TextContainer>(id), User?.Identity?.Name, DateTime.UtcNow);
+			return capsule == null ? StatusCode(404, "not found") : Ok(capsule);
+		}
 
 		[HttpPost("capsule")]
 		public async Task<IActionResult> AddTimeCapsule(string text, DateTime toBeOpened)
