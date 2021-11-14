@@ -43,7 +43,7 @@ namespace mp.Services
                             ""parent_type"": ""{JoinField.ProductRelationName}"",
                             ""query"": {{
                                 ""term"": {{
-                                    ""_id"": ""{parentId}""
+                                    ""_id"": ""{Escape(parentId)}""
                                 }}
                             }}
                         }}
