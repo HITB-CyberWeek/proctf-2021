@@ -13,7 +13,7 @@
 struct Tree {
     unsigned long long id;
     unsigned long long user_id;
-    unsigned long long person_id;
+    std::optional<unsigned long long> person_id;
     std::string title;
     std::string description;
 };
@@ -32,14 +32,18 @@ struct Link {
 
 class TreesDatabase {
 public:
-    TreesDatabase(std::shared_ptr<tao::pq::transaction> tx, std::shared_ptr<PersonsDatabase> persons);
+    TreesDatabase(std::shared_ptr<tao::pq::transaction> tx);
     std::shared_ptr<tao::pq::transaction> transaction();
 
     std::optional<Tree> find_tree(unsigned long long id);
     std::optional<Tree> find_tree_by_user(unsigned long long user_id);
     Tree create_tree(
-        unsigned long long user_id, const std::string person_name, unsigned long long person_birth_date,
-        const std::string & title, const std::string & description
+        unsigned long long user_id, const std::string & title, const std::string & description,
+        std::optional<unsigned long long> person_id
+    );
+    Tree update_tree(
+        unsigned long long user_id, const std::string & title, const std::string & description,
+        std::optional<unsigned long long> person_id
     );
 
     std::vector<Link> get_links(unsigned long long tree_id);
@@ -53,7 +57,6 @@ private:
     std::optional<Tree> _find_tree(const tao::pq::result & result);
 
     std::shared_ptr<tao::pq::transaction> _tx;
-    std::shared_ptr<PersonsDatabase> _persons;
 };
 
 #endif

@@ -19,7 +19,7 @@ TreesController::TreesController() {
     const auto database = Database().connection();
     const auto transaction = database->transaction();
     this->_persons_database = std::make_shared<PersonsDatabase>(transaction);
-    this->_trees_database = std::make_shared<TreesDatabase>(transaction, this->_persons_database);
+    this->_trees_database = std::make_shared<TreesDatabase>(transaction);
     this->_signer = std::make_shared<Signer>(this->_keys->get_signing_key());
 }
 
@@ -32,15 +32,15 @@ HttpResponse TreesController::get_tree(const HttpRequest & request) {
         }, HttpStatusCode::UNAUTHORIZED);
     };
 
-    const auto found_tree = this->_trees_database->find_tree_by_user(user_id.value());
-    if (!found_tree) {
+    const auto tree = this->_trees_database->find_tree_by_user(user_id.value());
+    if (!tree) {
         return HttpResponse({
             {"status", "error"},
             {"message", "Your genealogy tree doesn't exist, create it first"}
         }, HttpStatusCode::NOT_FOUND);
     }
 
-    return this->_return_tree_json(found_tree.value());
+    return this->_return_tree_json(tree.value());
 }
 
 HttpResponse TreesController::create_tree(const HttpRequest & request) {
@@ -63,14 +63,44 @@ HttpResponse TreesController::create_tree(const HttpRequest & request) {
     const auto json = request.get_json();
     const auto title = json.at("title").get_string();
     const auto description = json.at("description").get_string();
-    const auto name = json.at("name").get_string();
-    const auto birth_date = json.at("birth_date").get_unsigned();
+    const auto person_id = json.at("person").optional<unsigned long long>();
 
     const auto tree = this->_trees_database->create_tree(
-        user_id.value(), name, birth_date, title, description
+        user_id.value(), title, description, person_id
     );
 
     const auto response = this->_return_tree_json(tree);
+    this->_trees_database->transaction()->commit();
+    return response;
+}
+
+HttpResponse TreesController::update_tree(const HttpRequest & request) {
+    const auto user_id = this->_current_user_id(request);
+    if (!user_id) {
+        return HttpResponse({
+            {"status", "error"},
+            {"message", "You're not authenticated"}
+        }, HttpStatusCode::UNAUTHORIZED);
+    };
+
+    const auto tree = this->_trees_database->find_tree_by_user(user_id.value());
+    if (!tree) {
+        return HttpResponse({
+            {"status", "error"},
+            {"message", "Your genealogy tree doesn't exist, create it first"}
+        }, HttpStatusCode::NOT_FOUND);
+    }
+
+    const auto json = request.get_json();
+    const auto title = json.at("title").get_string();
+    const auto description = json.at("description").get_string();
+    const auto person_id = json.at("person").optional<unsigned long long>();
+
+    const auto updated_tree = this->_trees_database->update_tree(
+        tree->id, title, description, person_id
+    );
+
+    const auto response = this->_return_tree_json(updated_tree);
     this->_trees_database->transaction()->commit();
     return response;
 }
@@ -102,7 +132,7 @@ HttpResponse TreesController::update_links(const HttpRequest & request) {
         }, HttpStatusCode::BAD_REQUEST);
     }
 
-    for (const auto link: json.get_array()) {
+    for (const auto& link: json.get_array()) {
         const auto type = link.at("type").get_unsigned();
         const auto value = link.at("value").get_string();
         this->_trees_database->create_link(tree->id, (LinkType) type, value);
@@ -131,10 +161,10 @@ HttpResponse TreesController::update_owners(const HttpRequest &request) {
     }
 
     const auto json = request.get_json();
-    if (!json.is_array() || json.get_array().size() > 10) {
+    if (!json.is_array() || json.get_array().size() > 60) {
         return HttpResponse({
             {"status", "error"},
-            {"message", "Invalid content: should be array of owners not more than 10 elements"}
+            {"message", "Invalid content: should be array of owners not more than 60 elements"}
         }, HttpStatusCode::BAD_REQUEST);
     }    
 
@@ -179,7 +209,9 @@ HttpResponse TreesController::export_tree_archive(const HttpRequest & request) {
         link_message.value = link.value;
         tree_message.links.push_back(link_message);
     }
-    tree_message.person = this->_build_brotobuf_person(tree->person_id);
+    if (tree->person_id) {
+        tree_message.person = this->_build_brotobuf_person(tree->person_id.value());
+    }
 
     brotobuf::OutputStream stream;
     tree_message.serialize(stream);
@@ -188,7 +220,7 @@ HttpResponse TreesController::export_tree_archive(const HttpRequest & request) {
     std::string serialized_data_str;
     serialized_data_str.assign(serialized_data.begin(), serialized_data.end());
 
-    // Add sign to our archive
+    // Add signature to our archive
     auto response = HttpResponse(serialized_data_str + this->_signer->sign(serialized_data));
     response.set_header("content-type", "application/octet-stream");
     return response;
@@ -247,22 +279,25 @@ brotobuf::Person TreesController::_build_brotobuf_person(unsigned long long pers
     }
     result.name = person->name;
     result.birth_date = person->birth_date;
-    result.death_date = person->death_date.value_or(0);
+    result.death_date = person->death_date.value_or(NO_DEATH_DATE);
     for (auto parent_id: this->_persons_database->get_parents(person_id)) {
         result.parents.push_back(this->_build_brotobuf_person(parent_id));
     }
     return result;
 }
 
-tao::json::value TreesController::_restore_brotobuf_person(const brotobuf::Person & person) {
+tao::json::value TreesController::_restore_brotobuf_person(const std::optional<brotobuf::Person> & person) {
+    if (! person) {
+        return tao::json::null;
+    }
     std::vector<tao::json::value> parents;
-    for (const auto& parent: person.parents) {
+    for (const auto& parent: person->parents) {
         parents.push_back(this->_restore_brotobuf_person(parent));
     }
     return {
-        {"name", person.name},
-        {"birth_date", person.birth_date},
-        {"death_date", person.death_date},
+        {"name", person->name},
+        {"birth_date", person->birth_date},
+        {"death_date", person->death_date == NO_DEATH_DATE ? tao::json::null : tao::json::value(person->death_date)},
         {"parents", parents}
     };
 }
@@ -281,11 +316,16 @@ HttpResponse TreesController::_return_tree_json(const Tree & tree) {
         owners.push_back(owner);
     }
 
+    tao::json::value person_json = tao::json::null;
+    if (tree.person_id) {
+        person_json = this->_persons_database->build_person_json(tree.person_id.value());
+    }
+
     return HttpResponse({
         {"status", "ok"},
         {"tree", {
             {"id", tree.id},
-            {"person", this->_persons_database->build_person_object(tree.person_id)},
+            {"person", person_json},
             {"title", tree.title},
             {"description", tree.description},
             {"links", links},

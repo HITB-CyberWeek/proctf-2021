@@ -4,6 +4,7 @@
 #include "broto.hpp"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -49,10 +50,11 @@ void Person::deserialize(InputStream &&stream) {
       break;
     case 3:
       if (this->parents.empty()) {
-        printf("Allocating %p->parents for 10 elements of %ld bytes = %ld = "
+        printf("Allocating %p->parents for 6 elements of %ld bytes = %ld = "
                "0x%lx\n",
-               this, sizeof(Person), 10 * sizeof(Person), 10 * sizeof(Person));
-        this->parents.resize(10);
+               this, sizeof(Person), 6 * sizeof(Person), 6 * sizeof(Person));
+        this->parents.resize(6);
+        printf("Allocated %p->parents: %p\n", this, parents.data());
         this->_parents_iterator = this->parents.begin();
       }
       printf("Writing to %p->parents[%ld]\n", this,
@@ -64,8 +66,9 @@ void Person::deserialize(InputStream &&stream) {
   }
 
   this->parents.resize(this->_parents_iterator - this->parents.begin());
-  printf("Shrinking %p->parents for %ld elements, freed %ld bytes\n", this,
-         parents.size(), parents.capacity() * sizeof(Person));
+  printf("Shrinking %p->parents for %ld elements, freed %ld bytes at %p\n",
+         this, parents.size(), parents.capacity() * sizeof(Person),
+         parents.data());
   this->parents.shrink_to_fit();
 }
 void Person::serialize_birth_date(OutputStream &stream) const {
@@ -89,9 +92,9 @@ void Person::serialize_name(OutputStream &stream) const {
 void Person::serialize_parents(OutputStream &stream) const {
   if (this->parents.size() == 0)
     return;
-  if (this->parents.size() > 10) {
+  if (this->parents.size() > 6) {
     throw std::out_of_range(
-        "Can not serialize object: parents is too long, max length is 10");
+        "Can not serialize object: parents is too long, max length is 6");
   }
   for (auto &element : this->parents) {
     this->_serialize_varint(3, stream);

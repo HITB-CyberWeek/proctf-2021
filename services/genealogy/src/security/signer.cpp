@@ -31,7 +31,6 @@ std::string Signer::sign(const Signer::Data & data) const {
 }
 
 bool Signer::check_sign(const std::string & data) const {
-    printf("data.length() = %zu\n", data.length());
     if (data.length() < AES_BLOCK_SIZE) {
         return false;    
     }
@@ -45,20 +44,20 @@ bool Signer::check_sign(const std::string & data) const {
 }
 
 void Signer::_append_length(Data & data) const {
-    size_t data_size = data.size();
+    size_t data_length = data.size();
 
-    data.resize(data_size + 2);
+    data.resize(data_length + 2);
 
-    data[data_size + 1] = data_size / 256;
-    data[data_size + 2] = data_size % 256;
+    data[data_length] = data_length / 256;
+    data[data_length + 1] = data_length % 256;
 }
 
 void Signer::_append_padding(Data & data, unsigned long long block_size) const {
-    const size_t data_size = data.size();
-    const size_t padded_length = ((data_size + block_size) / block_size) * block_size;    
+    const size_t data_length = data.size();
+    const size_t padded_length = ((data_length + block_size) / block_size) * block_size;
     data.resize(padded_length);
-    unsigned char padding = padded_length - data.size();
-    for (size_t idx = data_size; idx < padded_length; idx++) {
+    unsigned char padding = padded_length - data_length;
+    for (size_t idx = data_length; idx < padded_length; idx++) {
         data[idx] = padding;
     }
 }

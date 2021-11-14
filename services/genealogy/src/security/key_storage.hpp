@@ -7,7 +7,7 @@
 
 class KeyStorage {
 public:
-    const std::string::size_type KEY_LENGTH = 32;
+    const std::string::size_type KEY_LENGTH = 16;
 
     std::string get_cookie_key() const;
     std::string get_signing_key() const;

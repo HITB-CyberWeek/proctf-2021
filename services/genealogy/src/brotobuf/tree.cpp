@@ -6,6 +6,7 @@
 #include "person.hpp"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -16,7 +17,7 @@ GenealogyTree::GenealogyTree() {
   this->title = "";
   this->description = "";
   this->owners = std::vector<unsigned long long>();
-  this->person = Person();
+  this->person = {};
   this->links = std::vector<Link>();
 }
 void GenealogyTree::serialize(OutputStream &stream) const {
@@ -57,12 +58,13 @@ void GenealogyTree::deserialize(InputStream &&stream) {
       break;
     case 3:
       if (this->owners.empty()) {
-        printf("Allocating %p->owners for 10 elements of %ld bytes = %ld = "
+        printf("Allocating %p->owners for 60 elements of %ld bytes = %ld = "
                "0x%lx\n",
                this, sizeof(unsigned long long),
-               10 * sizeof(unsigned long long),
-               10 * sizeof(unsigned long long));
-        this->owners.resize(10);
+               60 * sizeof(unsigned long long),
+               60 * sizeof(unsigned long long));
+        this->owners.resize(60);
+        printf("Allocated %p->owners: %p\n", this, owners.data());
         this->_owners_iterator = this->owners.begin();
       }
       printf("Writing to %p->owners[%ld]\n", this,
@@ -72,7 +74,8 @@ void GenealogyTree::deserialize(InputStream &&stream) {
       break;
     case 4:
       printf("Writing to %p->person\n", this);
-      this->_deserialize_object<Person>(this->person, stream);
+      this->person = Person();
+      this->_deserialize_object<Person>(this->person.value(), stream);
       break;
     case 5:
       if (this->links.empty()) {
@@ -80,6 +83,7 @@ void GenealogyTree::deserialize(InputStream &&stream) {
             "Allocating %p->links for 10 elements of %ld bytes = %ld = 0x%lx\n",
             this, sizeof(Link), 10 * sizeof(Link), 10 * sizeof(Link));
         this->links.resize(10);
+        printf("Allocated %p->links: %p\n", this, links.data());
         this->_links_iterator = this->links.begin();
       }
       printf("Writing to %p->links[%ld]\n", this,
@@ -91,12 +95,13 @@ void GenealogyTree::deserialize(InputStream &&stream) {
   }
 
   this->owners.resize(this->_owners_iterator - this->owners.begin());
-  printf("Shrinking %p->owners for %ld elements, freed %ld bytes\n", this,
-         owners.size(), owners.capacity() * sizeof(unsigned long long));
+  printf("Shrinking %p->owners for %ld elements, freed %ld bytes at %p\n", this,
+         owners.size(), owners.capacity() * sizeof(unsigned long long),
+         owners.data());
   this->owners.shrink_to_fit();
   this->links.resize(this->_links_iterator - this->links.begin());
-  printf("Shrinking %p->links for %ld elements, freed %ld bytes\n", this,
-         links.size(), links.capacity() * sizeof(Link));
+  printf("Shrinking %p->links for %ld elements, freed %ld bytes at %p\n", this,
+         links.size(), links.capacity() * sizeof(Link), links.data());
   this->links.shrink_to_fit();
 }
 void GenealogyTree::serialize_id(OutputStream &stream) const {
@@ -120,9 +125,9 @@ void GenealogyTree::serialize_description(OutputStream &stream) const {
 void GenealogyTree::serialize_owners(OutputStream &stream) const {
   if (this->owners.size() == 0)
     return;
-  if (this->owners.size() > 10) {
+  if (this->owners.size() > 60) {
     throw std::out_of_range(
-        "Can not serialize object: owners is too long, max length is 10");
+        "Can not serialize object: owners is too long, max length is 60");
   }
   for (auto &element : this->owners) {
     this->_serialize_varint(3, stream);
@@ -130,10 +135,10 @@ void GenealogyTree::serialize_owners(OutputStream &stream) const {
   }
 }
 void GenealogyTree::serialize_person(OutputStream &stream) const {
-  if (0)
+  if (!this->person)
     return;
   this->_serialize_varint(4, stream);
-  this->_serialize_object<Person>(this->person, stream);
+  this->_serialize_object<Person>(this->person.value(), stream);
 }
 void GenealogyTree::serialize_links(OutputStream &stream) const {
   if (this->links.size() == 0)

@@ -24,7 +24,7 @@ class PersonsDatabase {
 public:
     PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx);
     std::shared_ptr<tao::pq::transaction> transaction();
-    tao::json::value build_person_object(unsigned long long person_id);
+    tao::json::value build_person_json(unsigned long long person_id);
 
     std::optional<Person> find_person(unsigned long long id);
     Person create_person(
