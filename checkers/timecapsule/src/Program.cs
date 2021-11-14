@@ -75,7 +75,7 @@ namespace checker
 			{
 				try
 				{
-					var vulns = (await checker.Info().ConfigureAwait(false)).Split(':').Skip(1).Select(v => int.Parse(v.Trim())).ToArray();
+					var vulns = (await checker.Info().ConfigureAwait(false)).Split('\n').First().Split(':').Skip(1).Select(v => int.Parse(v.Trim())).ToArray();
 					await StderrWriteLineColoredAsync("CHECK", ConsoleColor.Yellow).ConfigureAwait(false);
 					await checker.Check(host).ConfigureAwait(false);
 
