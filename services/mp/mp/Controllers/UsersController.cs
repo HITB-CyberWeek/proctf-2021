@@ -63,39 +63,6 @@ namespace mp.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("authenticateJwt")]
-        public IActionResult AuthenticateJwt([FromBody] AuthenticateModel model)
-        {
-            var user = userService.ValidateCredentials(model.Login, model.Password);
-
-            if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.RestApiJWTSecret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Name, user.Login)
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-
-            return Ok(new
-            {
-                //TODO return model here
-                Login = user.Login,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Token = tokenString
-            });
-        }
-
-        [AllowAnonymous]
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterModel model)
         {

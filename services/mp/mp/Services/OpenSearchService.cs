@@ -1,8 +1,9 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Http;
+using mp.Entities;
+using Newtonsoft.Json;
 
 namespace mp.Services
 {
@@ -19,11 +20,54 @@ namespace mp.Services
             this.elasticClient = elasticClient;
         }
 
-        public async Task<string> Search(string queryString, int from = 0, int size = 10)
+        public async Task<string> IndexDocument(Document document, string routing = null)
         {
-            var userLogin = httpContextAccessor.HttpContext?.User.Identity?.GetUserId();
-            var user = userService.Get(userLogin);
-            return await elasticClient.SearchAsync(user, queryString, from, size);
+            return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
+
+        public async Task<IEnumerable<Document>> Search(string queryString, int from = 0, int size = 10)
+        {
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), queryString ?? "", from, size))
+                ?.Hits
+                .Hits
+                .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
+        }
+
+        //TODO copypaste
+        public async Task<IEnumerable<Document>> SearchOrdersOfProduct(string productId, int from = 0, int size = 10)
+        {
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext.FindCurrentUserId(), productId, from, size))
+                ?.Hits
+                .Hits
+                .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
+        }
+
+        //TODO check DLS works with get by id
+        public async Task<Document> Get(string documentId)
+        {
+            var hit =  JsonConvert.DeserializeObject<Hit>(await elasticClient.GetAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), documentId));
+            return hit?.Source?.CloneAndSetId(hit.Id);
+        }
+    }
+
+    class IndexResponse
+    {
+        [JsonProperty("_id")] public string Id;
+    }
+
+    class SearchResponse
+    {
+        [JsonProperty("hits")] public HitOuter Hits { get; set; }
+
+        internal class HitOuter
+        {
+            [JsonProperty("hits")] public Hit[] Hits { get; set; }
+        }
+    }
+
+    public class Hit
+    {
+        [JsonProperty("_id")] public string Id;
+        [JsonProperty("_source")] public Document Source { get; set; }
     }
 }

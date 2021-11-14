@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using mp.Entities;
+using mp.Models.Searchable;
 using mp.Services;
 
 namespace mp.Controllers
@@ -11,39 +10,28 @@ namespace mp.Controllers
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class ProductsController : ControllerBase
+    public class ProductsController : SearchController
     {
-        private readonly OpenSearchService openSearchService;
-
-        // GET: api/<Products>
-        [HttpGet("search")]
-        public string Search([FromQuery] string query)
-        {
-            return openSearchService.Search(query).Result;
-        }
-
-        // GET api/<Products>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public ProductModel Get(string id)
         {
-            return "value";
+            return ProductModel.FromDocument(GetInternal(id));
         }
 
-        // PUT api/<Products>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpGet("search")]
+        public ProductModel[] Search([FromQuery] string query)
         {
+            return SearchInternal(query).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray();
         }
 
-        // DELETE api/<Products>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPut("create")]
+        public IActionResult CreateProduct([FromBody] ProductModel product)
         {
+            return Ok(openSearchService.IndexDocument(Document.CreateProduct(product.Name, product.Description, creator: HttpContext.FindCurrentUserId())).Result);
         }
 
-        public ProductsController(OpenSearchService openSearchService)
+        public ProductsController(OpenSearchService openSearchService) : base(openSearchService)
         {
-            this.openSearchService = openSearchService;
         }
     }
 }
