@@ -1,7 +1,7 @@
 import os
 import sys
 
-N = 768
+N = 64
 
 SERVER = "team%d.ctf.hitb.org"
 
@@ -48,7 +48,7 @@ except FileExistsError:
     print("Remove ./client_entergame_prod dir first")
     sys.exit(1)
 
-for i in range(N):
+for i in range(1, N+1):
     ca = open("net_certs_prod/team%d-net/ca.crt" % i).read().strip()
     cert = open("net_certs_prod/team%d-net/issued/team%d-client.crt" % (i, i)).read().strip()
     cert = cert[cert.index("-----BEGIN CERTIFICATE-----"):]

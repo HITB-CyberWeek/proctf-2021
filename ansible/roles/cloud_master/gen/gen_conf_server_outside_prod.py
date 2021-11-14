@@ -1,7 +1,7 @@
 import os
 import sys
 
-N = 768
+N = 64
 
 SERVER_DATA = """mode server
 tls-server
@@ -60,7 +60,7 @@ except FileExistsError:
     print("Remove ./server_outside_prod dir first")
     sys.exit(1)
 
-for i in range(N):
+for i in range(1, N+1):
     dh = open("net_certs_prod/team%d-net/dh.pem" % i).read().strip()
     ca = open("net_certs_prod/team%d-net/ca.crt" % i).read().strip()
     cert = open("net_certs_prod/team%d-net/issued/team%d-server.crt" % (i, i)).read().strip()

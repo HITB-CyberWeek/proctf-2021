@@ -94,3 +94,24 @@ def call_unitl_zero_exit(params, redirect_out_to_err=True, attempts=60, timeout=
         return True
 
     return None
+
+def get_available_vms():
+    try:
+        ret = {}
+        for line in open("%s/vms.txt" % DB_PATH):
+            if line.strip().startswith("#"):
+                continue
+            vm, vm_number = line.rsplit(maxsplit=1)
+            ret[vm] = int(vm_number)
+        return ret
+    except (OSError, ValueError):
+        return {}
+
+def get_vm_name_by_num(num):
+    if list(get_available_vms().values()).count(num) != 1:
+        return ""
+
+    for k, v in get_available_vms().items():
+        if v == num:
+            return k
+    return ""
