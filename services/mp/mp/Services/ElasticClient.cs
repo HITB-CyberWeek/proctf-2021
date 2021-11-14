@@ -66,8 +66,14 @@ namespace mp.Services
                     ""from"": ""{from}"",
                     ""size"": ""{size}"",
                     ""query"": {{
-                        ""query_string"": {{
-                            ""query"": ""{Escape(queryString)}""
+                        ""bool"": {{
+                            ""must"":[
+                                {{
+                                    ""query_string"": {{
+                                        ""query"": ""{Escape(queryString)}""
+                                    }}
+                                }}
+                            ]
                         }}
                     }}
                 }}";
