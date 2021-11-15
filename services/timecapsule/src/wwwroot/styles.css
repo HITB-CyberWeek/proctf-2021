@@ -32,6 +32,10 @@ input, textarea {
 .auth {
 	text-align: right;
 }
+.auth.signed:before {
+	content: '👤\FE0E ';
+	color: #5f9;
+}
 
 .grid {
 	display: grid;
