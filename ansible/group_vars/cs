@@ -39,12 +39,12 @@ cs_disable_irrelevant_services: 0
 cs_time: "['2021-11-13 12:00:00', '2021-11-28 12:00:00']"
 
 teams: |
-  {name => 'Team 120', network => '10.60.120.0/24', host => '10.60.120.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 121', network => '10.60.121.0/24', host => '10.60.121.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 122', network => '10.60.122.0/24', host => '10.60.122.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 123', network => '10.60.123.0/24', host => '10.60.123.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 124', network => '10.60.124.0/24', host => '10.60.124.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 125', network => '10.60.125.0/24', host => '10.60.125.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 120', network => '10.60.120.0/24', host => '10.60.120.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 0}]},
+  {name => 'Team 121', network => '10.60.121.0/24', host => '10.60.121.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 122', network => '10.60.122.0/24', host => '10.60.122.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 123', network => '10.60.123.0/24', host => '10.60.123.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 124', network => '10.60.124.0/24', host => '10.60.124.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
+  {name => 'Team 125', network => '10.60.125.0/24', host => '10.60.125.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
   {name => 'Team 126', network => '10.60.126.0/24', host => '10.60.126.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
   {name => 'Team 127', network => '10.60.127.0/24', host => '10.60.127.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
   {name => 'Team 128', network => '10.60.128.0/24', host => '10.60.128.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
