@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace mp.Models.Users
 {
-    public class AuthenticateModel
+    public class UserModel
     {
         [Required]
         [DefaultValue("user1")]

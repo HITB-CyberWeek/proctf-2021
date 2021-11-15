@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
+﻿using System.Security.Claims;
 using System.Threading.Tasks;
-using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using mp.Entities;
 using mp.Models.Users;
 using mp.Services;
@@ -23,34 +15,25 @@ namespace mp.Controllers
     [Route("[controller]")]
     public class UsersController : ControllerBase
     {
-        private IUserService userService;
-        private IMapper mapper;
-        private readonly AppSettings _appSettings;
+        private UserService userService;
 
-        public UsersController(
-            IUserService userService,
-            IMapper mapper,
-            IOptions<AppSettings> appSettings)
+        public UsersController(UserService userService)
         {
             this.userService = userService;
-            this.mapper = mapper;
-            _appSettings = appSettings.Value;
         }
 
         [AllowAnonymous]
-        [HttpPost("authenticateCookie")]
-        public IActionResult AuthenticateCookie([FromBody] AuthenticateModel model)
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] UserModel model)
         {
             var user = userService.ValidateCredentials(model.Login, model.Password);
             if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
+                return BadRequest(new { message = "login or password is incorrect" });
 
             var claimsIdentity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
             claimsIdentity.AddClaims(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Login),
-                // new Claim(ClaimTypes.Name, user.FirstName),
-                // new Claim(ClaimTypes.Surname, user.LastName)
+                new Claim(ClaimTypes.NameIdentifier, user.Login)
             });
 
             HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
@@ -64,13 +47,11 @@ namespace mp.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterModel model)
+        public async Task<IActionResult> Register([FromBody] UserModel model)
         {
-            var user = mapper.Map<User>(model);
-
             try
             {
-                userService.Create(user, model.Password);
+                await userService.Create(model.Login, model.Password);
                 return Ok();
             }
             catch (ApiException ex)

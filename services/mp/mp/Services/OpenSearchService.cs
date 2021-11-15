@@ -10,10 +10,10 @@ namespace mp.Services
     public class OpenSearchService
     {
         private readonly IHttpContextAccessor httpContextAccessor;
-        private readonly IUserService userService;
+        private readonly UserService userService;
         private readonly ElasticClient elasticClient;
 
-        public OpenSearchService(IHttpContextAccessor httpContextAccessor, IUserService userService, ElasticClient elasticClient)
+        public OpenSearchService(IHttpContextAccessor httpContextAccessor, UserService userService, ElasticClient elasticClient)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.userService = userService;
