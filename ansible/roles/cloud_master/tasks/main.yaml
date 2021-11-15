@@ -112,7 +112,7 @@
     rsync_opts:
       - "--chmod=D0755,F0755"
       - "--chown=root:root"
-      - "--exclude=do_token.py"
+      - "--exclude=do_tokens.py"
       - "--include=*.py"
       - "--exclude=*"
 
@@ -138,4 +138,4 @@
   copy: src=api_srv/{{item}} dest=/cloud/backend/ mode=0600 owner=cloud group=cloud
   with_items:
     - hitb2021_do_deploy
-    - do_token.py
+    - do_tokens.py

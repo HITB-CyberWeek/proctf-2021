@@ -10,7 +10,7 @@ import traceback
 
 import do_api
 from cloud_common import (log_progress, call_unitl_zero_exit, #get_cloud_ip, 
-                          SSH_OPTS, SSH_DO_OPTS, ROUTER_HOST, # SSH_YA_OPTS
+                          SSH_OPTS, SSH_DO_OPTS, # ROUTER_HOST, SSH_YA_OPTS
                           )
 
 

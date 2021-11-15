@@ -210,7 +210,7 @@ def create_task(team, task_name, script_name, args, timeout=600):
 def get_available_vms():
     try:
         ret = {}
-        for line in open("%s/vms.txt" % DB_PATH):
+        for line in open("%s/services.txt" % DB_PATH):
             if line.strip().startswith("#"):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)

@@ -9,10 +9,7 @@ import time
 import os
 import shutil
 
-DOMAIN = "ctf.hitb.org"
-
-# change me before the game
-ROUTER_HOST = "vpn.ctf.hitb.org"
+from do_settings import DO_SSH_ID_FILE
 
 SSH_OPTS = [
     "-o", "StrictHostKeyChecking=no",
@@ -27,7 +24,7 @@ SSH_OPTS = [
 SSH_DO_OPTS = SSH_OPTS + [
     "-o", "Port=2222",
     "-o", "User=root",
-    "-o", "IdentityFile=hitb2021_do_deploy"
+    "-o", "IdentityFile=%s" % DO_SSH_ID_FILE
 ]
 
 SSH_YA_OPTS = SSH_OPTS + [
@@ -45,6 +42,16 @@ SSH_YA_OPTS = SSH_OPTS + [
 #         os.remove("db/team%d/cloud_ip" % team)
 #     except FileNotFoundError:
 #         return
+
+def get_cloud_name(team):
+    try:
+        return open("db/team%d/cloud_name" % team).read().strip()
+    except FileNotFoundError as e:
+        return None
+
+
+def put_cloud_name(team, cloud_name):
+    open("db/team%d/cloud_name" % team, "w").write(cloud_name)
 
 
 # def take_cloud_ip(team):
@@ -69,11 +76,6 @@ SSH_YA_OPTS = SSH_OPTS + [
 #     return None
 
 
-# def get_cloud_ip(team):
-#     try:
-#         return open("db/team%d/cloud_ip" % team).read().strip()
-#     except FileNotFoundError as e:
-#         return None
 
 
 def log_progress(*params):
@@ -95,10 +97,10 @@ def call_unitl_zero_exit(params, redirect_out_to_err=True, attempts=60, timeout=
 
     return None
 
-def get_available_vms():
+def get_available_services():
     try:
         ret = {}
-        for line in open("%s/vms.txt" % DB_PATH):
+        for line in open("db/services.txt"):
             if line.strip().startswith("#"):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
@@ -107,11 +109,11 @@ def get_available_vms():
     except (OSError, ValueError):
         return {}
 
-def get_vm_name_by_num(num):
-    if list(get_available_vms().values()).count(num) != 1:
+def get_service_name_by_num(num):
+    if list(get_available_services().values()).count(num) != 1:
         return ""
 
-    for k, v in get_available_vms().items():
+    for k, v in get_available_services().items():
         if v == num:
             return k
     return ""
