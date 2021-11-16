@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using mp.Entities;
@@ -13,9 +14,9 @@ namespace mp.Controllers
     {
         protected readonly OpenSearchService openSearchService;
 
-        protected IEnumerable<Document> SearchInternal(string query)
+        protected IEnumerable<Document> SearchInternal(string query, int pageNum)
         {
-            return openSearchService.Search(query).Result;
+            return openSearchService.Search(query, pageNum).Result;
         }
 
         protected Document GetInternal(string id)

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using mp.Entities;
@@ -19,9 +20,9 @@ namespace mp.Controllers
         }
 
         [HttpGet("search")]
-        public ProductModel[] Search([FromQuery] string query)
+        public ProductModel[] Search([FromQuery] string query, int pageNum)
         {
-            return SearchInternal(query).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray();
+            return SearchInternal(query, pageNum).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray();
         }
 
         [HttpPut("create")]

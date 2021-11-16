@@ -1,4 +1,5 @@
-﻿using mp.Entities;
+﻿using System;
+using mp.Entities;
 
 namespace mp.Models.Searchable
 {
@@ -8,6 +9,7 @@ namespace mp.Models.Searchable
         public string Name { get; set; }
         public string Description { get; set; }
         public string Creator { get; set; }
+        public DateTime Dt { get; set; }
 
         public static ProductModel FromDocument(Document document)
         {
@@ -19,7 +21,8 @@ namespace mp.Models.Searchable
                 Id = document.Id,
                 Name = document.Name,
                 Description = document.Text,
-                Creator = document.Creator
+                Creator = document.Creator,
+                Dt = document.Dt
             };
         }
     }

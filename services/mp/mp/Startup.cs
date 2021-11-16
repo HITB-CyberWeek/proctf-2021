@@ -48,13 +48,17 @@ namespace mp
                             return Task.CompletedTask;
                         }
                     };
+                    options.LoginPath = "/Users/whoami";
                     options.Cookie.Name = nameof(mp);
                     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
                     options.ExpireTimeSpan = TimeSpan.FromDays(7);
                     options.Cookie.HttpOnly = true;
                 });
 
-            services.AddSingleton(provider => new UserService("state/users/"));
+            var usersStorage = new UsersStorage("state/users/");
+            services.AddSingleton(provider => usersStorage);
+            services.AddSingleton< UserService>();
+
             services.AddSingleton(provider =>
             {
                 var settings = new ConnectionConfiguration(new Uri(Configuration["AppSettings:OpenSearchUrl"]))

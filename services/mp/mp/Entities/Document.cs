@@ -1,4 +1,5 @@
-﻿using mp.Models.Searchable;
+﻿using System;
+using mp.Models.Searchable;
 using Newtonsoft.Json;
 
 namespace mp.Entities
@@ -10,6 +11,7 @@ namespace mp.Entities
         [JsonProperty("text")] public string Text { get; internal set; }
         [JsonProperty("created_by")] public string Creator { get; internal set; }
         [JsonProperty("readable_by", DefaultValueHandling = DefaultValueHandling.Ignore)] public string[] ReadableBy { get; internal set; }
+        [JsonProperty("dt")] public DateTime Dt { get; internal set; }
 
         [JsonProperty("join_field", DefaultValueHandling = DefaultValueHandling.Ignore)] public JoinField JoinField { get; internal set; }
 
@@ -42,6 +44,7 @@ namespace mp.Entities
                 Name = name,
                 Text = text,
                 Creator = creator,
+                Dt = DateTime.UtcNow,
                 JoinField = JoinField.Product()
             };
         }
@@ -53,6 +56,7 @@ namespace mp.Entities
                 Text = text,
                 Creator = creator,
                 ReadableBy = new[] {creator, product.Creator},
+                Dt = DateTime.UtcNow,
                 JoinField = JoinField.Order(product.Id)
             };
         }

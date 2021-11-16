@@ -23,6 +23,13 @@ namespace mp.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet("whoami")]
+        public IActionResult Whoami()
+        {
+            return Ok(HttpContext.FindCurrentUserId());
+        }
+
+        [AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserModel model)
         {

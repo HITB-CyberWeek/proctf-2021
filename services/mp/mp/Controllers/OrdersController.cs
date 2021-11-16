@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using mp.Entities;
@@ -19,18 +20,18 @@ namespace mp.Controllers
         }
 
         [HttpGet("searchForMyProduct")]
-        public IActionResult SearchForMyProduct([FromQuery] string productId)
+        public IActionResult SearchForMyProduct([FromQuery] string productId, int pageNum)
         {
             if(productId == null)
                 return BadRequest(new { message = $"{nameof(productId)} not specified" });
 
-            return Ok(openSearchService.SearchOrdersOfProduct(productId).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
+            return Ok(openSearchService.SearchOrdersOfProduct(productId, pageNum).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
         }
 
         [HttpGet("search")]
-        public OrderModel[] Search([FromQuery] string query)
+        public OrderModel[] Search([FromQuery] string query, int pageNum)
         {
-            return SearchInternal(query).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
+            return SearchInternal(query, pageNum).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
         }
 
         [HttpPut("create")]

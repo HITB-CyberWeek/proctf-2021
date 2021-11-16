@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace mp.Services
 {
-    class UsersStorage
+    public class UsersStorage
     {
         private string stateDir;
 

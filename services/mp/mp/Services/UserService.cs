@@ -10,9 +10,9 @@ namespace mp.Services
     {
         private readonly UsersStorage usersStorage;
 
-        public UserService(string stateDir)
+        public UserService(UsersStorage usersStorage)
         {
-            usersStorage = new UsersStorage(stateDir);
+            this.usersStorage = usersStorage;
         }
 
         //TODO trim login

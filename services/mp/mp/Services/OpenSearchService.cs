@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -25,18 +26,18 @@ namespace mp.Services
             return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
 
-        public async Task<IEnumerable<Document>> Search(string queryString, int from = 0, int size = 10)
+        public async Task<IEnumerable<Document>> Search(string queryString, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), queryString ?? "", from, size))
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
         }
 
         //TODO copypaste
-        public async Task<IEnumerable<Document>> SearchOrdersOfProduct(string productId, int from = 0, int size = 10)
+        public async Task<IEnumerable<Document>> SearchOrdersOfProduct(string productId, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext.FindCurrentUserId(), productId, from, size))
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -48,6 +49,8 @@ namespace mp.Services
             var hit =  JsonConvert.DeserializeObject<Hit>(await elasticClient.GetAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), documentId));
             return hit?.Source?.CloneAndSetId(hit.Id);
         }
+
+        private const int PageSize = 10;
     }
 
     class IndexResponse
