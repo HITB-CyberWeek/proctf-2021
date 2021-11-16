@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,7 +32,7 @@ namespace mp.Services
             return response.Body;
         }
 
-        public async Task<string> SearchOrdersOfProduct(string userId, string parentId, int from = 0, int size = 10)
+        public async Task<string> SearchOrdersOfProduct(string userId, string parentId, int from, int size)
         {
             var request = JsonConvert.SerializeObject(new
                 {
@@ -63,7 +64,7 @@ namespace mp.Services
             return response.Body;
         }
 
-        public async Task<string> SearchAsync(string userId, string queryString, int from = 0, int size = 10)
+        public async Task<string> SearchAsync(string userId, string queryString, int from, int size)
         {
             var request = JsonConvert.SerializeObject(new
                 {
@@ -73,8 +74,18 @@ namespace mp.Services
                     {
                         @bool = new
                         {
-                            must = new[]
+                            must = new object[]
                             {
+                                new
+                                {
+                                    range = new
+                                    {
+                                        dt = new
+                                        {
+                                            gte = "now-1h"
+                                        }
+                                    }
+                                },
                                 new
                                 {
                                     query_string = new
@@ -123,14 +134,15 @@ namespace mp.Services
             return $"{headerEncoded}.{bodyEncoded}.{signatureEncoded}";
         }
 
+        private byte[] SerializeString(string s)
+        {
+            var result = Encoding.GetEncoding(1251).GetBytes(s);
+            return result;
+        }
+
         private string EncodeB64(object o)
         {
             return Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(SerializeString(JsonConvert.SerializeObject(o, Formatting.Indented)));
-        }
-
-        private byte[] SerializeString(string s)
-        {
-            return Encoding.GetEncoding(1251).GetBytes(s);
         }
     }
 }
