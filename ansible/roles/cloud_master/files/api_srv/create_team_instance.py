@@ -12,8 +12,8 @@ import traceback
 import do_api
 from do_settings import CLOUD_FOR_NEW_VMS, CLOUDS, CLOUD_FOR_DNS, DOMAIN
 from do_tokens import DO_TOKENS
-from cloud_common import ( get_cloud_name, put_cloud_name,
-                          log_progress, get_service_name_by_num,
+from cloud_common import ( get_cloud_name, put_cloud_name, get_cloud_name,
+                          log_progress, get_service_name_by_num, get_image_name,
                           call_unitl_zero_exit,SSH_OPTS, SSH_DO_OPTS,
                           SSH_YA_OPTS)
 
@@ -21,9 +21,7 @@ TEAM = int(sys.argv[1])
 VMNUM = int(sys.argv[2])
 
 ROUTER_VM_NAME = "team%d-router" % TEAM
-IMAGE_VM_NAME = "team%d-serv%d" % (TEAM,VMNUM)
 DNS_NAME = "team%d" % TEAM
-
 
 
 def log_stderr(*params):
@@ -240,7 +238,7 @@ def main():
                 log_stderr("no vpc id, exiting")
                 exit(1)
 
-            exists = do_api.check_vm_exists(token, IMAGE_VM_NAME)
+            exists = do_api.check_vm_exists(token, get_image_name(TEAM, VMNUM))
             if exists is None:
                 log_stderr("failed to determine if vm exists, exiting")
                 return 1
@@ -251,7 +249,7 @@ def main():
                 userdata = USERDATA_TEMPLATE.format(pass_hash, team_router)
 
                 vulnimage_droplet_id = do_api.create_vm(token,
-                    IMAGE_VM_NAME, image=do_cloud_params["vulnimages"][service_name],
+                    get_image_name(TEAM, VMNUM), image=do_cloud_params["vulnimages"][service_name],
                     ssh_keys=do_cloud_params["ssh_keys"],
                     size=do_cloud_params.get("vulnimage_size"),
                     region=do_cloud_params.get("region"),

@@ -8,6 +8,7 @@ import sys
 import time
 import os
 import shutil
+import re
 
 from do_settings import DO_SSH_ID_FILE
 
@@ -52,6 +53,10 @@ def get_cloud_name(team):
 
 def put_cloud_name(team, cloud_name):
     open("db/team%d/cloud_name" % team, "w").write(cloud_name)
+
+
+# def unput_cloud_name(team):
+#     os.remove("db/team%d/cloud_name" % team)
 
 
 # def take_cloud_ip(team):
@@ -117,3 +122,18 @@ def get_service_name_by_num(num):
         if v == num:
             return k
     return ""
+
+def get_image_name(team, num):
+    cloud_name = get_cloud_name(team)
+    if not cloud_name:
+        raise Exception("No image name")
+
+    service_name = get_service_name_by_num(num)
+    if not service_name:
+        raise Exception("No service with this num, edit services.txt")
+
+    if not re.fullmatch(r"[a-z0-9-]+", service_name):
+        raise Exception("Service has bad name")
+
+
+    return "team%d-%s" % (team, service_name)
