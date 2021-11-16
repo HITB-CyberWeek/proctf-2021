@@ -1,8 +1,11 @@
 using System;
+using System.IO;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -27,51 +30,45 @@ namespace mp
         {
             services.AddControllers().AddNewtonsoftJson();
             services.AddHttpContextAccessor();
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-            services.AddAuthentication(x =>
-                {
-                    x.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    x.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                })
-                .AddCookie(options =>
+            services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("state/encryption/")).SetApplicationName(nameof(mp));
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
                 {
                     options.Events = new CookieAuthenticationEvents
                     {
-                        OnValidatePrincipal = async context =>
+                        OnValidatePrincipal = context =>
                         {
-                            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                            var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
                             var login = context.Principal?.Identity?.GetUserId();
                             var user = userService.Find(login);
-                            if(user == null)
-                            {
+                            if(user == null) 
                                 context.RejectPrincipal();
-                                // await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            }
+                            return Task.CompletedTask;
                         }
                     };
-                    // options.Cookie.IsEssential = true;
-                    options.Cookie.Name = "mp";
+                    options.Cookie.Name = nameof(mp);
                     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
                     options.ExpireTimeSpan = TimeSpan.FromDays(7);
                     options.Cookie.HttpOnly = true;
                 });
 
-            services.AddSingleton<IUserService>(provider => new UserService("users"));
+            services.AddSingleton(provider => new UserService("state/users/"));
             services.AddSingleton(provider =>
             {
-                var settings = new ConnectionConfiguration(new Uri("http://192.168.11.131:9200"))
+                var settings = new ConnectionConfiguration(new Uri(Configuration["AppSettings:OpenSearchUrl"]))
                     .RequestTimeout(TimeSpan.FromSeconds(30))
                     .ThrowExceptions();
                 var elasticLowLevelClient =  new ElasticLowLevelClient(settings);
-                return new ElasticClient(elasticLowLevelClient, "mp");
+                return new ElasticClient(elasticLowLevelClient, nameof(mp));
             });
             services.AddSingleton<OpenSearchService>();
 
             services.AddSwaggerGen(c =>
             {
                 c.SchemaFilter<DefaultsAwareSchemaFilter>();
-                c.SwaggerDoc("v1", new OpenApiInfo {Title = "mp", Version = "v1"});
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = nameof(mp), Version = "v1"});
             });
             services.AddSwaggerGenNewtonsoftSupport();
         }
@@ -94,7 +91,7 @@ namespace mp
         }
     }
 
-    public class DefaultsAwareSchemaFilter : ISchemaFilter
+    internal class DefaultsAwareSchemaFilter : ISchemaFilter
     {
         public void Apply(OpenApiSchema schema, SchemaFilterContext context)
         {
