@@ -90,6 +90,10 @@ namespace mp.Services
                                 {
                                     query_string = new
                                     {
+                                        fields = new []
+                                        {
+                                            "product_name", "text", "created_by"
+                                        },
                                         query = queryString
                                     }
                                 }
