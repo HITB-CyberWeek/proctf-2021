@@ -1,6 +1,7 @@
 FROM gcc:11-bullseye
+LABEL maintainer="andgein@hackerdom.ru"
 
-ADD . /app
+ADD src/ /app
 
 WORKDIR /app
 
@@ -12,4 +13,4 @@ RUN apt-get update
 RUN apt-get install -y gdb
 RUN wget -q -O- https://github.com/hugsy/gef/raw/master/scripts/gef.sh | sh
 
-CMD /app/main
+CMD /app/genealogy

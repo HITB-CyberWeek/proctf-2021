@@ -1,7 +1,7 @@
-#include "http_response.hpp"
-
-#include "http_server.hpp"
 #include "tao/json/to_string.hpp"
+
+#include "http_response.hpp"
+#include "http_server.hpp"
 #include "../utils.hpp"
 
 HttpResponse::HttpResponse(HttpStatusCode status_code) : status_code(status_code) {

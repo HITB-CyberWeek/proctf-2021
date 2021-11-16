@@ -1,0 +1,4 @@
+data/
+trash/
+**/*.o
+src/keys/

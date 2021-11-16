@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "tao/pq/transaction.hpp"
+#include "tao/pq.hpp"
 #include "tao/json/value.hpp"
 
 #include "common.hpp"

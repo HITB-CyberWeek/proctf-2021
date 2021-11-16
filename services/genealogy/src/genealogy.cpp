@@ -1,5 +1,6 @@
 #include <memory>
 #include <string>
+#include <signal.h>
 
 #include "server/http_request.hpp"
 #include "server/http_status_code.hpp"
@@ -75,6 +76,8 @@ HttpResponse check_tree_archive(const HttpRequest & request) {
 }
 
 int main() {
+    signal(SIGCHLD, SIG_IGN);
+
     ensure_keys_exist();
 
     auto server = std::make_unique<HttpServer>(8888);

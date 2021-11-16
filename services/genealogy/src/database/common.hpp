@@ -4,8 +4,7 @@
 
 #include <memory>
 
-#include "tao/pq.hpp"
-#include "tao/pq/notification.hpp"
+#include "tao/pq/connection.hpp"
 #include "tao/pq/transaction.hpp"
 
 class Database {

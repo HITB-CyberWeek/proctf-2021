@@ -67,6 +67,7 @@ Signer::Data Signer::_encrypt(const Data & data) const {
 
     AES_KEY enc_key;
     AES_set_encrypt_key((const unsigned char*) this->_key.data(), 128, &enc_key);
+
     AES_cbc_encrypt(data.data(), output.get(), data.size(), &enc_key, this->_iv.get(), AES_ENCRYPT);
 
     Data result;

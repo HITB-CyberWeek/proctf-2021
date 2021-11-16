@@ -31,13 +31,18 @@ HttpResponse UsersController::create_user(const HttpRequest & request) {
     const auto user = this->_users_database->create_user(login, password_hash);
     this->_users_database->transaction()->commit();
 
-    return HttpResponse({
+    auto response = HttpResponse({
         {"status", "ok"},
         {"user", {
             {"id", user.id},
             {"login", user.login}
         }}
     });
+
+    response.set_cookie("user_id", std::to_string(user.id));
+    response.set_cookie("user_hash", this->_get_user_cookie_hash(user.id));
+
+    return response;
 }
 
 HttpResponse UsersController::login(const HttpRequest & request) {
@@ -47,16 +52,14 @@ HttpResponse UsersController::login(const HttpRequest & request) {
 
     const auto password_hash = this->_hasher->md5(password);
 
-    const auto found_user = this->_users_database->find_user(login);
-    this->_users_database->transaction()->rollback();
-    if (!found_user) {
+    const auto user = this->_users_database->find_user(login);
+    if (!user) {
         return HttpResponse({
             {"status", "error"},
             {"message", string_format("User with login %s doesn't exist", login.c_str())}
         }, HttpStatusCode::PRECONDITION_FAILED);
     }
-    const auto user = found_user.value();
-    if (user.password_hash != password_hash) {
+    if (user->password_hash != password_hash) {
         return HttpResponse({
             {"status", "error"},
             {"message", string_format("Invalid password for user %s", login.c_str())}
@@ -66,13 +69,13 @@ HttpResponse UsersController::login(const HttpRequest & request) {
     auto response = HttpResponse({
         {"status", "ok"},
         {"user", {
-            {"id", user.id},
-            {"login", user.login}
+            {"id", user->id},
+            {"login", user->login}
         }}
     });
     
-    response.set_cookie("user_id", std::to_string(user.id));
-    response.set_cookie("user_hash", this->_get_user_cookie_hash(user.id));
+    response.set_cookie("user_id", std::to_string(user->id));
+    response.set_cookie("user_hash", this->_get_user_cookie_hash(user->id));
 
     return response;
 }
@@ -86,20 +89,19 @@ HttpResponse UsersController::get_me(const HttpRequest & request) {
         }, HttpStatusCode::UNAUTHORIZED);
     }
 
-    const auto found_user = this->_users_database->find_user(user_id.value());
-    if (!found_user) {
+    const auto user = this->_users_database->find_user(user_id.value());
+    if (!user) {
         return HttpResponse({
             {"status", "error"},
             {"message", string_format("User has been deleted", user_id.value())}
         }, HttpStatusCode::UNAUTHORIZED);
     }
 
-    const auto user = found_user.value();
     return HttpResponse({
         {"status", "ok"},
         {"user", {
-            {"id", user.id},
-            {"login", user.login}
+            {"id", user->id},
+            {"login", user->login}
         }}
     });  
 }

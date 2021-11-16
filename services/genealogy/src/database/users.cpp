@@ -1,9 +1,8 @@
-#include "users.hpp"
-
-#include "tao/pq.hpp"
-
-#include "common.hpp"
 #include "tao/pq/transaction.hpp"
+
+#include "users.hpp"
+#include "common.hpp"
+
 
 UsersDatabase::UsersDatabase(std::shared_ptr<tao::pq::transaction> tx): _tx(tx) {
     this->_tx->connection()->prepare(

