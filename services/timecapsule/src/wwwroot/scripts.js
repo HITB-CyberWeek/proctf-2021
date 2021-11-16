@@ -3,6 +3,8 @@ import { wrap, unwrap } from './wrapper.js';
 let $ = (selector, element) => (element || document).querySelector(selector);
 let error = (msg) => alert(msg);
 
+const PUBLIC_KEY = "13371337-1337-1337-1337-133713371337";
+
 fetch("/auth", {credentials:"same-origin"}).then(response => {
 	if(!response.ok) response.text().then(text => error(text));
 	else {
@@ -14,11 +16,11 @@ fetch("/auth", {credentials:"same-origin"}).then(response => {
 	}
 });
 [$("#signup"), $("#signin")].forEach(el => el.onclick = () => {
-	const url = `/signup?login=${encodeURIComponent($("#login").value)}&password=${encodeURIComponent($("#password").value)}`;
-	fetch(url, {method: "POST", credentials: "same-origin"}).then(response => {
-		if(!response.ok) response.text().then(text => error(text));
-		else $(".auth").classList.add("signed");
-	});
+	wrap({author: $("#login").value, text: $("#password").value}, PUBLIC_KEY).then(capsule =>
+		fetch(`/${el.id}?wrapped=${encodeURIComponent(capsule)}`, {method: "POST", credentials: "same-origin"}).then(response => {
+			if(!response.ok) response.text().then(text => error(text));
+			else $(".auth").classList.add("signed");
+	}));
 });
 
 function renderCapsule($body, template, item) {
@@ -60,22 +62,23 @@ if(location.pathname == "/add.html") {
 	$("form").onsubmit = e => {
 		e.preventDefault();
 
-		let toBeOpened = $("#tobeopened").value;
+		let toBeOpened = $("#tobeopened").value + "Z";
 		let text = $("#text").value;
 
-		fetch(`/capsule?text=${encodeURIComponent(text)}&tobeopened=${encodeURIComponent(toBeOpened)}`, {method:"POST", credentials:"same-origin"}).then(response => {
-			if(!response.ok) response.text().then(text => error(text));
-			else {
-				response.json().then(json => {
-					if(!json) return;
+		wrap({text: text, expireDate: new Date(toBeOpened)}, PUBLIC_KEY).then(capsule =>
+			fetch(`/capsule?wrapped=${encodeURIComponent(capsule)}`, {method:"POST", credentials:"same-origin"}).then(response => {
+				if(!response.ok) response.text().then(text => error(text));
+				else {
+					response.json().then(json => {
+						if(!json) return;
 
-					const $body = $(".single");
-					while($body.lastElementChild){$body.removeChild($body.lastElementChild);}
+						const $body = $(".single");
+						while($body.lastElementChild){$body.removeChild($body.lastElementChild);}
 
-					renderCapsule($body, $("template").content, json);
-				}).catch(e => error("post /capsule failed: " + e));
-			}
-		});
+						renderCapsule($body, $("template").content, json);
+					}).catch(e => error("post /capsule failed: " + e));
+				}
+		}));
 	}
 }
 

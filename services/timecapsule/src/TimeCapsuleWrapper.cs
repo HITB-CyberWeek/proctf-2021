@@ -37,6 +37,11 @@ namespace timecapsule
 			}
 		}
 
+		public static async Task<Container> TryUnwrapAsync(string value, CancellationToken token, Guid? key = null)
+		{
+			try { return await UnwrapAsync(value, token, key); } catch { return null; }
+		}
+
 		public static async Task<Container> UnwrapAsync(string value, CancellationToken token, Guid? key = null)
 		{
 			byte[] buffer1 = null, buffer2 = null;

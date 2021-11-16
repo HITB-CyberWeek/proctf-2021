@@ -18,8 +18,14 @@ namespace timecapsule
 		public async Task<IActionResult> CheckAuth() => Ok(User?.Identity?.Name ?? string.Empty);
 
 		[HttpPost("signup")]
-		public async Task<IActionResult> SignUp(string login, string password)
+		public async Task<IActionResult> SignUp(string wrapped)
 		{
+			var unwrapped = await TimeCapsuleWrapper.TryUnwrapAsync(wrapped, HttpContext.RequestAborted, PublicKey);
+			if(unwrapped == null)
+				return StatusCode(400, "bad auth wrap");
+
+			var (login, password) = (unwrapped.Author, unwrapped.Text);
+
 			if(string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password) || login.Length < 3 || Encoding.UTF8.GetByteCount(login) > 255)
 				return StatusCode(400, "bad login or password");
 
@@ -45,8 +51,14 @@ namespace timecapsule
 		}
 
 		[HttpPost("signin")]
-		public async Task<IActionResult> SignIn(string login, string password)
+		public async Task<IActionResult> SignIn(string wrapped)
 		{
+			var unwrapped = await TimeCapsuleWrapper.TryUnwrapAsync(wrapped, HttpContext.RequestAborted, PublicKey);
+			if(unwrapped == null)
+				return StatusCode(400, "bad auth wrap");
+
+			var (login, password) = (unwrapped.Author, unwrapped.Text);
+
 			var user = await dbCtx.Users.FindAsync(new object[] { login?.Trim().ToLower() }, HttpContext.RequestAborted);
 			if(user?.Secret == null || !SecureEquals(user.Secret.Value, ComputeHash(password)))
 				return StatusCode(403, "user not found or bad password");
@@ -69,8 +81,14 @@ namespace timecapsule
 		}
 
 		[HttpPost("capsule")]
-		public async Task<IActionResult> AddTimeCapsule(string text, DateTime toBeOpened)
+		public async Task<IActionResult> AddTimeCapsule(string wrapped)
 		{
+			var unwrapped = await TimeCapsuleWrapper.TryUnwrapAsync(wrapped, HttpContext.RequestAborted, PublicKey);
+			if(unwrapped == null)
+				return StatusCode(400, "bad capsule wrap");
+
+			var (text, toBeOpened) = (unwrapped.Text, unwrapped.ExpireDate);
+
 			var user = User?.Identity?.Name;
 			if(user == null)
 				return StatusCode(401, "not authenticated");
@@ -154,6 +172,7 @@ namespace timecapsule
 			return res == 0;
 		}
 
+		private static readonly Guid PublicKey = new("13371337-1337-1337-1337-133713371337");
 		private readonly DatabaseContext dbCtx;
 	}
 }

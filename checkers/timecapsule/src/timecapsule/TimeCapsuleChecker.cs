@@ -60,9 +60,14 @@ namespace checker.timecapsule
 			var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
 
 			var login = RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUmlauts().RandomUpperCase();
+			if(RndUtil.GetInt(0, 10) == 0) login += " " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUmlauts().RandomUpperCase();
+			else if(RndUtil.GetInt(0, 10) == 0) login += ", " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUmlauts().RandomUpperCase();
+			else if(RndUtil.GetInt(0, 10) == 0) login += " \"aka\" " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUmlauts().RandomUpperCase();
+
 			var password = RndText.RandomText(RndUtil.GetInt(8, 48)).RandomLeet().RandomUmlauts().RandomUpperCase();
 
-			var result = await client.DoRequestAsync(HttpMethod.Post, ApiSignUp + $"?login={WebUtility.UrlEncode(login)}&password={WebUtility.UrlEncode(password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+			var wrapped = TimeCapsuleWrapper.Wrap(new Container { Author = login, Text = password }, PublicKey);
+			var result = await client.DoRequestAsync(HttpMethod.Post, ApiSignUp + "?wrapped=" + WebUtility.UrlEncode(wrapped), null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
 			if(result.StatusCode != HttpStatusCode.OK)
 				throw new CheckerException(result.StatusCode.ToExitCode(), $"post {ApiSignUp} failed: {result.StatusCode.ToReadableCode()}");
 
@@ -88,7 +93,8 @@ namespace checker.timecapsule
 			await Console.Error.WriteLineAsync($"generated text '{text}'").ConfigureAwait(false);
 
 			var toBeOpened = DateTime.UtcNow.AddMinutes(RndUtil.GetInt(60, 180));
-			result = await client.DoRequestAsync(HttpMethod.Post, ApiCapsule + $"?text={WebUtility.UrlEncode(text)}&toBeOpened={toBeOpened:s}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+			wrapped = TimeCapsuleWrapper.Wrap(new Container { Text = text, ExpireDate = toBeOpened }, PublicKey);
+			result = await client.DoRequestAsync(HttpMethod.Post, ApiCapsule + "?wrapped=" + WebUtility.UrlEncode(wrapped), null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
 			if(result.StatusCode != HttpStatusCode.OK)
 				throw new CheckerException(result.StatusCode.ToExitCode(), $"post {ApiCapsule} failed: {result.StatusCode.ToReadableCode()}");
 
@@ -188,7 +194,8 @@ namespace checker.timecapsule
 			{
 				await Console.Error.WriteLineAsync($"use saved login '{put.Login}' and password '{put.Password}'").ConfigureAwait(false);
 
-				result = await client.DoRequestAsync(HttpMethod.Post, ApiSignIn + $"?login={WebUtility.UrlEncode(put.Login)}&password={WebUtility.UrlEncode(put.Password)}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+				var wrapped = TimeCapsuleWrapper.Wrap(new Container { Author = put.Login, Text = put.Password }, PublicKey);
+				result = await client.DoRequestAsync(HttpMethod.Post, ApiSignIn + "?wrapped=" + WebUtility.UrlEncode(wrapped), null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
 				if(result.StatusCode != HttpStatusCode.OK)
 					throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiSignIn} failed: {result.StatusCode.ToReadableCode()}");
 
@@ -241,5 +248,7 @@ namespace checker.timecapsule
 		private const string ApiSignUp = "/signup";
 		private const string ApiSignIn = "/signin";
 		private const string ApiCapsule = "/capsule";
+
+		private static readonly Guid PublicKey = new("13371337-1337-1337-1337-133713371337");
 	}
 }
