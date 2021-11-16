@@ -12,7 +12,7 @@ import os
 import traceback
 
 import do_api
-from do_settings import DOMAIN
+from do_settings import DOMAIN, CLOUD_FOR_DNS
 from do_tokens import DO_TOKENS
 from cloud_common import (# get_cloud_ip,
                           log_progress, call_unitl_zero_exit, get_cloud_name,
@@ -42,7 +42,7 @@ def main():
         return 1
 
     token = DO_TOKENS[cloud_name]
-
+    dns_token = DO_TOKENS[CLOUD_FOR_DNS]
 
     droplet_id = None
     if net_state == "READY":
@@ -67,13 +67,13 @@ def main():
 
     if net_state == "DNS_REGISTERED":
         domain_ids = do_api.get_domain_ids_by_hostname(
-            token, DNS_NAME, DOMAIN, print_warning_on_fail=True)
+            dns_token, DNS_NAME, DOMAIN, print_warning_on_fail=True)
         if domain_ids is None:
             log_stderr("failed to get domain ids, exiting")
             return 1
 
         for domain_id in domain_ids:
-            if not do_api.delete_domain_record(token, domain_id, DOMAIN):
+            if not do_api.delete_domain_record(dns_token, domain_id, DOMAIN):
                 log_stderr("failed to delete domain %d, exiting" % domain_id)
                 return 1
 

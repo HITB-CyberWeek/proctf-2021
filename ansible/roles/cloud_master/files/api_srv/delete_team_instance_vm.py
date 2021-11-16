@@ -14,7 +14,7 @@ import traceback
 import do_api
 from do_tokens import DO_TOKENS
 from cloud_common import (log_progress, call_unitl_zero_exit, get_cloud_name, 
-                          get_image_name, get_service_name_by_num, # unput_cloud_name,
+                          get_image_name, # unput_cloud_name,
                           SSH_OPTS #, SSH_YA_OPTS
                           )
 
