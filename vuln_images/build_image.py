@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+import json
+import os
+import pathlib
+import subprocess
+import tempfile
+from typing import Literal, Union, Optional
+
+import jinja2
+import typer
+from pydantic_yaml import YamlModel
+
+import settings
+
+PACKER_TOOL = "packer"
+VULNIMAGES_CONFIG_PATH = pathlib.Path("../ansible/roles/cloud_master/files/api_srv/do_vulnimages.json")
+
+
+class ScriptsConfigV1(YamlModel):
+    build_outside_vm: str = ""
+    build_inside_vm: str
+    start_once: str
+
+
+class FileDeployConfigV1(YamlModel):
+    source: str = ""
+    sources: list[str] = []
+    destination: str = "/home/$SERVICE"
+
+    def prepare_for_upload(self, config: "DeployConfig") -> "FileDeployConfigV1":
+        return FileDeployConfigV1(
+            source=self.source,
+            sources=self.sources,
+            destination=substitute_variables(self.destination, config),
+        )
+
+
+class DeployConfigV1(YamlModel):
+    version: Literal[1]
+
+    service: str
+    username: Optional[str] = None
+    scripts: ScriptsConfigV1
+    files: list[FileDeployConfigV1]
+
+
+DeployConfig = Union[DeployConfigV1]
+
+
+def substitute_variables(data: str, config: DeployConfig) -> str:
+    return data.replace("$SERVICE", config.service).replace("$USERNAME", config.username)
+
+
+def update_vulnimages_config(service_name: str, image_id: int):
+    config = json.loads(VULNIMAGES_CONFIG_PATH.read_text())
+    config[service_name] = image_id
+    VULNIMAGES_CONFIG_PATH.write_text(json.dumps(config, indent=4))
+
+
+def get_environment_for_shell_commands(config: DeployConfig):
+    return {
+        "SERVICE": config.service,
+        "USERNAME": config.username,
+    }
+
+
+def build_image(config_path: pathlib.Path, config: DeployConfig):
+    config_folder = config_path.parent
+
+    # Step 1 — build_outside_vm
+    if config.scripts.build_outside_vm:
+        typer.echo(typer.style("Step 1", fg=typer.colors.GREEN, bold=True) + f". Running {config.scripts.build_outside_vm!r}")
+        process = subprocess.Popen(
+            config.scripts.build_outside_vm, shell=True, env=get_environment_for_shell_commands(config),
+            cwd=config_folder.as_posix()
+        )
+        process.wait()
+        if process.returncode != 0:
+            typer.echo(typer.style(f"Command failed with exit code {process.returncode}", fg=typer.colors.RED, bold=True))
+            raise typer.Exit(process.returncode)
+    else:
+        typer.echo(
+            typer.style("Step 1", fg=typer.colors.YELLOW, bold=True) +
+            " was ignored, because scripts.build_outside_vm not specified."
+        )
+
+    # Step 2 — build packer configuration
+    typer.echo(typer.style("Step 2", fg=typer.colors.GREEN, bold=True) + f". Preparing configuration for the packer tool")
+    jinja2_variables = {
+        "api_token": settings.DO_API_TOKEN,
+        "files_path": pathlib.Path("packer").absolute().as_posix(),
+        "vm_size": "s-2vcpu-4gb",
+        "region": "ams3",
+        "service": config.service,
+        "username": config.username,
+        "files": [file.prepare_for_upload(config).dict() for file in config.files],
+        "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config),
+        "start_once": substitute_variables(config.scripts.start_once, config),
+    }
+    template = jinja2.Template(pathlib.Path("packer/image.pkr.hcl.jinja2").read_text())
+    filename = tempfile.mktemp(prefix=f"packer-{config.service}-", suffix=".pkr.hcl", dir=config_folder)
+    try:
+        with open(filename, "w") as f:
+            f.write(template.render(**jinja2_variables))
+
+        typer.echo(f"Built configuration for the packer tool: {filename}")
+
+        # Step 3 — run packer and build the image
+        typer.echo(typer.style("Step 3", fg=typer.colors.GREEN, bold=True) + f". Run packer tool and bulid the image!")
+        process = subprocess.Popen(
+            [PACKER_TOOL, "build", pathlib.Path(filename).name],
+            cwd=config_folder.as_posix(),
+        )
+        process.wait()
+        if process.returncode != 0:
+            typer.echo(typer.style(f"Packer failed with exit code {process.returncode}", fg=typer.colors.RED, bold=True))
+            raise typer.Exit(process.returncode)
+    finally:
+        os.unlink(filename)
+
+    # Step 4 — read manifest file
+    typer.echo(typer.style("Step 4", fg=typer.colors.GREEN, bold=True) + f". Get image id")
+    manifest_path = config_folder / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    snapshot_id = manifest["builds"][0]["artifact_id"]
+    typer.echo(f"Snapshot ID is {snapshot_id}")
+
+    if ":" in snapshot_id:
+        snapshot_id = int(snapshot_id.split(":")[-1])
+    else:
+        snapshot_id = int(snapshot_id)
+    update_vulnimages_config(config.service, snapshot_id)
+    typer.echo(
+        typer.style("Updated config", fg=typer.colors.GREEN, bold=True) +
+        f" at {VULNIMAGES_CONFIG_PATH} , don't forget to commit and deploy it."
+    )
+
+    manifest_path.unlink()
+
+
+def main(
+    config_path: typer.FileText,
+    check: bool = typer.Option(False, "--check", help="Only check the config, don't deploy anything")
+):
+    config = DeployConfigV1.parse_file(config_path.name)
+    if check:
+        raise typer.Exit()
+
+    config_path = pathlib.Path(config_path.name)
+    build_image(config_path, config)
+
+
+if __name__ == "__main__":
+    typer.run(main)
