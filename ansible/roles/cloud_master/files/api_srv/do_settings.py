@@ -8,6 +8,7 @@ CLOUDS = {
         "router_image": 89427587,
         "router_size": "s-1vcpu-2gb",
         "vulnimages": {
+            "empty": 95821704,
             "chess": 95735372,
         },
         "vulnimage_size": "s-2vcpu-4gb",
