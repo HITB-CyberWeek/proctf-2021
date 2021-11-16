@@ -1,0 +1,11 @@
+version: '3'
+services:
+  timecapsule:
+    container_name: timecapsule
+    restart: unless-stopped
+    build: .
+    ports:
+      - 7007:7007
+    volumes:
+      - ./data:/app/data
+      - ./settings:/app/settings
