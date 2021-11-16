@@ -14,10 +14,12 @@ shutdowns it and creates a snapshot for further copying.
 Write your own `deploy.yaml` and put it to the service folder (in `services/<service-name>`).
 
 ```yaml
-# Just a version of format. For now, it's always equal to 1.
+# Just a version of the file format. For now, it's always equal to 1.
 version: 1
+
 # Name of the service. Required field. Available as $SERVICE in some places below.
 service: test
+
 # Name of the user. Specify it if you want to create a user and a home directory for him.
 # Most probably, you want.
 # Available as $USERNAME in some places below.
@@ -54,14 +56,15 @@ scripts:
 # Here you have to specify files which we need to deliver to the VM.
 # You can upload a single file or a complete directory. 
 files:
-  # Copies all files from ./deploy/ folder to /home/$SERVICE/
+  # Will copy all files from ./deploy/ folder to /home/$SERVICE/.
   - source: ./deploy/
     destination: /home/$USERNAME
-  # Copies all files from ./deploy/ folder to /home/$SERVICE/deploy/
+  # Will copy all files from ./deploy/ folder to /home/$SERVICE/deploy/
   # (because there is no trailing slash in source! See https://www.packer.io/docs/provisioners/file#directory-uploads
-  # for details
+  # for details).
   - source: ./deploy
     destination: /home/$USERNAME
+  # Will copy different files into one destination.
   - sources:
       - docker-compose.yaml
       - Dockerfile
