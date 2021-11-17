@@ -14,7 +14,7 @@ import subprocess
 import do_api
 from do_tokens import DO_TOKENS
 from cloud_common import (log_progress, call_unitl_zero_exit, get_cloud_name,
-                          get_image_name, SSH_OPTS #, SSH_YA_OPTS
+                          get_image_name, get_snapshot_prefix, SSH_OPTS #, SSH_YA_OPTS
                           )
 
 TEAM = int(sys.argv[1])
@@ -45,7 +45,7 @@ def main():
 
         good_snapshots = []
 
-        snapshot_prefix = get_image_name(TEAM, VMNUM) + "-"
+        snapshot_prefix = get_snapshot_prefix(TEAM, VMNUM)
 
         for snapshot in snapshots:
             if not snapshot.get("name", "").startswith(snapshot_prefix):
