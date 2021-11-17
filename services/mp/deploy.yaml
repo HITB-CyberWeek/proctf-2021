@@ -1,0 +1,23 @@
+version: 1
+service: mp
+username: mp
+scripts:
+  build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yml build --pull
+  start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d # TODO: create models
+files:
+  - sources:
+      - mp/*.cs
+      - mp/mp.csproj
+    destination: /home/$USERNAME/mp
+  - source: mp/Controllers/*.cs
+    destination: /home/$USERNAME/mp/Controllers
+  - source: mp/Entities/*.cs
+    destination: /home/$USERNAME/mp/Entities
+  - source: mp/Models/*.cs
+    destination: /home/$USERNAME/mp/Models
+  - source: mp/Services/*.cs
+    destination: /home/$USERNAME/mp/Services
+  - sources:
+      - docker-compose.yml
+      - Dockerfile
+    destination: /home/$USERNAME
