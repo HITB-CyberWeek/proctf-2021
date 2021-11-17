@@ -1,0 +1,16 @@
+version: '2.1'
+services:
+  ctf:
+    build: .
+    restart: unless-stopped
+    pids_limit: 500
+    image: cells
+    volumes:
+      - ./srv:/home/service
+    ports:
+      - 5000:5000
+    ulimits:
+       nproc: 5000
+       nofile:
+          soft: 20000
+          hard: 40000

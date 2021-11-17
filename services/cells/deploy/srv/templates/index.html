@@ -1,0 +1,182 @@
+<html>
+<head>
+<!--    <link href="/static/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/bootstrap.min.js"></script>-->
+<!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="/static/bootstrap.min.css">
+<script src="/static/jquery.min.js"></script>
+<script src="/static/bootstrap.min.js"></script>
+
+</head>
+<body>    
+    {% if mes %}
+        <script>
+            alert("{{ mes }}");
+            window.location="/";
+        </script>
+    {% endif %}
+    <div class="container">
+        <div class="box-padding-md grey-bg">
+            <div class="jumbotron jumbotron-fluid">
+                <div class="container">  
+                    <div class="col-md-2">
+                        <img src="/static/logo.png" class="mr-3 mt-3 rounded-circle" style="width:100px;">
+                    </div>
+                    <div class="col-md-10">
+                        <h3 class="display-5">CellMachine</h3>
+                        <p class="lead">Saving your secrets in DNA of cells</p>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% if login %}
+    <div class="col-md-3 col-md-offset-1">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create new secret in CellMachine</h5>
+                </div>
+                <div class="modal-body">
+                    <form action="/code" method="POST">
+                        <div class="form-group">
+                            <label for="Name">Name</label>
+                            <input type="text" class="form-control" id="name" placeholder="Name" name="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="Password">Password</label>
+                            <input type="password" class="form-control" id="Password" placeholder="Password" name="password">
+                        </div>
+                        <!--<div class="form-group">
+                            <label for="Invite code">Password</label>
+                            <input type="text" class="form-control" id="payment" placeholder="payment" name="payment">
+                        </div>-->
+                        <div class="form-group">
+                            <label for="Content">Content</label>
+                            <textarea class="form-control" id="Content" name='v' placeholder="Content"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+            </div>
+    </div>
+    <div class="col-md-6">
+        {% if progs %}
+            <h3>You have submitted secrets</h3>
+            <table class="table">
+                {% for prog in progs %}
+                    <tr>
+                        <td>{{ prog.name }}</td><td><a href='{{ prog.file }}'>download</a></td>
+                        <td style="width:100px"><a id='a_{{ prog.name }}' onclick="check_on('{{ prog.name }}')">check</a>
+                        <span style='display:none' id='s_{{ prog.name }}'>
+                            <input type=text id='i_{{ prog.name }}'/>
+                            <a href="#" id="c_{{ prog.name }}">check</a>
+                        </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <script>
+            function check_on(nn){
+                $("#a_"+nn).css("display","none")
+                $("#s_"+nn).css("display","inline")
+                $("#c_"+nn).click(function(){
+                    $.ajax({
+                        url: "/check/{{ login }}/"+nn+".pk.cell",
+                        contentType: "application/json; charset=utf-8",
+                        data: {"key":$("#i_"+nn).val()},
+                        }).done(function(e) {
+                            alert(e.status)
+                        });
+                });
+            }
+            </script>
+        {%endif%}
+    </div>
+    <div class="col-md-1">
+        Logged in as {{ login }}
+        <a href="/logout">Logout</a>
+    </div>
+    {% else %}
+        <div class="col-md-5 col-md-offset-1">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login</h5>
+                </div>
+                <div class="modal-body">
+                    <form action="/login" method="POST">
+                        <div class="form-group">
+                            <label for="login">Login</label>
+                            <input type="text" class="form-control" id="login" placeholder="login" name="login">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name='password' placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register</h5>
+                </div>
+                <div class="modal-body">
+                    <form action="/register" method="POST">
+                        <div class="form-group">
+                            <label for="login">Login</label>
+                            <input type="text" class="form-control" id="login" placeholder="Login" name="login">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name='password' placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8 col-md-offset-2">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Find users on site</h5>
+                </div>
+                <div class="modal-body">
+                    <form action="/search">
+                        <div class="row height d-flex justify-content-center align-items-center">
+                            <div class="col-md-8">
+                                <div class="search"> <i class="fa fa-search"></i>
+                                <input type="text" class="form-control" placeholder="Enter username template" name="template">
+                                <button type="submit" class="btn btn-primary">Search</button> </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% if search_result %}
+                    <table class="table">
+                    <thead>
+                        <tr><td>User</td><td>Cells</td></tr>
+                    </thead>
+                    <tbody>
+                    {% for res in search_result.users  %}
+                        <tr>
+                            <td>{{ res.name }}</td>
+                            <td>
+                        {% for cc in res.cells %}
+                            <a href="/data/{{ res.name }}/{{ cc }}">{{ cc }}</a>
+                        {% endfor %}
+                        </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</body>
+</html>

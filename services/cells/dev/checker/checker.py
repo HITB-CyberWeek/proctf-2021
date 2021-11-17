@@ -135,7 +135,6 @@ try:
                 for chunk in r.iter_content(chunk_size=8192): 
                     f.write(chunk)
         
-        print(password_message)
         #password_message = 'a'+password_message[1:]
         res = sp.Popen(["./cells.elf","execute",local_filename,password_message,"0"],stdout=sp.PIPE)
         out = res.communicate()
