@@ -6,17 +6,17 @@ scripts:
   start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d # TODO: create models
 files:
   - sources:
-      - mp/*.cs
-      - mp/mp.csproj
-    destination: /home/$USERNAME/mp
-  - source: mp/Controllers/*.cs
-    destination: /home/$USERNAME/mp/Controllers
-  - source: mp/Entities/*.cs
-    destination: /home/$USERNAME/mp/Entities
-  - source: mp/Models/*.cs
-    destination: /home/$USERNAME/mp/Models
-  - source: mp/Services/*.cs
-    destination: /home/$USERNAME/mp/Services
+      - src/*.cs
+      - src/mp.csproj
+    destination: /home/$USERNAME/src
+  - source: src/Controllers/*.cs
+    destination: /home/$USERNAME/src/Controllers
+  - source: src/Entities/*.cs
+    destination: /home/$USERNAME/src/Entities
+  - source: src/Models/*.cs
+    destination: /home/$USERNAME/src/Models
+  - source: src/Services/*.cs
+    destination: /home/$USERNAME/src/Services
   - sources:
       - docker-compose.yml
       - Dockerfile
