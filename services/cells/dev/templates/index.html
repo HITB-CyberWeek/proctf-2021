@@ -55,7 +55,7 @@
                         </div>-->
                         <div class="form-group">
                             <label for="Content">Content</label>
-                            <textarea class="form-control" id="Content" name='content' placeholder="Content"></textarea>
+                            <textarea class="form-control" id="Content" name='v' placeholder="Content"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Send</button>
                     </form>
@@ -150,7 +150,7 @@
                         <div class="row height d-flex justify-content-center align-items-center">
                             <div class="col-md-8">
                                 <div class="search"> <i class="fa fa-search"></i>
-                                <input type="text" class="form-control" placeholder="Enter username template" name="login">
+                                <input type="text" class="form-control" placeholder="Enter username template" name="template">
                                 <button type="submit" class="btn btn-primary">Search</button> </div>
                             </div>
                         </div>
@@ -158,14 +158,21 @@
                 </div>
                 {% if search_result %}
                     <table class="table">
-                    {% for res in search_result  %}
+                    <thead>
+                        <tr><td>User</td><td>Cells</td></tr>
+                    </thead>
+                    <tbody>
+                    {% for res in search_result.users  %}
                         <tr>
-                            <td>{{ res.login }}</td>
-                            <td>{% for cell in res.cells %}
-                            {{cell.name}},
-                            {% endfor %}</td>
+                            <td>{{ res.name }}</td>
+                            <td>
+                        {% for cc in res.cells %}
+                            <a href="/data/{{ res.name }}/{{ cc }}">{{ cc }}</a>
+                        {% endfor %}
+                        </td>
                         </tr>
                     {% endfor %}
+                    </tbody>
                     </table>
                 {% endif %}
             </div>

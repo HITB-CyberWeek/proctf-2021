@@ -1,4 +1,4 @@
-import os,json,glob,subprocess
+import os,json,glob,subprocess,string,re
 import CellsGenerate
 from flask import Flask
 from flask import make_response,jsonify
@@ -11,6 +11,9 @@ from flask import send_from_directory
 app = Flask(__name__)
 app.secret_key = "qweqwe"
 
+def fs(s):
+    return re.sub(re.compile(r'[^%s%s%s=\._]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
+    
 def check_creadentials(login, password):
     user_dir = os.path.join("data",login)
     if not os.path.isdir(user_dir):
@@ -24,10 +27,13 @@ def check_creadentials(login, password):
     return True
 @app.route('/static/<path:path>')
 def send_js(path):
+    path=fs(path)
     return send_from_directory('static', path)
 
 @app.route('/data/<user>/<name>')
 def send_data(user,name):
+    user=fs(user)
+    name=fs(name)
     if name[-8:] != ".pk.cell":
         return redirect('/?m=No such program')
     p = os.path.join("data",user)
@@ -48,13 +54,14 @@ def index():
         for fl in glob.glob(user_dir+"/info_*"):
             info = json.load(open(fl,'r'))
             progs.append(info)
-        print(progs)
         return render_template('index.html',login=login,progs=progs)
     return render_template('index.html',login=login)
 
 @app.route('/login', methods=['POST'])
 def login():
     login, password = request.values['login'], request.values['password']
+    login=fs(login)
+    password=fs(password)
     if check_creadentials(login, password):
         session['login'] = login
         return redirect('/?m=Successfully logged in')
@@ -70,6 +77,10 @@ def logout():
 @app.route('/register', methods=['POST'])
 def register():
     login,password  = request.values['login'], request.values['password']
+    login=fs(login)
+    password=fs(password)
+    if len(login)<5 or len(password)<5:
+        return redirect('/?m=Too short login or password')
     if check_creadentials(login,password):
         return redirect('/?m=User already exists')
     user_dir = os.path.join("data",login)
@@ -83,11 +94,13 @@ def register():
 def code():
     if not "login" in session:
         return redirect('/?m=Not logged in')
-    
     login = session['login']
     name = request.values["name"]
     password = request.values["password"]
-    content= request.values["name"]
+    content= request.values["content"]
+    name=fs(name)
+    password=fs(password)
+    content=fs(content)
     #pay = request.values("pay")
     user_dir = os.path.join("data",login)
     if not os.path.isdir(user_dir):
@@ -100,6 +113,8 @@ def code():
 
 @app.route('/check/<user>/<name>', methods=['GET'])
 def check(user,name):
+    user=fs(user)
+    name=fs(name)
     if name[-8:] != ".pk.cell":
         return redirect('/?m=No such program')
     if not 'key' in request.values:
@@ -107,25 +122,29 @@ def check(user,name):
     p = os.path.join("data",user,name)
     proc = subprocess.Popen(["./cells.elf","execute",p,request.values['key'],"0"],stdout=subprocess.PIPE)
     res,_ = proc.communicate()
-    print(res)
     toks = res.split(b",")
     if len(toks)!=2:
         return jsonify({'status':"Invalid password"})
     sm = CellsGenerate.csum_b(toks[0])
     if hex(sm)[2:].encode() != toks[1]:
         return jsonify({'status':"Invalid password"})
-    return jsonify({'status':"OK"})
+    return jsonify({'status':"OK "+ toks[0].decode()})
 
 @app.route('/search', methods=['GET'])
 def search():
     tmpl = request.values["template"]
+    tmpl = fs(tmpl)
     if len(tmpl)<2:
         return redirect('/?m=Too short template')
     users = []
-    for fl in glob.glob("data"):
-        if tmpl in fl:
-          users.append(dict(name=fl))  
-    
+    res={}
+    for fl in glob.glob("data/*%s*" % tmpl):
+        users.append(dict(name=os.path.basename(fl),cells=[]))
+        for fl2 in glob.glob("%s/info_*" % fl):
+            info = json.load(open(fl2,'r'))
+            users[-1]['cells'].append(info['name']+'.pk.cell')
+    res['users']=users
+    return render_template('index.html',search_result=res)
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
