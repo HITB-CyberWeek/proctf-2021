@@ -26,7 +26,7 @@ namespace mp.Controllers
         [HttpGet("whoami")]
         public IActionResult Whoami()
         {
-            return Ok(HttpContext.FindCurrentUserId());
+            return Ok(HttpContext?.User.FindCurrentUserId());
         }
 
         [AllowAnonymous]
@@ -40,7 +40,7 @@ namespace mp.Controllers
             var claimsIdentity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
             claimsIdentity.AddClaims(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Login)
+                new Claim(ClaimTypes.Name, user.Login)
             });
 
             HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,

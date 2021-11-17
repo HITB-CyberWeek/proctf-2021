@@ -12,7 +12,7 @@ import re
 import do_api
 from do_tokens import DO_TOKENS
 from cloud_common import (log_progress, call_unitl_zero_exit, get_cloud_name,
-                          get_image_name, #get_cloud_ip,
+                          get_image_name, get_snapshot_prefix, #get_cloud_ip,
                           SSH_OPTS #SSH_YA_OPTS
                           )
 
@@ -54,8 +54,18 @@ def main():
             log_stderr("more than one vm with this name exists")
             return 1
 
-        result = do_api.take_vm_snapshot(token, list(ids)[0],
-                                         get_image_name(TEAM, VMNUM) + "-" + NAME)
+        if NAME == "init":
+            print("msg: ERR, init snapshot can't be overwritten")
+            return 1
+
+        snapshot_name = get_snapshot_prefix(TEAM, VMNUM) + NAME
+
+        for snapshot in do_api.list_snapshots(token):
+            if snapshot.get("name", "") == snapshot_name:
+                print("msg: ERR, snapshot already exists")
+                return 1
+
+        result = do_api.take_vm_snapshot(token, list(ids)[0], snapshot_name)
         if not result:
             log_stderr("take shapshot failed")
             return 1

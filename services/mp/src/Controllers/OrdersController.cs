@@ -41,7 +41,7 @@ namespace mp.Controllers
             if(document == null)
                 return BadRequest(new { message = $"Product {order.ProductId} not found" });
 
-            return Ok(openSearchService.IndexDocument(Document.CreateOrder(order.Description, document, creator: HttpContext.FindCurrentUserId()), order.ProductId).Result);
+            return Ok(openSearchService.IndexDocument(Document.CreateOrder(order.Description, document, creator: HttpContext?.User.FindCurrentUserId()), order.ProductId).Result);
         }
 
         public OrdersController(OpenSearchService openSearchService) : base(openSearchService)

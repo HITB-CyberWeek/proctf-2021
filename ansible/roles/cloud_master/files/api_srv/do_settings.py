@@ -1,6 +1,8 @@
 import json
+import os
 
-with open("./do_vulnimages.json") as vulnimages_file:
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(SCRIPT_DIR, "do_vulnimages.json")) as vulnimages_file:
     vulnimages = json.load(vulnimages_file)
 
 CLOUD_FOR_NEW_VMS = "hitb"

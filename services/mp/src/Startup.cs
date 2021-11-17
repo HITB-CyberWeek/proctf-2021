@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
-using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -41,7 +40,7 @@ namespace mp
                         OnValidatePrincipal = context =>
                         {
                             var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
-                            var login = context.Principal?.Identity?.GetUserId();
+                            var login = context.Principal?.FindCurrentUserId();
                             var user = userService.Find(login);
                             if(user == null) 
                                 context.RejectPrincipal();
@@ -80,14 +79,15 @@ namespace mp
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if(env.IsDevelopment())
-            {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger(options =>
-                {
-                    options.SerializeAsV2 = true;
-                });
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "mp v1"));
-            }
+
+            app.UseSwagger(options => options.SerializeAsV2 = true);
+            app.UseSwaggerUI(c =>
+            {
+                c.RoutePrefix = "";
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "mp v1");
+                c.EnableTryItOutByDefault();
+            });
 
             app.UseRouting();
 

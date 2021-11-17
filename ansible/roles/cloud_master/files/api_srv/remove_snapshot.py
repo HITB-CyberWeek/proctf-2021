@@ -12,7 +12,7 @@ import re
 import do_api
 from do_tokens import DO_TOKENS
 from cloud_common import (log_progress, call_unitl_zero_exit, get_cloud_name,
-                          get_image_name, SSH_OPTS #, SSH_YA_OPTS
+                          get_image_name, get_snapshot_prefix, SSH_OPTS #, SSH_YA_OPTS
                           )
 
 TEAM = int(sys.argv[1])
@@ -29,6 +29,10 @@ def main():
         print("msg: ERR, name validation error")
         return 1
 
+    if NAME == "init":
+        print("msg: ERR, init snapshot is not deletable")
+        return 1
+
     cloud_name = get_cloud_name(TEAM)
     if not cloud_name:
         log_stderr("no cloud_name, exiting")
@@ -36,8 +40,7 @@ def main():
 
     token = DO_TOKENS[cloud_name]
 
-    snapshot_name = get_image_name(TEAM, VMNUM) + "-" + NAME
-
+    snapshot_name = get_snapshot_prefix(TEAM, VMNUM) + NAME
     snapshots = do_api.list_snapshots(token)
 
     ids = []
@@ -63,7 +66,6 @@ def main():
     if not result:
         log_stderr("failed to delete snapshot")
         return 1
-
 
     # image_state = open("db/team%d/image_deploy_state" % TEAM).read().strip()
 

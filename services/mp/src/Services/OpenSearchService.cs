@@ -23,12 +23,12 @@ namespace mp.Services
 
         public async Task<string> IndexDocument(Document document, string routing = null)
         {
-            return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
+            return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
 
         public async Task<IEnumerable<Document>> Search(string queryString, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -37,7 +37,7 @@ namespace mp.Services
         //TODO copypaste
         public async Task<IEnumerable<Document>> SearchOrdersOfProduct(string productId, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -46,7 +46,7 @@ namespace mp.Services
         //TODO check DLS works with get by id
         public async Task<Document> Get(string documentId)
         {
-            var hit =  JsonConvert.DeserializeObject<Hit>(await elasticClient.GetAsync(httpContextAccessor.HttpContext.FindCurrentUserId(), documentId));
+            var hit =  JsonConvert.DeserializeObject<Hit>(await elasticClient.GetAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), documentId));
             return hit?.Source?.CloneAndSetId(hit.Id);
         }
 
