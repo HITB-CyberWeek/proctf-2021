@@ -1,0 +1,182 @@
+input 133 remove
+input 133 remove
+input 133 remove
+input 133 remove
+input 133 remove
+input 133 remove
+input 133 remove
+input 133 remove
+skip 84 remove
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+xor 132 83
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+output -41
+skip 0
+sub 44 43
+add 44 40
+sub 39 44
+xor 39 41
+xor 38 44
+xor 40 42
+add 42 38
+xor 36 38
+xor 39 34
+add 36 32
+sub 36 38
+mul 31 34
+mul 32 36
+mul 33 34
+xor 28 32
+xor 31 32
+add 28 27
+sub 24 26
+xor 23 27
+mul 29 23
+sub 21 27
+add 21 27
+mul 23 19
+sub 20 18
+mul 19 20
+add 22 21
+add 20 16
+xor 20 19
+xor 20 16
+xor 16 13
+add 18 16
+add 10 14
+xor 15 10
+xor 10 8
+sub 10 14
+mul 12 10
+xor 12 6
+xor 7 5
+mul 8 3
+mul 2 6
+sub 3 4 reload
+0
+0
+0
+0
+0
+0
+0
+0
+-44
+209
+66
+122
+24
+69
+208
+77
+119
+217
+107
+7082
+4507
+8300
+101
+78
+212
+-106
+93
+5819
+-88
+208
+5598
+73
+8791
+218
+201
+105
+63
+73
+19
+168
+51
+11
+117
+8299
+59
+3
+5619
+5538
+38

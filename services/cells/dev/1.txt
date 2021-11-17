@@ -1,0 +1,14 @@
+skip 4 remove
+add 3 4
+output 8
+skip 0 
+input 6 remove
+input 6 remove
+input 6 remove
+input 6 remove
+add 2 3
+add 3 4 reload
+0
+0
+0
+0
