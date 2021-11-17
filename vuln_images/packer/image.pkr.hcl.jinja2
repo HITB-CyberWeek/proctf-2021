@@ -13,8 +13,8 @@ source "digitalocean" "service_image" {
   region        = "{{ region }}"
   size          = "{{ vm_size }}"
   ssh_username  = "root"
-  droplet_name  = "{{ service }}-{% raw %}{{timestamp}}{% endraw %}"
-  snapshot_name = "{{ service }}-{% raw %}{{timestamp}}{% endraw %}"
+  droplet_name  = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
+  snapshot_name = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
 }
 
 build {
@@ -128,6 +128,20 @@ EOT
     ]
   }
   {% endif %}
+
+  {% if username %}
+  provisioner "shell" {
+    inline = [
+      "chown -R \"{{ username }}:{{ username }}\" \"/home/{{ username }}\""
+    ]
+  }
+  {% endif %}
+
+  provisioner "shell" {
+    inline = [
+       "ls -laR \"/home/{{ username }}\""
+    ]
+  }
   
   # Fix some internal digitalocean+cloud-init scripts to be compatible with our cloud infrastructure
   provisioner "shell" {

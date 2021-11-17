@@ -4,7 +4,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from typing import Literal, Union, Optional
+from typing import Literal, Union, Optional, Iterable
 
 import jinja2
 import typer
@@ -13,7 +13,10 @@ from pydantic_yaml import YamlModel
 import settings
 
 PACKER_TOOL = "packer"
-VULNIMAGES_CONFIG_PATH = pathlib.Path("../ansible/roles/cloud_master/files/api_srv/do_vulnimages.json")
+CURRENT_FOLDER = pathlib.Path(__file__).parent
+VULNIMAGES_CONFIG_PATH = CURRENT_FOLDER / "../ansible/roles/cloud_master/files/api_srv/do_vulnimages.json"
+
+print(VULNIMAGES_CONFIG_PATH)
 
 
 class ScriptsConfigV1(YamlModel):
@@ -27,12 +30,30 @@ class FileDeployConfigV1(YamlModel):
     sources: list[str] = []
     destination: str = "/home/$SERVICE"
 
-    def prepare_for_upload(self, config: "DeployConfig") -> "FileDeployConfigV1":
-        return FileDeployConfigV1(
+    def prepare_for_upload(self, config: "DeployConfig", config_folder: pathlib.Path) -> Iterable["FileDeployConfigV1"]:
+        # Packer's file provisioner works with "sources" option very bad: i.e., doesn't support directories there,
+        # so we convert "sources" into multiple Files with "source"
+        if self.sources:
+            files = [FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)]
+            for file in files:
+                yield from file.prepare_for_upload(config, config_folder)
+            return
+
+        destination = substitute_variables(self.destination, config)
+        if config_folder / self.source and not destination.endswith("/"):
+            destination += "/"
+        yield FileDeployConfigV1(
             source=self.source,
-            sources=self.sources,
-            destination=substitute_variables(self.destination, config),
+            destination=destination,
         )
+
+    @staticmethod
+    def _unfold_globs(sources: list[str], folder: pathlib.Path) -> list[str]:
+        result = []
+        for source in sources:
+            trailing_slash = "/" if source.endswith("/") else ""
+            result += [p.relative_to(folder).as_posix() + trailing_slash for p in folder.glob(source)]
+        return result
 
 
 class DeployConfigV1(YamlModel):
@@ -64,7 +85,7 @@ def get_environment_for_shell_commands(config: DeployConfig):
     }
 
 
-def build_image(config_path: pathlib.Path, config: DeployConfig):
+def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_config: bool, packer_debug: bool):
     config_folder = config_path.parent
 
     # Step 1 — build_outside_vm
@@ -86,6 +107,9 @@ def build_image(config_path: pathlib.Path, config: DeployConfig):
 
     # Step 2 — build packer configuration
     typer.echo(typer.style("Step 2", fg=typer.colors.GREEN, bold=True) + f". Preparing configuration for the packer tool")
+    files = []
+    for file in config.files:
+        files += [prepared_file.dict() for prepared_file in file.prepare_for_upload(config, config_folder)]
     jinja2_variables = {
         "api_token": settings.DO_API_TOKEN,
         "files_path": pathlib.Path("packer").absolute().as_posix(),
@@ -93,11 +117,11 @@ def build_image(config_path: pathlib.Path, config: DeployConfig):
         "region": "ams3",
         "service": config.service,
         "username": config.username,
-        "files": [file.prepare_for_upload(config).dict() for file in config.files],
+        "files": files,
         "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config),
         "start_once": substitute_variables(config.scripts.start_once, config),
     }
-    template = jinja2.Template(pathlib.Path("packer/image.pkr.hcl.jinja2").read_text())
+    template = jinja2.Template((CURRENT_FOLDER / "packer/image.pkr.hcl.jinja2").read_text())
     filename = tempfile.mktemp(prefix=f"packer-{config.service}-", suffix=".pkr.hcl", dir=config_folder)
     try:
         with open(filename, "w") as f:
@@ -106,17 +130,30 @@ def build_image(config_path: pathlib.Path, config: DeployConfig):
         typer.echo(f"Built configuration for the packer tool: {filename}")
 
         # Step 3 — run packer and build the image
-        typer.echo(typer.style("Step 3", fg=typer.colors.GREEN, bold=True) + f". Run packer tool and bulid the image!")
+        typer.echo(typer.style("Step 3", fg=typer.colors.GREEN, bold=True) + f". Run packer tool and build the image!")
+
+        packer_env = None
+        debug_options = []
+        if packer_debug:
+            packer_env = {
+                **os.environ,
+                "PACKER_LOG": "1",
+                "PACKER_LOG_PATH": "packer.log",
+            }
+            debug_options = ["-debug"]
+
         process = subprocess.Popen(
-            [PACKER_TOOL, "build", pathlib.Path(filename).name],
+            [PACKER_TOOL, "build", *debug_options, pathlib.Path(filename).name],
             cwd=config_folder.as_posix(),
+            env=packer_env,
         )
         process.wait()
         if process.returncode != 0:
             typer.echo(typer.style(f"Packer failed with exit code {process.returncode}", fg=typer.colors.RED, bold=True))
             raise typer.Exit(process.returncode)
     finally:
-        os.unlink(filename)
+        if not save_packer_config:
+            os.unlink(filename)
 
     # Step 4 — read manifest file
     typer.echo(typer.style("Step 4", fg=typer.colors.GREEN, bold=True) + f". Get image id")
@@ -140,14 +177,16 @@ def build_image(config_path: pathlib.Path, config: DeployConfig):
 
 def main(
     config_path: typer.FileText,
-    check: bool = typer.Option(False, "--check", help="Only check the config, don't deploy anything")
+    check: bool = typer.Option(False, "--check", help="Only check the config, don't deploy anything"),
+    save_packer_config: bool = typer.Option(False, "--save-packer-config", help="Don't remove packer configuration file"),
+    packer_debug: bool = typer.Option(False, "--packer-debug", help="Enable -debug option in packer"),
 ):
     config = DeployConfigV1.parse_file(config_path.name)
     if check:
         raise typer.Exit()
 
     config_path = pathlib.Path(config_path.name)
-    build_image(config_path, config)
+    build_image(config_path, config, save_packer_config, packer_debug)
 
 
 if __name__ == "__main__":

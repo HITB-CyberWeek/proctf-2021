@@ -8,7 +8,7 @@ files:
   - sources:
       - src/*.cs
       - src/timecapsule.csproj
-      - src/wwwroot/
+      - src/wwwroot
     destination: /home/$USERNAME/src
   - sources:
       - docker-compose.yml

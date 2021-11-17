@@ -267,7 +267,7 @@ function call_api(t, cmd, args) {
 
     cur_req = new XMLHttpRequest()
     cur_req.open('POST', 'api/cloud', true)
-    cur_req.setRequestHeader("X-Authorization", "Bearier " + t)
+    cur_req.setRequestHeader("X-Authorization", "Bearier " + encodeURIComponent(t))
     cur_req.setRequestHeader('Content-type', 'application/json; charset=utf-8');
 
     cur_req.onreadystatechange = function() {

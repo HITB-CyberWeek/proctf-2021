@@ -1,0 +1,125 @@
+input 84 remove
+input 84 remove
+input 84 remove
+input 84 remove
+input 84 remove
+input 84 remove
+input 84 remove
+input 84 remove
+skip 68 remove
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 67
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 59
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 51
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 43
+xor 83 35
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+output -33
+skip 0
+xor 8 9
+xor 9 10
+xor 10 11
+xor 11 12
+sub 4 5
+sub 5 6
+sub 6 7
+sub 7 8 reload
+0
+0
+0
+0
+0
+0
+0
+0
+51
+54
+51
+61
+-49
+-52
+-49
+-53
+51
+50
+51
+57
+-49
+-56
+-49
+-57
+51
+62
+51
+110
+-49
+-99
+-49
+-100
+51
+99
+51
+105
+-49
+-49
+-49
+-50
+62

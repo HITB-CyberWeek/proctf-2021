@@ -1,0 +1,244 @@
+input 194 remove
+input 194 remove
+input 194 remove
+input 194 remove
+input 194 remove
+input 194 remove
+input 194 remove
+input 194 remove
+skip 86 remove
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 85
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 77
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 69
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 61
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 53
+xor 193 45
+xor 193 45
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+output -42
+skip 0
+sub 102 107
+xor 100 103
+add 99 99
+sub 101 103
+xor 101 99
+mul 101 99
+add 99 95
+xor 95 100
+add 94 95
+add 91 95
+xor 91 95
+mul 93 94
+xor 90 92
+add 90 88
+xor 93 91
+add 85 88
+sub 90 85
+mul 86 86
+sub 88 88
+sub 85 86
+mul 81 80
+xor 82 86
+sub 83 81
+add 83 83
+xor 81 83
+xor 75 75
+sub 75 76
+mul 77 75
+sub 79 75
+add 71 73
+mul 70 77
+mul 76 75
+xor 75 75
+sub 69 74
+xor 69 66
+sub 65 69
+mul 64 70
+xor 63 68
+mul 68 68
+xor 63 63
+mul 62 63
+xor 63 61
+add 60 62
+xor 58 61
+add 63 61
+xor 61 56
+mul 57 54
+sub 53 56
+xor 53 53
+sub 56 56
+mul 55 55
+sub 50 50
+mul 51 48
+mul 47 50
+xor 47 52
+mul 50 52
+xor 48 45
+xor 47 45
+mul 44 46
+add 44 43
+xor 42 42
+mul 45 45
+xor 43 38
+add 43 37
+xor 40 36
+add 35 38
+xor 41 36
+sub 40 40
+xor 38 39
+sub 38 31
+add 32 30
+xor 32 36
+sub 30 32
+mul 29 28
+xor 26 26
+mul 32 30
+mul 30 30
+add 26 28
+xor 29 25
+mul 21 22
+add 25 24
+xor 25 25
+mul 21 21
+add 18 23
+sub 19 16
+add 20 22
+add 15 17
+xor 17 15
+sub 17 16
+add 16 12
+add 14 10
+sub 12 11
+xor 15 10
+xor 8 12
+mul 10 12
+xor 8 10
+xor 10 8
+add 4 4
+mul 6 3
+xor 8 3 reload
+0
+0
+0
+0
+0
+0
+0
+0
+-53
+54
+84
+-52
+50
+2896
+88
+63
+-53
+50
+84
+-56
+50
+2900
+88
+51
+-53
+62
+84
+-97
+50
+2817
+88
+104
+-53
+99
+84
+-104
+50
+2899
+88
+58
+-58
+43
+87
+-56
+49
+2896
+80
+57
+-61
+51
