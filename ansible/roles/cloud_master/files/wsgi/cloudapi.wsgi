@@ -352,8 +352,9 @@ def cmd_man(team, args):
       Windows: right-click on ctfe.ovpn -> Start OpenVPN on this config file
     Of course, they have to have OpenVPN installed
   Step 4:
-    Connect to vulnerable vm using ssh client: 
+    Get ip and credentials:
       # get_vm_info <vm>
+    Connect to vulnerable vm using ssh client.
   Step 5:
     After initial setup, make your first vm snapshot, so you can recover to
     that saved state later:
@@ -363,7 +364,6 @@ def cmd_man(team, args):
       # open_network
     Now other teams and checksystem are able to access the vm.
     Also now, you should be able to access other teams and checksystem 
-    (if the game network is opened, of course)
   Step 7:
     Have a nice game!
 
@@ -372,7 +372,8 @@ def cmd_man(team, args):
     # list_snapshots <vm> -> restore_vm_from_snapshot <vm> <name>
   If something goes terribly wrong, use this command:
     # isolate_network
-  The access to vuln image should remain and you can reconnect it again with
+  The access to vuln images should remain from your only network.
+  To open the network again, execute:
     # open_network""".lstrip("\n")
 
     return "200 Ok", {"result": "ok", "msg": man_msg, "team": team}
