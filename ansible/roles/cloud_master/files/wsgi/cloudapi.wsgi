@@ -212,12 +212,10 @@ def get_available_vms():
     try:
         ret = {}
         for line in open("%s/services.txt" % DB_PATH):
-            if line.strip().startswith("#"):
+            line = line.strip()
+            if not re.fullmatch(r"([0-9a-zA-Z_])+\s+\d+", line):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
-            if "-" in vm:
-                # bad service name
-                continue
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
@@ -376,7 +374,7 @@ def cmd_man(team, args):
     # list_snapshots <vm> -> restore_vm_from_snapshot <vm> <name>
   If something goes terribly wrong, use this command:
     # isolate_network
-  The access to vuln images should remain from your only network.
+  The access to vuln images should remain from your network only.
   To open the network again, execute:
     # open_network""".lstrip("\n")
 
