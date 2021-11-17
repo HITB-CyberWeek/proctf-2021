@@ -10,9 +10,9 @@
 int c_tcp_open(int port) {
 	int sock;
 	int reuseaddr;
-	struct sockaddr_in6 servaddr;
+	struct sockaddr_in servaddr;
 
-	sock = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+	sock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
 	if (sock < 0)
 		return sock;
 
@@ -23,9 +23,9 @@ int c_tcp_open(int port) {
 	}
 
 	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin6_family = AF_INET6;
-	inet_pton(AF_INET6, "::", &servaddr.sin6_addr);
-	servaddr.sin6_port = htons(port);
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(port);
 
 	if (bind(sock, (const struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
 		close(sock);
@@ -41,7 +41,7 @@ int c_tcp_open(int port) {
 }
 
 int c_accept(int socket) {
-	struct sockaddr_in6 client_addr;
+	struct sockaddr_in client_addr;
 	socklen_t client_addr_len;
 
 	client_addr_len = sizeof(client_addr);
