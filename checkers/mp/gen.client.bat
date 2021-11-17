@@ -1,0 +1,1 @@
+docker run --rm -v %CD%:/local swaggerapi/swagger-codegen-cli generate -i http://10.33.63.11:1117/swagger/v1/swagger.json -l csharp -o /local/swagger-generated-client/sharp
