@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="settings/*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="wwwroot/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -17,10 +16,6 @@
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="5.0.11" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="settings\" />
   </ItemGroup>
 
 </Project>
