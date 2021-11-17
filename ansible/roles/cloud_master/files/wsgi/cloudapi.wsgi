@@ -329,8 +329,8 @@ def cmd_help(team, args):
   restore_vm_from_snapshot <vm> <name>  - restore vm from the snapshot
   remove_snapshot <vm> <name>           - remove a snapshot
   reboot_vm <vm>                        - reboot vm
-  open_network            - connect vm to the game network
-  isolate_network       - disconnect vm from the game network
+  open_network                          - connect vm to the game network
+  isolate_network                       - disconnect vm from the game network
   help                                  - help
   man                                   - instructions
 """.strip("\n")
@@ -353,7 +353,7 @@ def cmd_man(team, args):
     Of course, they have to have OpenVPN installed
   Step 4:
     Connect to vulnerable vm using ssh client: 
-      # get_vm_info
+      # get_vm_info <vm>
   Step 5:
     After initial setup, make your first vm snapshot, so you can recover to
     that saved state later:
