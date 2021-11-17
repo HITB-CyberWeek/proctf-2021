@@ -53,9 +53,7 @@ def main():
 
             good_snapshots.append(snapshot)
 
-        if not good_snapshots:
-            print("msg:", "no snapshots are created yet")
-            return 0
+        print("msg:", "init")
 
         good_snapshots.sort(key=lambda v: v.get("created_at", 0))
 

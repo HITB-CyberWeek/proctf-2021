@@ -106,12 +106,10 @@ def get_available_services():
     try:
         ret = {}
         for line in open("db/services.txt"):
-            if line.strip().startswith("#"):
+            line = line.strip()
+            if not re.fullmatch(r"([0-9a-zA-Z_])+\s+\d+", line):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
-            if "-" in vm:
-                # bad service name
-                continue
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
