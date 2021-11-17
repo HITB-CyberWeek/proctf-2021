@@ -29,6 +29,10 @@ def main():
         print("msg: ERR, name validation error")
         return 1
 
+    if NAME == "init":
+        print("msg: ERR, init snapshot is not deletable")
+        return 1
+
     cloud_name = get_cloud_name(TEAM)
     if not cloud_name:
         log_stderr("no cloud_name, exiting")
