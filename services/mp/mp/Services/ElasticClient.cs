@@ -82,7 +82,7 @@ namespace mp.Services
                                     {
                                         dt = new
                                         {
-                                            gte = "now-1h"
+                                            gte = "now-1d"
                                         }
                                     }
                                 },
