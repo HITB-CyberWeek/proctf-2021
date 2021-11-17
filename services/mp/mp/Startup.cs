@@ -82,7 +82,10 @@ namespace mp
             if(env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
+                app.UseSwagger(options =>
+                {
+                    options.SerializeAsV2 = true;
+                });
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "mp v1"));
             }
 
