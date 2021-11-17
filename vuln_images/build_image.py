@@ -4,7 +4,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from typing import Literal, Union, Optional
+from typing import Literal, Union, Optional, Iterable
 
 import jinja2
 import typer
@@ -30,14 +30,20 @@ class FileDeployConfigV1(YamlModel):
     sources: list[str] = []
     destination: str = "/home/$SERVICE"
 
-    def prepare_for_upload(self, config: "DeployConfig", config_folder: pathlib.Path) -> "FileDeployConfigV1":
+    def prepare_for_upload(self, config: "DeployConfig", config_folder: pathlib.Path) -> Iterable["FileDeployConfigV1"]:
+        # Packer's file provisioner works with "sources" option very bad: i.e., doesn't support directories there,
+        # so we convert "sources" into multiple Files with "source"
+        if self.sources:
+            files = [FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)]
+            for file in files:
+                yield from file.prepare_for_upload(config, config_folder)
+            return
+
         destination = substitute_variables(self.destination, config)
-        if self.sources or (config_folder / self.source).is_dir():
-             if not destination.endswith("/"):
-                destination += "/"
-        return FileDeployConfigV1(
+        if config_folder / self.source and not destination.endswith("/"):
+            destination += "/"
+        yield FileDeployConfigV1(
             source=self.source,
-            sources=self._unfold_globs(self.sources, config_folder),
             destination=destination,
         )
 
@@ -101,6 +107,9 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
 
     # Step 2 — build packer configuration
     typer.echo(typer.style("Step 2", fg=typer.colors.GREEN, bold=True) + f". Preparing configuration for the packer tool")
+    files = []
+    for file in config.files:
+        files += [prepared_file.dict() for prepared_file in file.prepare_for_upload(config, config_folder)]
     jinja2_variables = {
         "api_token": settings.DO_API_TOKEN,
         "files_path": pathlib.Path("packer").absolute().as_posix(),
@@ -108,7 +117,7 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
         "region": "ams3",
         "service": config.service,
         "username": config.username,
-        "files": [file.prepare_for_upload(config, config_folder).dict() for file in config.files],
+        "files": files,
         "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config),
         "start_once": substitute_variables(config.scripts.start_once, config),
     }
