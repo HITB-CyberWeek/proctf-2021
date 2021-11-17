@@ -1,13 +1,12 @@
-﻿using Microsoft.AspNet.Identity;
-using Microsoft.AspNetCore.Http;
+﻿using System.Security.Claims;
 
 namespace mp
 {
     public static class HttpContextExtensions
     {
-        public static string FindCurrentUserId(this HttpContext httpContext)
+        public static string FindCurrentUserId(this ClaimsPrincipal claimsPrincipal)
         {
-            return httpContext?.User.Identity?.GetUserId();
+            return claimsPrincipal?.Identity?.Name;
         }
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
-using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -41,7 +40,7 @@ namespace mp
                         OnValidatePrincipal = context =>
                         {
                             var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
-                            var login = context.Principal?.Identity?.GetUserId();
+                            var login = context.Principal?.FindCurrentUserId();
                             var user = userService.Find(login);
                             if(user == null) 
                                 context.RejectPrincipal();
