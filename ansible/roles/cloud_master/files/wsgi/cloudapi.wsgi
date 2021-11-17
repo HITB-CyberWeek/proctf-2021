@@ -7,6 +7,7 @@ import os
 import signal
 import fcntl
 
+
 DB_PATH="/cloud/backend/db"
 SCRIPTS_PATH="/cloud/backend"
 
@@ -214,6 +215,9 @@ def get_available_vms():
             if line.strip().startswith("#"):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
+            if "-" in vm:
+                # bad service name
+                continue
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
@@ -298,7 +302,7 @@ def cmd_take_snapshot(team, args):
 
 def cmd_list_snapshots(team, args):
     vm = int(args[0])
-    return create_task(team, "list_snapshots", "list_snapshots.py", [str(team)], str(vm))
+    return create_task(team, "list_snapshots", "list_snapshots.py", [str(team), str(vm)])
 
 def cmd_restore_vm_from_snapshot(team, args):
     vm = int(args[0])

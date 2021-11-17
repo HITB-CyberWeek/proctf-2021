@@ -109,6 +109,9 @@ def get_available_services():
             if line.strip().startswith("#"):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
+            if "-" in vm:
+                # bad service name
+                continue
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
@@ -124,16 +127,31 @@ def get_service_name_by_num(num):
     return ""
 
 def get_image_name(team, num):
-    cloud_name = get_cloud_name(team)
-    if not cloud_name:
-        raise Exception("No image name")
+    # cloud_name = get_cloud_name(team)
+    # if not cloud_name:
+    #     raise Exception("No image name")
 
     service_name = get_service_name_by_num(num)
     if not service_name:
         raise Exception("No service with this num, edit services.txt")
 
+    # the underscore is bad character for image name
+    service_name = service_name.replace("_", "-")
+
     if not re.fullmatch(r"[a-z0-9-]+", service_name):
         raise Exception("Service has bad name")
 
-
     return "team%d-%s" % (team, service_name)
+
+def get_snapshot_prefix(team, num):
+    service_name = get_service_name_by_num(num)
+    if not service_name:
+        raise Exception("No service with this num, edit services.txt")
+
+    # the hyphen is bad character for snapshot name
+    service_name = service_name.replace("-", "_")
+
+    if not re.fullmatch(r"[a-z0-9_]+", service_name):
+        raise Exception("Service has bad name")
+
+    return "team%d-%s-" % (team, service_name)
