@@ -41,6 +41,7 @@ for t in range(1, N+1):
 
     for s in range(1, S+1):
         open(DB_DIR + "/team%d/serv%d_image_deploy_state" % (t, s), "w").write("NOT_STARTED")
+        open(DB_DIR + "/team%d/serv%d_open_state" % (t, s), "w").write("OPEN")
 
         root_passwd_filename = "passwds_prod/team%d_serv%d_root_passwd.txt" % (t, s)
         root_passwd = open(root_passwd_filename).read().strip()
