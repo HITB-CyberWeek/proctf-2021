@@ -36,24 +36,40 @@
 #include "hash/sha2small.c"
 #include "codec/dec32be.c"
 #include "codec/enc32be.c"
+#include "hash/sha1.c"
+#include "rsa/rsa_default_oaep_encrypt.c"
+#include "rsa/rsa_i31_oaep_encrypt.c"
+#include "rsa/rsa_oaep_pad.c"
+#include "hash/mgf1.c"
+#include "rsa/rsa_i31_pub.c"
+#include "int/i31_decmod.c"
+#include "rsa/rsa_default_oaep_decrypt.c"
+#include "rsa/rsa_i31_oaep_decrypt.c"
+#include "rsa/rsa_i31_priv.c"
+#include "rsa/rsa_oaep_unpad.c"
+#include "int/i31_reduce.c"
 
 #define DEBUG
 // #define DEBUG_INPUT
 #define MAX_SLOTS 1020
 // 1020 = 17 teams x 1 max put per round x 60 rounds
-#define RSA_KEY_SIZE_BITS 768
+#define RSA_KEY_SIZE_BITS 512
 #define RSA_PUB_EXP 17
 
-#define META_SIZE 33 // So we can store here 32-byte flag + '\0'
-#define PLAINTEXT_SIZE 64
+#define META_SIZE 33    // So we can store here 32-byte flag + '\0'
+#define CIPHERTEXT_SIZE BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
+#define PUBKEY_SIZE     BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
+#define PRIVKEY_SIZE    BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS)
 
 typedef struct {
-  int idx;                                                          //   4
-  char meta[META_SIZE];                                             //  33
-  char plaintext[PLAINTEXT_SIZE];                                   //  64
-  unsigned char privkey[BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS)];  // 240
-  unsigned char pubkey[BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)];    // 100
-} Slot;                                                             // TOTAL = 441 bytes (with padding: 444)
+  int idx;                              //   4
+  char meta[META_SIZE];                 //  33
+  char buf[CIPHERTEXT_SIZE];            // 100
+  br_rsa_private_key sk;
+  unsigned char privkey[PRIVKEY_SIZE];  // 240
+  br_rsa_public_key pk;
+  unsigned char pubkey[PUBKEY_SIZE];    // 100
+} Slot;                                 // TOTAL = 441 bytes (with padding: 444)
 
 Slot slots[MAX_SLOTS];
 int free_slot_index = 0; // round-robin
@@ -61,9 +77,9 @@ int free_slot_index = 0; // round-robin
 #define IS_VALID_SLOT(slot) (0 <= slot && slot < MAX_SLOTS)
 
 #define MAX_CMD_LEN 16
-#define MAX_ARG1_LEN 128
-#define MAX_ARG2_LEN 128
-#define MAX_ARG3_LEN 128
+#define MAX_ARG1_LEN 200
+#define MAX_ARG2_LEN 200
+#define MAX_ARG3_LEN 200
 
 typedef struct {
   char command[MAX_CMD_LEN + 1];
@@ -100,6 +116,42 @@ void print_input(Input *input) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 br_hmac_drbg_context rng;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static size_t
+hextobin(unsigned char *dst, const char *src, int dst_size) {
+    size_t num;
+    unsigned acc;
+    int z;
+
+    num = 0;
+    z = 0;
+    acc = 0;
+    while (*src != 0) {
+        int c = *src ++;
+        if (c >= '0' && c <= '9') {
+            c -= '0';
+        } else if (c >= 'A' && c <= 'F') {
+            c -= ('A' - 10);
+        } else if (c >= 'a' && c <= 'f') {
+            c -= ('a' - 10);
+        } else {
+            continue;
+        }
+        if (z) {
+            *dst ++ = (acc << 4) + c;
+            num ++;
+            if (num > dst_size) {
+                break;
+            }
+        } else {
+            acc = c;
+        }
+        z = !z;
+    }
+    return num;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -166,10 +218,6 @@ bool set_meta(Slot* slot, char new_meta[]) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 bool get_meta(const Slot slot) { // Note: slot is copied to the stack. We need this for exploitation!
-#ifdef DEBUG
-  printf("[DEBUG] slot      stack address: %p\n", &slot);
-  printf("[DEBUG] slot.meta stack address: %p\n", &slot.meta);
-#endif
   printf(slot.meta); // Bug 2!
   return true;
 }
@@ -198,22 +246,26 @@ void print_int_text(const char *name, const unsigned char *buf, size_t len) {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG
 void print_private_key(br_rsa_private_key *sk) {
-  printf("RSA private key:\n");
-  print_int_text("p ", sk->p, sk->plen);
-  print_int_text("q ", sk->q, sk->qlen);
-  print_int_text("dp", sk->dp, sk->plen);
-  print_int_text("dq", sk->dq, sk->dqlen);
-  print_int_text("iq", sk->iq, sk->iqlen);
+  printf("[DEBUG] RSA private key:\n");
+  print_int_text("[DEBUG] p ", sk->p, sk->plen);
+  print_int_text("[DEBUG] q ", sk->q, sk->qlen);
+  print_int_text("[DEBUG] dp", sk->dp, sk->plen);
+  print_int_text("[DEBUG] dq", sk->dq, sk->dqlen);
+  print_int_text("[DEBUG] iq", sk->iq, sk->iqlen);
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG
 void print_public_key(br_rsa_public_key *pk) {
-  printf("RSA public key:\n");
-  print_int_text("n ", pk->n, pk->nlen);
-  print_int_text("e ", pk->e, pk->elen);
+  printf("[DEBUG] RSA public key:\n");
+  print_int_text("[DEBUG] n ", pk->n, pk->nlen);
+  print_int_text("[DEBUG] e ", pk->e, pk->elen);
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -233,21 +285,135 @@ void rsa_test() {
   }
   print_private_key(&sk);
   print_public_key(&pk);
+
+  char tmp[128];
+  char plain[128] = "Hello World!";
+  br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
+
+  int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, tmp, sizeof(tmp), plain, strlen(plain) + 1);
+  if (!len) {
+    printf("ERROR: RSA encryption failed\n");
+    return;
+  }
+  printf("RSA ciphertext size: %d bytes\n", len);
+  print_int_text("ciphertext ", tmp, len);
+
+  br_rsa_oaep_decrypt mdec = br_rsa_oaep_decrypt_get_default();
+  if (mdec(&br_sha1_vtable, NULL, 0, &sk, tmp, &len) != 1) {
+    printf("ERROR: RSA decryption failed\n");
+    return;
+  }
+  print_int_text("plaintext ", tmp, len);
+  printf("%s\n", tmp);
+
+  char rand[16];
+  rng.vtable->generate(&rng.vtable, rand, sizeof(rand));
+  print_int_text("rand", rand, sizeof(rand));
+  rng.vtable->generate(&rng.vtable, rand, sizeof(rand));
+  print_int_text("rand", rand, sizeof(rand));
+  rng.vtable->generate(&rng.vtable, rand, sizeof(rand));
+  print_int_text("rand", rand, sizeof(rand));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 void generate(Slot *slot)
 {
-  br_rsa_private_key sk;
-  br_rsa_public_key pk;
   br_rsa_keygen kg = br_rsa_keygen_get_default();
-
-  if (!kg(&rng.vtable, &sk, slot->privkey, &pk, slot->pubkey, RSA_KEY_SIZE_BITS, RSA_PUB_EXP)) {
+  if (!kg(&rng.vtable, &(slot->sk), slot->privkey, &(slot->pk), slot->pubkey, RSA_KEY_SIZE_BITS, RSA_PUB_EXP)) {
     printf("ERROR");
     return;
   }
+#ifdef DEBUG
+  print_private_key(&slot->sk);
+  print_public_key(&slot->pk);
+#endif
   print_int_text("", slot->pubkey, sizeof(slot->pubkey));
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void encrypt(char *pubkey_hex, char *plaintext) {
+  char pubkey[PUBKEY_SIZE];
+  char buf[2 * CIPHERTEXT_SIZE];
+
+  memset((void *) pubkey, 0, sizeof(pubkey));
+  hextobin(pubkey, pubkey_hex, sizeof(pubkey));
+
+  memset((void *) buf, 0, sizeof(buf));
+  strncpy(buf, plaintext, sizeof(buf));
+
+  br_rsa_public_key pk;
+  pk.n = pubkey;
+  pk.nlen = 64;
+  pk.e = pubkey + 67;
+  pk.elen = 1;
+#ifdef DEBUG
+  print_public_key(&pk);
+#endif
+
+  char gamma[16];
+  rng.vtable->generate(&rng.vtable, gamma, sizeof(gamma));
+
+  br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
+  int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, buf, sizeof(buf), gamma, sizeof(gamma));
+  print_int_text("ct(gamma)", buf, len);
+
+  /* br_rsa_oaep_encrypt()
+   *     rnd           source of random bytes.
+   *     dig           hash function to use with MGF1.
+   *     label         label value (may be `NULL` if `label_len` is zero).
+   *     label_len     label length, in bytes.
+   *     pk            RSA public key.
+   *     dst           destination buffer.
+   *     dst_max_len   destination buffer length (maximum encrypted data size).
+   *     src           message to encrypt.
+   *     src_len       source message length (in bytes).
+   *     return  encrypted message length (in bytes), or 0 on error. 
+   */
+
+  if (!len) {
+    printf("ERROR 1");
+    return;
+  }
+  size_t i;
+  for (i = 0; i < strlen(plaintext); i++) {
+    buf[len + i] = plaintext[i] ^ gamma[i % sizeof(gamma)];
+  }
+  print_int_text("", buf, len + strlen(plaintext));
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void decrypt(Slot *slot, char *ciphertext_hex) {
+  char ciphertext[1000];
+  memset(ciphertext, 0, sizeof(ciphertext));
+  hextobin(ciphertext, ciphertext_hex, sizeof(ciphertext));
+
+  br_rsa_oaep_decrypt mdec = br_rsa_oaep_decrypt_get_default();
+  /*
+   * \param dig         hash function to use with MGF1.
+   * \param label       label value (may be `NULL` if `label_len` is zero).
+   * \param label_len   label length, in bytes.
+   * \param sk          RSA private key.
+   * \param data        input/output buffer.
+   * \param len         encrypted/decrypted message length.
+   * \return  1 on success, 0 on error.                                        */
+
+  int len = 64;
+  print_private_key(&slot->sk);
+  if (mdec(&br_sha1_vtable, NULL, 0, &slot->sk, ciphertext, &len) != 1) {
+    printf("ERROR: RSA decryption failed\n");
+    return;
+  }
+  int i;
+  for (i = 0; i < 32; i++) {
+    ciphertext[64 + i] ^= ciphertext[i % 16];
+  }
+  for (i = 0; i < 32; i++) {
+    slot->buf[i] = ciphertext[64 + i];
+  }
+  slot->buf[32] = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -259,9 +425,9 @@ bool handle_input(Input *input)
     printf("  GENERATE\n");
     printf("  SETMETA <SLOT> <META>\n");
     printf("  GETMETA <SLOT>\n");
-    printf("  DECRYPT <SLOT> <CIPHERTEXT_BASE64>\n");
+    printf("  DECRYPT <SLOT> <CIPHERTEXT_HEX>\n");
     printf("  GETPLAINTEXT <SLOT>");
-    // printf("  ENCRYPT <PUBKEY_BASE64> <PLAINTEXT_BASE64>\n"); // Private API, probably no user will need.
+    // printf("  ENCRYPT <PUBKEY_HEX> <PLAINTEXT>\n"); // Private API, probably no user will need.
     return true;
   } 
   else if (IS_COMMAND(input, "GENERATE", 0)) {
@@ -296,8 +462,7 @@ bool handle_input(Input *input)
     if (!IS_VALID_SLOT(slot)) {
       return false;
     }
-    // FIXME: implement decryption
-    strncpy(slots[slot].plaintext, input->arg2, PLAINTEXT_SIZE);
+    decrypt(&slots[slot], input->arg2);
     printf("OK");
     return true;
   }
@@ -306,11 +471,11 @@ bool handle_input(Input *input)
     if (!IS_VALID_SLOT(slot)) {
       return false;
     }
-    print_int_text("", slots[slot].plaintext, PLAINTEXT_SIZE);
+    printf("%s", slots[slot].buf);
     return true;
   }
   else if (IS_COMMAND(input, "ENCRYPT", 2)) {
-    printf("TODO"); // FIXME: implement
+    encrypt(input->arg1, input->arg2);
     return true;
   }
   else if (IS_COMMAND(input, "RSA", 0)) {
@@ -373,7 +538,7 @@ rtems_task Init(rtems_task_argument ignored) {
 //#define CONFIGURE_USE_DEVFS_AS_BASE_FILESYSTEM
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_INIT_TASK_STACK_SIZE (256 * 1024)   // Very important! Otherwise memory corruption will occur if we use more stack.
+#define CONFIGURE_INIT_TASK_STACK_SIZE (1024 * 1024)   // Very important! Otherwise memory corruption will occur if we use more stack.
 //#define CONFIGURE_EXECUTIVE_RAM_SIZE (64*1024*1024)
 //#define CONFIGURE_MINIMUM_STACK_SIZE (2*1024*1024)
 //#define CONFIGURE_MAXIMUM_PTYS 4

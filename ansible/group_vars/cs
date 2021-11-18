@@ -15,7 +15,7 @@ pg_work_mem: 4MB # 16MB
 cs_limit_nofile: 10000
 
 cs_worker_default_jobs: 4
-cs_worker_checkers_jobs: 4 #96
+cs_worker_checkers_jobs: 16 #96
 cs_worker_checkers_queues: -q checker
 cs_worker_instance: 2
 
@@ -36,49 +36,61 @@ cs_flags_secret: ***REMOVED***
 cs_round_length: 60
 cs_flag_life_time: 15
 cs_disable_irrelevant_services: 0
+cs_checkers_hostname_cb: sub { my ($team, $service) = @_; $team->{ip_prefix} . $service->{ip_suffix} }
+cs_scoring: |
+  start_flag_price => 10,
+  heating_speed => 1/12,
+  max_flag_price => 30,
+  cooling_down => 1/2,
+  heating_flags_limit => 20 * 30,
+  cooling_submissions_limit => 500 * 30,
+  dying_rounds => 120,
+  dying_flag_price => 1
+
 cs_time: "['2021-11-13 12:00:00', '2021-11-28 12:00:00']"
 
 teams: |
-  {name => 'Team 120', network => '10.60.120.0/24', host => '10.60.120.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 0}]},
-  {name => 'Team 121', network => '10.60.121.0/24', host => '10.60.121.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
-  {name => 'Team 122', network => '10.60.122.0/24', host => '10.60.122.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
-  {name => 'Team 123', network => '10.60.123.0/24', host => '10.60.123.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
-  {name => 'Team 124', network => '10.60.124.0/24', host => '10.60.124.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
-  {name => 'Team 125', network => '10.60.125.0/24', host => '10.60.125.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
-  {name => 'Team 126', network => '10.60.126.0/24', host => '10.60.126.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 127', network => '10.60.127.0/24', host => '10.60.127.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 128', network => '10.60.128.0/24', host => '10.60.128.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 129', network => '10.60.129.0/24', host => '10.60.129.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 130', network => '10.60.130.0/24', host => '10.60.130.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 131', network => '10.60.131.0/24', host => '10.60.131.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 132', network => '10.60.132.0/24', host => '10.60.132.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 133', network => '10.60.133.0/24', host => '10.60.133.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 134', network => '10.60.134.0/24', host => '10.60.134.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 135', network => '10.60.135.0/24', host => '10.60.135.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 136', network => '10.60.136.0/24', host => '10.60.136.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 137', network => '10.60.137.0/24', host => '10.60.137.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 138', network => '10.60.138.0/24', host => '10.60.138.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 139', network => '10.60.139.0/24', host => '10.60.139.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 140', network => '10.60.140.0/24', host => '10.60.140.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 141', network => '10.60.141.0/24', host => '10.60.141.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 142', network => '10.60.142.0/24', host => '10.60.142.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 143', network => '10.60.143.0/24', host => '10.60.143.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 144', network => '10.60.144.0/24', host => '10.60.144.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 145', network => '10.60.145.0/24', host => '10.60.145.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 146', network => '10.60.146.0/24', host => '10.60.146.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 147', network => '10.60.147.0/24', host => '10.60.147.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 148', network => '10.60.148.0/24', host => '10.60.148.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 149', network => '10.60.149.0/24', host => '10.60.149.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
-  {name => 'Team 150', network => '10.60.150.0/24', host => '10.60.150.3', token => '***REMOVED***', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 001', network => '10.60.1.0/24', host => '10.60.1.3', ip_prefix => '10.60.1.', token => '1_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 002', network => '10.60.2.0/24', host => '10.60.2.3', ip_prefix => '10.60.2.', token => '2_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 003', network => '10.60.3.0/24', host => '10.60.3.3', ip_prefix => '10.60.3.', token => '3_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 004', network => '10.60.4.0/24', host => '10.60.4.3', ip_prefix => '10.60.4.', token => '4_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 005', network => '10.60.5.0/24', host => '10.60.5.3', ip_prefix => '10.60.5.', token => '5_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 006', network => '10.60.6.0/24', host => '10.60.6.3', ip_prefix => '10.60.6.', token => '6_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 007', network => '10.60.7.0/24', host => '10.60.7.3', ip_prefix => '10.60.7.', token => '7_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 008', network => '10.60.8.0/24', host => '10.60.8.3', ip_prefix => '10.60.8.', token => '8_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 009', network => '10.60.9.0/24', host => '10.60.9.3', ip_prefix => '10.60.9.', token => '9_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 010', network => '10.60.10.0/24', host => '10.60.10.3', ip_prefix => '10.60.10.', token => '10_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 011', network => '10.60.11.0/24', host => '10.60.11.3', ip_prefix => '10.60.11.', token => '11_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 012', network => '10.60.12.0/24', host => '10.60.12.3', ip_prefix => '10.60.12.', token => '12_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 013', network => '10.60.13.0/24', host => '10.60.13.3', ip_prefix => '10.60.13.', token => '13_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 014', network => '10.60.14.0/24', host => '10.60.14.3', ip_prefix => '10.60.14.', token => '14_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 015', network => '10.60.15.0/24', host => '10.60.15.3', ip_prefix => '10.60.15.', token => '15_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 016', network => '10.60.16.0/24', host => '10.60.16.3', ip_prefix => '10.60.16.', token => '16_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 017', network => '10.60.17.0/24', host => '10.60.17.3', ip_prefix => '10.60.17.', token => '17_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 018', network => '10.60.18.0/24', host => '10.60.18.3', ip_prefix => '10.60.18.', token => '18_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 019', network => '10.60.19.0/24', host => '10.60.19.3', ip_prefix => '10.60.19.', token => '19_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 020', network => '10.60.20.0/24', host => '10.60.20.3', ip_prefix => '10.60.20.', token => '20_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 021', network => '10.60.21.0/24', host => '10.60.21.3', ip_prefix => '10.60.21.', token => '21_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 022', network => '10.60.22.0/24', host => '10.60.22.3', ip_prefix => '10.60.22.', token => '22_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 023', network => '10.60.23.0/24', host => '10.60.23.3', ip_prefix => '10.60.23.', token => '23_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 024', network => '10.60.24.0/24', host => '10.60.24.3', ip_prefix => '10.60.24.', token => '24_XYZ', country => 'NA', logo => '/data/logos/dummy.png'},
+  {name => 'Team 025', network => '10.60.25.0/24', host => '10.60.25.3', ip_prefix => '10.60.25.', token => '25_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 0}]},
+  {name => 'Team 026', network => '10.60.26.0/24', host => '10.60.26.3', ip_prefix => '10.60.26.', token => '26_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 0}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 027', network => '10.60.27.0/24', host => '10.60.27.3', ip_prefix => '10.60.27.', token => '27_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 028', network => '10.60.28.0/24', host => '10.60.28.3', ip_prefix => '10.60.28.', token => '28_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 0, defense => 1}]},
+  {name => 'Team 029', network => '10.60.29.0/24', host => '10.60.29.3', ip_prefix => '10.60.29.', token => '29_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 0, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
+  {name => 'Team 030', network => '10.60.30.0/24', host => '10.60.30.3', ip_prefix => '10.60.30.', token => '30_XYZ', country => 'NA', logo => '/data/logos/dummy.png', bot => [{sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}, {sla => 1, attack => 1, defense => 1}]},
 
 services: |
-  {name => 'Service 11', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 12', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 13', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 14', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 15', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 16', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 17', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 18', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 19', path => 'checkers/checker.py', timeout => 30},
-  {name => 'Service 20', path => 'checkers/checker.py', timeout => 30},
+  {name => 'timecapsule', tcp_port => 7007,  timeout => 30, ip_suffix => '4',  path => 'checkers/timecapsule/checker.sh'},
+  {name => 'cells',       tcp_port => 5000,  timeout => 30, ip_suffix => '5',  path => 'checkers/cells/checker.py'},
+  {name => 'chess',       tcp_port => 3255,  timeout => 30, ip_suffix => '6',  path => 'checkers/chess/checker.py'},
+  {name => 'forvolution', tcp_port => 12345, timeout => 30, ip_suffix => '7',  path => ''},
+  {name => 'mp',          tcp_port => 80,    timeout => 30, ip_suffix => '8',  path => 'checkers/mp/checker.sh'},
+  {name => 'fs',          tcp_port => 7777,  timeout => 30, ip_suffix => '9',  path => ''},
+  {name => 'genealogy',   tcp_port => 8888,  timeout => 30, ip_suffix => '10', path => 'checkers/genealogy/genealogy.checker.py'},
+  {name => 'authme',      tcp_port => 0,     timeout => 30, ip_suffix => '11', path => ''},
+  {name => 'hsm',         tcp_port => 0,     timeout => 30, ip_suffix => '12', path => ''},
+  {name => 'p0ck37',      tcp_port => 3000,  timeout => 30, ip_suffix => '13', path => ''},
+  {name => 's3rvic3',       tcp_port => 3128,  timeout => 30, ip_suffix => '14', path => ''},
+  {name => 'caas',        tcp_port => 0,     timeout => 30, ip_suffix => '15', path => ''},

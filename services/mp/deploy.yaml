@@ -7,6 +7,7 @@ scripts:
 files:
   - sources:
       - src/*.cs
+      - src/*.json
       - src/mp.csproj
     destination: /home/$USERNAME/src
   - source: src/Controllers/*.cs
