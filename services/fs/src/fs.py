@@ -44,6 +44,8 @@ class UsersRepository:
 
 
     def is_safe_path(self, basedir, path):
+        if pathlib.Path(basedir).is_absolute() or pathlib.Path(path).is_absolute():
+            return False
         abs_basedir = os.path.abspath(basedir)    
         abs_path = os.path.abspath(path)
         # print(f"abs_basedir: '{abs_basedir}', abs_path: '{abs_path}'")
