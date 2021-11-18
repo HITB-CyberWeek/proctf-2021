@@ -47,9 +47,9 @@ class UsersRepository:
     def validate_access(self, username, path):
         acl_path = f"users/{username}/.acl"
         with open(acl_path) as f:
-            acl = f.read().splitlines()
+            acl = [x for x in f.read().splitlines() if not re.fullmatch(r"\s*", x)]
+            print(acl)
         for allowed_path in acl:
-            # print(f"allowed_path? allowed_path '{allowed_path}' path '{path}'")
             if self.is_phys_subpath(f"data/{allowed_path}", path):
                 return True
         return False
@@ -159,10 +159,10 @@ def share():
     if not users_repository.is_phys_subpath(f"data/{current_user.username}", f"data/{share_request.location}"):
         return f"You don't own the location '{share_request.location}' requested to share", 403
 
-    key = RSA.import_key(app.config["signing_key"].read())
+    key = app.config["signing_key"]
     h = MD5.new(data)
     signature = pkcs1_15.new(key).sign(h)
-    result = url_for("get_access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
+    result = url_for("access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
 
     return f'\n<a href="{result}">click here to get access</a>\n';
 
@@ -175,7 +175,7 @@ def access():
     h = MD5.new(data)
     signature = base64.urlsafe_b64decode(request.args["signature"])
 
-    key = RSA.import_key(app.config["signing_key"].read())    
+    key = app.config["signing_key"]
     try:
         pkcs1_15.new(key).verify(h, signature)
     except:
@@ -186,7 +186,7 @@ def access():
         return f"Current user '{current_user.username}' is not equal to ticket user '{share_request.username}'", 403
     users_repository.append_acl(share_request.username, share_request.location)
 
-    return f"access to {share_request.location} granted"
+    return f"access to {share_request.location} granted: {share_request.message}"
 
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
