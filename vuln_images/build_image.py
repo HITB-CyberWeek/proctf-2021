@@ -69,7 +69,7 @@ DeployConfig = Union[DeployConfigV1]
 
 
 def substitute_variables(data: str, config: DeployConfig) -> str:
-    return data.replace("$SERVICE", config.service).replace("$USERNAME", config.username)
+    return data.replace("$SERVICE", config.service if config.service else "").replace("$USERNAME", config.username if config.username else "")
 
 
 def update_vulnimages_config(service_name: str, image_id: int):
