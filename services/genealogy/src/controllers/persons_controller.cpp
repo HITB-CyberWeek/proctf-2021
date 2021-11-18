@@ -1,12 +1,10 @@
 #include "persons_controller.hpp"
 
-#include "../database/persons.hpp"
+#include "../database/persons_database.hpp"
 #include "../utils.hpp"
 
 PersonsController::PersonsController() {
-    const auto database = Database().connection();
-    const auto transaction = database->transaction();
-    this->_persons_database = std::make_shared<PersonsDatabase>(transaction);
+    this->_persons_database = std::make_shared<PersonsDatabase>(this->_tx);
 }
 
 HttpResponse PersonsController::create_person(const HttpRequest &request) {

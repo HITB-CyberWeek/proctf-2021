@@ -4,12 +4,18 @@
 #include <string>
 #include <memory>
 
+#include "tao/pq/connection.hpp"
+
 #include "../server/http_request.hpp"
 #include "../security/key_storage.hpp"
 
 BaseController::BaseController() {
     this->_hasher = std::make_unique<Hasher>();
     this->_keys = std::make_unique<KeyStorage>();
+
+    const std::string connection_string = "host=database port=6432 dbname=genealogy user=genealogy password=genealogy";
+    const auto connection = tao::pq::connection::create(connection_string);
+    this->_tx = connection->transaction();
 }
 
 std::optional<unsigned long long> BaseController::_current_user_id(const HttpRequest & request) {

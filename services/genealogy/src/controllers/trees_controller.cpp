@@ -10,16 +10,13 @@
 #include "tao/json/type.hpp"
 #include "tao/json/value.hpp"
 
-#include "../database/common.hpp"
-#include "../database/trees.hpp"
+#include "../database/trees_database.hpp"
 #include "../brotobuf/tree.hpp"
 
 
 TreesController::TreesController() {
-    const auto database = Database().connection();
-    const auto transaction = database->transaction();
-    this->_persons_database = std::make_shared<PersonsDatabase>(transaction);
-    this->_trees_database = std::make_shared<TreesDatabase>(transaction);
+    this->_persons_database = std::make_shared<PersonsDatabase>(this->_tx);
+    this->_trees_database = std::make_shared<TreesDatabase>(this->_tx);
     this->_signer = std::make_shared<Signer>(this->_keys->get_signing_key());
 }
 

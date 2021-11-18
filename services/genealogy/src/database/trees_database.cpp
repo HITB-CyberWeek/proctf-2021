@@ -1,4 +1,4 @@
-#include "trees.hpp"
+#include "trees_database.hpp"
 
 #include <memory>
 #include <optional>
@@ -6,10 +6,10 @@
 #include "tao/pq/null.hpp"
 #include "tao/pq/transaction.hpp"
 
-#include "persons.hpp"
+#include "persons_database.hpp"
 
 
-TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : _tx(tx) {
+TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : Database(tx) {
     this->_tx->connection()->prepare(
         "create_tree", "INSERT INTO genealogy_trees (user_id, person_id, title, description) VALUES ($1, $2, $3, $4) RETURNING id"
     );
@@ -32,10 +32,6 @@ TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : _tx(tx)
     this->_tx->connection()->prepare(
         "create_owner", "INSERT INTO genealogy_tree_owners (tree_id, user_id) VALUES ($1, $2)"
     );
-}
-
-std::shared_ptr<tao::pq::transaction> TreesDatabase::transaction() {
-    return this->_tx;
 }
 
 std::optional<Tree> TreesDatabase::find_tree(unsigned long long id) {

@@ -10,7 +10,7 @@
 #include "tao/pq.hpp"
 #include "tao/json/value.hpp"
 
-#include "common.hpp"
+#include "database.hpp"
 
 struct Person {
     unsigned long long id;
@@ -20,10 +20,9 @@ struct Person {
     std::string name;
 };
 
-class PersonsDatabase {
+class PersonsDatabase: public Database {
 public:
     PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx);
-    std::shared_ptr<tao::pq::transaction> transaction();
     tao::json::value build_person_json(unsigned long long person_id);
 
     std::optional<Person> find_person(unsigned long long id);
@@ -42,9 +41,6 @@ public:
     void delete_parents(unsigned long long child_id);
     void delete_children(unsigned long long parent_id);
     std::vector<unsigned long long> get_parents(unsigned long long person_id);
-
-private:
-    std::shared_ptr<tao::pq::transaction> _tx;
 };
 
 #endif

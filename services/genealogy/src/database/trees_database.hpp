@@ -7,8 +7,8 @@
 #include "tao/pq/transaction.hpp"
 #include "tao/pq/result.hpp"
 
-#include "common.hpp"
-#include "persons.hpp"
+#include "database.hpp"
+#include "persons_database.hpp"
 
 struct Tree {
     unsigned long long id;
@@ -18,10 +18,9 @@ struct Tree {
     std::string description;
 };
 
-class TreesDatabase {
+class TreesDatabase: public Database {
 public:
     TreesDatabase(std::shared_ptr<tao::pq::transaction> tx);
-    std::shared_ptr<tao::pq::transaction> transaction();
 
     std::optional<Tree> find_tree(unsigned long long id);
     std::optional<Tree> find_tree_by_user(unsigned long long user_id);
@@ -39,8 +38,6 @@ public:
 
 private:
     std::optional<Tree> _find_tree(const tao::pq::result & result);
-
-    std::shared_ptr<tao::pq::transaction> _tx;
 };
 
 #endif

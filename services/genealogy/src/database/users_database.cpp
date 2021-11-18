@@ -1,10 +1,11 @@
+#include "users_database.hpp"
+
 #include "tao/pq/transaction.hpp"
 
-#include "users.hpp"
-#include "common.hpp"
+#include "database.hpp"
 
 
-UsersDatabase::UsersDatabase(std::shared_ptr<tao::pq::transaction> tx): _tx(tx) {
+UsersDatabase::UsersDatabase(std::shared_ptr<tao::pq::transaction> tx): Database(tx) {
     this->_tx->connection()->prepare(
         "insert_user", "INSERT INTO users (login, password_hash) VALUES ($1, $2)" 
     );
@@ -14,10 +15,6 @@ UsersDatabase::UsersDatabase(std::shared_ptr<tao::pq::transaction> tx): _tx(tx) 
     this->_tx->connection()->prepare(
         "find_user_by_login", "SELECT id, login, password_hash FROM users WHERE login = $1" 
     );
-}
-
-std::shared_ptr<tao::pq::transaction> UsersDatabase::transaction() {
-    return this->_tx;
 }
 
 std::optional<User> UsersDatabase::find_user(int user_id) const {

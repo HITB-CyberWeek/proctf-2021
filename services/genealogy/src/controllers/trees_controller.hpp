@@ -7,8 +7,8 @@
 #include "base_controller.hpp"
 #include "../server/http_request.hpp"
 #include "../server/http_response.hpp"
-#include "../database/trees.hpp"
-#include "../database/persons.hpp"
+#include "../database/trees_database.hpp"
+#include "../database/persons_database.hpp"
 #include "../brotobuf/person.hpp"
 #include "../security/signer.hpp"
 

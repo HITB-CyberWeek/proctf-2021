@@ -1,4 +1,4 @@
-#include "persons.hpp"
+#include "persons_database.hpp"
 
 #include <memory>
 #include <optional>
@@ -6,7 +6,7 @@
 #include "tao/pq/transaction.hpp"
 #include "tao/json/value.hpp"
 
-PersonsDatabase::PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx): _tx(tx) {
+PersonsDatabase::PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx): Database(tx) {
     this->_tx->connection()->prepare(
         "create_person", "INSERT INTO genealogy_tree_persons (owner_id, birth_date, death_date, name) VALUES ($1, $2, $3, $4) RETURNING id"
     );
@@ -31,10 +31,6 @@ PersonsDatabase::PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx): _tx(
     this->_tx->connection()->prepare(
         "get_parents", "SELECT parent_id FROM genealogy_tree_person_parents WHERE child_id = $1"
     );
-}
-
-std::shared_ptr<tao::pq::transaction> PersonsDatabase::transaction() {
-    return this->_tx;
 }
 
 std::optional<Person> PersonsDatabase::find_person(unsigned long long id) {

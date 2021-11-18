@@ -7,16 +7,17 @@
 
 #include "tao/pq/transaction.hpp"
 
+#include "database.hpp"
+
 struct User {
     unsigned long long id;
     std::string login;
     std::string password_hash;
 };
 
-class UsersDatabase {
+class UsersDatabase: public Database {
 public:
     UsersDatabase(std::shared_ptr<tao::pq::transaction> tx);
-    std::shared_ptr<tao::pq::transaction> transaction();
 
     std::optional<User> find_user(const std::string & login) const;
     std::optional<User> find_user(int user_id) const;
@@ -24,8 +25,6 @@ public:
 
 private:
     std::optional<User> _find_user(const tao::pq::result & result) const;
-
-    std::shared_ptr<tao::pq::transaction> _tx;
 };
 
 #endif

@@ -3,15 +3,12 @@
 #include <memory>
 
 #include "../security/hasher.hpp"
-#include "../database/common.hpp"
-#include "../database/users.hpp"
-#include "../database/trees.hpp"
+#include "../database/users_database.hpp"
+#include "../database/trees_database.hpp"
 #include "../utils.hpp"
 
 UsersController::UsersController() {
-    const auto database = Database().connection();
-    const auto transaction = database->transaction();
-    this->_users_database = std::make_shared<UsersDatabase>(transaction);
+    this->_users_database = std::make_shared<UsersDatabase>(this->_tx);
 }
 
 HttpResponse UsersController::create_user(const HttpRequest & request) {

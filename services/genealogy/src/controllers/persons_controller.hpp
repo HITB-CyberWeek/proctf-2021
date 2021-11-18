@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "base_controller.hpp"
-#include "../database/persons.hpp"
+#include "../database/persons_database.hpp"
 #include "../server/http_request.hpp"
 #include "../server/http_response.hpp"
 
