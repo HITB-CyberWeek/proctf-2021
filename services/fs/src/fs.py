@@ -33,32 +33,24 @@ class User(UserMixin):
         return True
 
 class UsersRepository:
-    def get_user_dir(self, username):
-        return pathlib.Path("users") / username
+    def append_acl(self, username, path):        
+        acl_path = f"users/{username}/.acl"
 
-    def append_acl(self, username, path):
-        user_dir = self.get_user_dir(username)
-        acl_path = user_dir / ".acl"
-        with acl_path.open("a") as f:
-            f.write(f"{path}\n")       
+        with open(acl_path, "a") as f:        
+            f.write(f"{path}\n")
 
-
-    def is_safe_path(self, basedir, path):
-        if pathlib.Path(basedir).is_absolute() or pathlib.Path(path).is_absolute():
-            return False
+    def is_phys_subpath(self, basedir, path):        
         abs_basedir = os.path.abspath(basedir)    
-        abs_path = os.path.abspath(path)
-        # print(f"abs_basedir: '{abs_basedir}', abs_path: '{abs_path}'")
+        abs_path = os.path.abspath(path)        
         return abs_basedir == os.path.commonpath([abs_basedir, abs_path])
 
     def validate_access(self, username, path):
-        user_dir = self.get_user_dir(username)
-        acl_path = user_dir / ".acl"
-        with acl_path.open() as f:
+        acl_path = f"users/{username}/.acl"
+        with open(acl_path) as f:
             acl = f.read().splitlines()
         for allowed_path in acl:
             # print(f"allowed_path? allowed_path '{allowed_path}' path '{path}'")
-            if self.is_safe_path(allowed_path, path):
+            if self.is_phys_subpath(f"data/{allowed_path}", path):
                 return True
         return False
 
@@ -67,10 +59,10 @@ class UsersRepository:
         return User(username)
 
     def get_or_create_user(self, username, password):
-        if not re.fullmatch(r'[a-zA-Z0-9_]+', username):
+        if not re.fullmatch(r"[a-zA-Z0-9_]+", username):
             return None
 
-        user_dir = self.get_user_dir(username)
+        user_dir = pathlib.Path("users") / username
         os.makedirs(os.path.dirname(user_dir), exist_ok=True)
 
         password_hash_path = user_dir / ".pass_hash"
@@ -113,7 +105,7 @@ def load_or_gen_secret_key():
     except FileNotFoundError:
         key = secrets.token_hex()
         try:
-            with open(key_path,'w') as key_file:
+            with open(key_path,"w") as key_file:
                 key_file.write(key)
         except Exception as e:            
             key = open(key_path).read()
@@ -121,9 +113,9 @@ def load_or_gen_secret_key():
 
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
-app.config['SECRET_KEY'] = load_or_gen_secret_key()
-app.config['signing_key'] = load_or_gen_rsa_key()
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["SECRET_KEY"] = load_or_gen_secret_key()
+app.config["signing_key"] = load_or_gen_rsa_key()
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -134,15 +126,15 @@ users_repository = UsersRepository()
 
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
         registeredUser = users_repository.get_or_create_user(username, password)
         if registeredUser != None:
             login_user(registeredUser)
-            return redirect(url_for('whoami'))
+            return redirect(url_for("whoami"))
         else:
             return abort(401)
     else:
@@ -154,7 +146,7 @@ def login():
             </form>
         ''')
 
-@app.route('/share', methods=['POST'])
+@app.route("/share", methods=["POST"])
 @login_required
 def share():
     len = int(request.headers["Content-Length"])
@@ -162,18 +154,18 @@ def share():
     data = request.get_data()
     share_request = ShareRequest(**loads(data))
 
-    if not users_repository.is_safe_path(current_user.username, share_request.location):
+    if not users_repository.is_phys_subpath(f"data/{current_user.username}", f"data/{share_request.location}"):
         return f"You don't own the location '{share_request.location}' requested to share", 403
 
-    key = RSA.import_key(open('key.pem').read())
+    key = RSA.import_key(app.config["signing_key"].read())
     h = MD5.new(data)
     signature = pkcs1_15.new(key).sign(h)
-    result = url_for('get_access', request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
+    result = url_for("get_access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
 
-    return f'\n<a href="{result}">click here</a>\n';
+    return f'\n<a href="{result}">click here to get access</a>\n';
 
 
-@app.route('/access', methods=['GET'])
+@app.route("/access")
 @login_required
 def access():
     data = base64.urlsafe_b64decode(request.args["request"])
@@ -181,7 +173,7 @@ def access():
     h = MD5.new(data)
     signature = base64.urlsafe_b64decode(request.args["signature"])
 
-    key = RSA.import_key(open('key.pem').read())    
+    key = RSA.import_key(app.config["signing_key"].read())    
     try:
         pkcs1_15.new(key).verify(h, signature)
     except:
@@ -194,25 +186,25 @@ def access():
 
     return f"access to {share_request.location} granted"
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            print('No file part')
+    if request.method == "POST":
+        if "file" not in request.files:
+            print("No file part")
             return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            print('No selected file')
+        file = request.files["file"]
+        if file.filename == "":
+            print("No selected file")
             return redirect(request.url)
-        if file:
-            filepath = pathlib.Path(current_user.username) / file.filename
-            if not users_repository.is_safe_path(current_user.username, filepath):
+        if file:            
+            filepath = f"{current_user.username}/{file.filename}"
+            real_path = f"data/{filepath}"
+            if not users_repository.is_phys_subpath(f"data/{current_user.username}", real_path):
                 return f"Can't upload not to user's folder", 403
-            real_path = pathlib.Path("data") / filepath
             os.makedirs(os.path.dirname(real_path), exist_ok=True)
             file.save(real_path)
-            return redirect(url_for('download_file', file=filepath))
+            return redirect(url_for("download_file", file=filepath))
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -223,18 +215,18 @@ def upload():
     </form>
     '''
 
-@app.route('/download')
+@app.route("/download")
 @login_required
 def download_file():
-    filepath = request.args["file"]
+    file = request.args["file"]
+    filepath = f"data/{file}"
     if not users_repository.validate_access(current_user.username, filepath):
-        return f"Access denied", 403
-    #TODO allow to download file directly from anywhere, cause we already passed the security checks
-    return send_file(pathlib.Path("data") / filepath)
+        return f"Access denied", 403    
+    return send_file(filepath)
 
 @app.errorhandler(401)
 def unauthorized(e):
-    return Response('<p>Login failed</p>')
+    return Response("<p>Login failed</p>")
 
 # callback to reload the user object        
 @login_manager.user_loader
@@ -242,11 +234,11 @@ def load_user(userid):
     return users_repository.get_user(userid)
 
 
-@app.route('/')
+@app.route("/")
 def index():
     return "<h2>This is a next-gen file upload and sharing service</h2>"
 
-@app.route('/whoami')
+@app.route("/whoami")
 @login_required
 def whoami():
     return "<h1>'" + current_user.username + "' logged in</h1>"
@@ -265,4 +257,4 @@ def dumps(o):
     return str_to_bytes(json.dumps(o, ensure_ascii=False))
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=7777, debug = True)
+    app.run(host="127.0.0.1", port=7777, debug = True)
