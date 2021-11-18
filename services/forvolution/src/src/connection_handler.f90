@@ -2,7 +2,7 @@ module connection_handler
   use iso_c_binding, only: c_char
   use tcp, only: tcp_read, tcp_write, tcp_close
   use database, only: db_store, db_load, id_size
-  use string_utils, only: to_int, to_char, to_string
+  use string_utils, only: to_int, to_char, to_string, parse_int
   use sha256, only: sha256_calc, sha256_size
   use matrix, only: convolution
 
@@ -38,9 +38,9 @@ module connection_handler
   integer, parameter :: error_bad_fields = 4
   integer, parameter :: error_exception = 255
 
-  integer, parameter :: matrix_size = 100
-  integer, parameter :: text_size = 255
-  integer, parameter :: convolution_size = 9
+  integer, parameter :: matrix_size = 50
+  integer, parameter :: text_size = 99
+  integer, parameter :: convolution_size = 10
   integer, parameter :: buffer_size = 4 * matrix_size ** 2 + text_size + text_size
 
   type :: extra_data
@@ -167,7 +167,7 @@ contains
       case(request_command)
         command = to_string(self%buffer(1:self%processed-1), self%processed-1)
         if (command.eq.command_upload) then
-          call self%set_read_bytes(4)
+          call self%set_read_fields(2 * 4, 3 * 4, 4)
           self%request_state = request_upload_size
         elseif (command.eq.command_download) then
           call self%set_read_bytes(1)
@@ -246,17 +246,55 @@ contains
     integer :: desc
     integer :: key
 
-    n = iachar(self%buffer(1))
-    m = iachar(self%buffer(2))
-    desc = iachar(self%buffer(3))
-    key = iachar(self%buffer(4))
+    integer, dimension(1:1) :: offset
+    integer :: npos
+    integer :: mpos
+    integer :: ndpos
+    integer :: nkpos
+
+    offset = findloc(self%buffer(1:self%processed), delimiter)
+    npos = offset(1)
+    if (npos.le.1.or.npos.gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    n = parse_int(self%buffer(1:npos-1))
+
+    offset = findloc(self%buffer(npos+1:self%processed), delimiter)
+    mpos = offset(1) + npos
+    if ((mpos-npos).le.1.or.(mpos-npos).gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    m = parse_int(self%buffer(npos+1:mpos-1))
+
+    offset = findloc(self%buffer(mpos+1:self%processed), delimiter)
+    ndpos = offset(1) + mpos
+    if ((ndpos-mpos).le.1.or.(ndpos-mpos).gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    desc = parse_int(self%buffer(mpos+1:ndpos-1))
+
+    offset = findloc(self%buffer(ndpos+1:self%processed), delimiter)
+    nkpos = offset(1) + ndpos
+    if ((nkpos-ndpos).le.1.or.(nkpos-ndpos).gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    key = parse_int(self%buffer(ndpos+1:nkpos-1))
 
     if (n.le.0.or.m.le.0.or.desc.le.0.or.key.le.0) then
       call self%set_error(error_bad_size)
       return
     end if
 
-    if ((n.gt.matrix_size).or.(m.gt.matrix_size)) then
+    if (n.gt.matrix_size.or.m.gt.matrix_size) then
+      call self%set_error(error_bad_size)
+      return
+    end if
+
+    if (desc.gt.text_size.or.key.gt.text_size) then
       call self%set_error(error_bad_size)
       return
     end if
@@ -281,6 +319,7 @@ contains
     integer(1), dimension(:,:), allocatable :: matrix
     character, dimension(:), allocatable :: desc
     character, dimension(:), allocatable :: key
+
 
     n = self%extra%n
     m = self%extra%m

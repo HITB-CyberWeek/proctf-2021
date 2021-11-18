@@ -3,7 +3,7 @@ module string_utils
   implicit none
 
   private
-  public :: from_c_string, to_int, to_char, to_string
+  public :: from_c_string, to_int, to_char, to_string, parse_int
  
 interface from_c_string
   module procedure from_c_string, from_c_ptr, from_c_nptr
@@ -81,5 +81,17 @@ contains
       r(i:i) = ar(i)
     end do
   end function
+
+  function parse_int(s) result(r)
+    character, dimension(:), intent(in) :: s
+    integer(1) :: r
+
+    integer :: i
+
+    r = 0
+    do i = 1, size(s)
+      r = r * 10 + iachar(s(i)) - 48
+    end do
+  end function parse_int
 
 end module string_utils

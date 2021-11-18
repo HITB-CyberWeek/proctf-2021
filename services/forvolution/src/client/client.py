@@ -6,15 +6,16 @@ from itertools import chain
 MAX_SIZE = 255
 ID_BSIZE = 32
 
-Upload = 'UPLOAD'.encode(encoding='ascii')
-Download = 'DOWNLOAD'.encode(encoding='ascii')
-Convolution = 'CONVOLUTION'.encode(encoding='ascii')
-Delimiter = ';'.encode(encoding='ascii')
+Upload = 'UPLOAD'
+Download = 'DOWNLOAD'
+Convolution = 'CONVOLUTION'
+Delimiter = ';'
 
 class Errors(Enum):
     UnknownCommand = 1
     BadSize = 2
     Unauthorized = 3
+    BadFiled = 4
     Exception = 255
 
 class Error(Exception):
@@ -82,8 +83,7 @@ class Client:
         bdesc = prepare_str(desc)
         bkey = prepare_str(key)
 
-        self.writer.write(Upload + Delimiter)
-        self.writer.write(bytes([n, m, len(bdesc), len(bkey)]))
+        self.writer.write((Delimiter.join([Upload, str(n), str(m), str(len(bdesc)), str(len(bkey))]) + Delimiter).encode(encoding='ascii'))
         self.writer.write(bmatrix)
         self.writer.write(bdesc)
         self.writer.write(bkey)
@@ -96,7 +96,7 @@ class Client:
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
 
-        self.writer.write(Download + Delimiter)
+        self.writer.write((Download + Delimiter).encode(encoding='ascii'))
         self.writer.write(bytes([len(bkey)]))
         self.writer.write(bmid)
         self.writer.write(bkey)
@@ -115,7 +115,7 @@ class Client:
         bmid = prepare_id(mid)
         kn, km, bkernel = prepare_matrix(kernel)
 
-        self.writer.write(Convolution + Delimiter)
+        self.writer.write((Convolution + Delimiter).encode(encoding='ascii'))
         self.writer.write(bytes([kn, km]))
         self.writer.write(bmid)
         self.writer.write(bkernel)
