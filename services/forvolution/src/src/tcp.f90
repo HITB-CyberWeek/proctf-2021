@@ -14,13 +14,13 @@ module tcp
       integer(kind=c_int) :: socket
     end function c_tcp_open
 
-    function c_accept(socket) result(client) bind(c, name='c_accept')
+    function c_accept(socket) result(client) bind(c, name='c_tcp_accept')
       import c_int
       integer(kind=c_int), intent(in), value :: socket
       integer(kind=c_int) :: client
     end function c_accept
 
-    function c_read(socket, buff, size) result(count) bind(c, name='c_read')
+    function c_read(socket, buff, size) result(count) bind(c, name='c_tcp_read')
       import c_int, c_ptr, c_size_t
       integer(kind=c_int), intent(in), value :: socket
       type(c_ptr), intent(in), value :: buff
@@ -28,7 +28,7 @@ module tcp
       integer(kind=c_int) :: count
     end function c_read
 
-    function c_write(socket, buff, size) result(count) bind(c, name='c_write')
+    function c_write(socket, buff, size) result(count) bind(c, name='c_tcp_write')
       import c_int, c_ptr, c_size_t
       integer(kind=c_int), intent(in), value :: socket
       type(c_ptr), intent(in), value :: buff

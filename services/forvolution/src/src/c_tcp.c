@@ -40,7 +40,7 @@ int c_tcp_open(int port) {
 	return sock;
 }
 
-int c_accept(int socket) {
+int c_tcp_accept(int socket) {
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len;
 
@@ -48,11 +48,11 @@ int c_accept(int socket) {
 	return accept4(socket, (struct sockaddr*)&client_addr, &client_addr_len, SOCK_NONBLOCK);
 }
 
-int c_read(int socket, char* buffer, int count) {
+int c_tcp_read(int socket, char* buffer, int count) {
 	return read(socket, buffer, count);
 }
 
-int c_write(int socket, char* buffer, int count) {
+int c_tcp_write(int socket, char* buffer, int count) {
 	return write(socket, buffer, count);
 }
 

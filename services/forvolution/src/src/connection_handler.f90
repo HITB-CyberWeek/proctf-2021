@@ -30,6 +30,7 @@ module connection_handler
   integer, parameter :: error_unknown_command = 1
   integer, parameter :: error_bad_size = 2
   integer, parameter :: error_unauthorized = 3
+  integer, parameter :: error_exception = 255
 
   integer, parameter :: matrix_size = 100
   integer, parameter :: text_size = 255
@@ -231,21 +232,31 @@ contains
 
     integer :: n
     integer :: m
-    integer :: desc
+    integer :: ndesc
     integer :: key
     character, dimension(1:id_size) :: id
     character, dimension(1:sha256_size) :: key_hash
+    integer(1), dimension(:,:), allocatable :: matrix
+    character, dimension(:), allocatable :: desc
 
     n = self%extra%n
     m = self%extra%m
-    desc = self%extra%desc
+    ndesc = self%extra%desc
     key = self%extra%key
-    key_hash = sha256_calc(self%buffer(n*m+desc+1:n*m+desc+key))
-    id = db_store(n, m, to_int(self%buffer(1:n*m)), &
-      desc, self%buffer(n*m+1:n*m+desc), &
-      key_hash)
 
-    call self%set_result(id_size, id)
+    matrix = reshape(to_int(self%buffer(1:n*m)), (/n, m/))
+    allocate(desc(1:ndesc))
+    desc = self%buffer(n*m+1:n*m+ndesc)
+
+    key_hash = sha256_calc(self%buffer(n*m+ndesc+1:n*m+ndesc+key))
+
+    id = db_store(self%buffer, int(n, 1), int(m, 1), matrix, int(ndesc, 1), desc, key_hash)
+
+    if (id(1).eq.achar(0)) then
+      call self%set_error(error_exception)
+    else
+      call self%set_result(id_size, id)
+    end if
   end subroutine handle_upload
 
   subroutine init_download(self)
