@@ -10,6 +10,7 @@ services:
       - 80:80
     volumes:
       - ./state:/app/state
+      - ./settings:/settings
   opensearch-node1:
     image: opensearchproject/opensearch:latest
     container_name: opensearch-node1
@@ -32,5 +33,6 @@ services:
       - opensearch-data1:/usr/share/opensearch/data
       - ./opensearch/internal_users.yml:/usr/share/opensearch/plugins/opensearch-security/securityconfig/internal_users.yml
       - ./opensearch/config.yml:/usr/share/opensearch/plugins/opensearch-security/securityconfig/config.yml
+
 volumes:
   opensearch-data1:

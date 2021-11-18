@@ -3,7 +3,7 @@ service: mp
 username: mp
 scripts:
   build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yml build --pull
-  start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d # TODO: create models
+  start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d ; docker exec mp /app/init-opensearch.sh
 files:
   - sources:
       - src/*.cs
@@ -17,7 +17,12 @@ files:
     destination: /home/$USERNAME/src/Models
   - source: src/Services/*.cs
     destination: /home/$USERNAME/src/Services
+  - source: settings/key.pem
+    destination: /home/$USERNAME/settings
+  - source: opensearch/*.yml
+    destination: /home/$USERNAME/opensearch
   - sources:
       - docker-compose.yml
       - Dockerfile
+      - init-opensearch.sh
     destination: /home/$USERNAME
