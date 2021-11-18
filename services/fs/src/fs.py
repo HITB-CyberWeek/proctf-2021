@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, abort, redirect, url_for
+from flask import Flask, Response, request, abort, redirect, url_for, send_file
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user
 import ujson as json
 import re
@@ -12,7 +12,6 @@ from Crypto.Hash import MD5
 from Crypto.PublicKey import RSA
 
 import base64
-
 
 class ShareRequest:
     def __init__(self, u, l, m):
@@ -32,19 +31,36 @@ class User(UserMixin):
         return True
 
 class UsersRepository:
-    def get_user(self, username):
-        return User(username)
-
     def get_user_dir(self, username):
-        return pathlib.Path(f"users/{username}/")
-    
+        return pathlib.Path("users") / username
+
     def append_acl(self, username, path):
         user_dir = self.get_user_dir(username)
-
         acl_path = user_dir / ".acl"
         with acl_path.open("a") as f:
-            f.write(f"{path}\n")        
+            f.write(f"{path}\n")       
 
+
+    def is_safe_path(self, basedir, path):
+        abs_basedir = os.path.abspath(basedir)    
+        abs_path = os.path.abspath(path)
+        # print(f"abs_basedir: '{abs_basedir}', abs_path: '{abs_path}'")
+        return abs_basedir == os.path.commonpath([abs_basedir, abs_path])
+
+    def validate_access(self, username, path):
+        user_dir = self.get_user_dir(username)
+        acl_path = user_dir / ".acl"
+        with acl_path.open() as f:
+            acl = f.read().splitlines()
+        for allowed_path in acl:
+            # print(f"allowed_path? allowed_path '{allowed_path}' path '{path}'")
+            if self.is_safe_path(allowed_path, path):
+                return True
+        return False
+
+
+    def get_user(self, username):
+        return User(username)
 
     def get_or_create_user(self, username, password):
         if not re.match(r'^\w+$', username):
@@ -68,9 +84,9 @@ class UsersRepository:
             return self.get_user(username)
 
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '############### AUTOGENERATE IT #################'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -85,7 +101,7 @@ def login():
         password = request.form['password']
         registeredUser = users_repository.get_or_create_user(username, password)
         if registeredUser != None:
-            print(f'Proceeding to login {registeredUser.get_id()}')
+            # print(f'Proceeding to login {registeredUser.get_id()}')
             login_user(registeredUser)
             return redirect(url_for('whoami'))
         else:
@@ -99,25 +115,17 @@ def login():
             </form>
         ''')
 
-
-
-def is_safe_path(basedir, path):
-    abs_basedir = os.path.abspath(basedir)    
-    abs_path = os.path.abspath(path)
-    return abs_basedir == os.path.commonpath([abs_basedir, abs_path])
-
-
 @app.route('/share', methods=['POST'])
 @login_required
 def share():
     len = int(request.headers["Content-Length"])
-    if len > 1024:
-        return "Request data is too big", 400
+    # if len > 1024:
+    #     return "Request data is too big", 400
 
     data = request.get_data()
     share_request = ShareRequest(**loads(data))
 
-    if not is_safe_path(current_user.username, share_request.location):
+    if not users_repository.is_safe_path(current_user.username, share_request.location):
         return f"You don't own the location '{share_request.location}' requested to share", 403
 
     key = RSA.import_key(open('key.pem').read())
@@ -128,9 +136,9 @@ def share():
     return f'\n<a href="{result}">click here</a>\n';
 
 
-@app.route('/get_access', methods=['GET'])
+@app.route('/access', methods=['GET'])
 @login_required
-def get_access():
+def access():
     data = base64.urlsafe_b64decode(request.args["request"])
 
     h = MD5.new(data)
@@ -149,7 +157,41 @@ def get_access():
 
     return f"access to {share_request.location} granted"
 
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
+def upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            print('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            print('No selected file')
+            return redirect(request.url)
+        if file:
+            filepath = pathlib.Path(current_user.username) / file.filename
+            if not users_repository.is_safe_path(current_user.username, filepath):
+                return f"Can't upload not to user's folder", 403
+            file.save(pathlib.Path("data") / filepath)
+            return redirect(url_for('download_file', file=filepath))
+    return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Upload new File</h1>
+    <form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+    '''
 
+@app.route('/download')
+@login_required
+def download_file():
+    filepath = request.args["file"]
+    if not users_repository.validate_access(current_user.username, filepath):
+        return f"Access denied", 403
+    #TODO allow to download file directly from anywhere, cause we already passed the security checks
+    return send_file(pathlib.Path("data") / filepath)
 
 @app.errorhandler(401)
 def unauthorized(e):
@@ -182,20 +224,6 @@ def loads(b: bytes):
 
 def dumps(o):
     return str_to_bytes(json.dumps(o, ensure_ascii=False))
-
-@app.route("/get")
-def get():
-    print(dumps(request.args))
-    return "<p>Hello, World!</p>\n"
-
-@app.route("/post", methods=["POST"])
-def post():
-    data = request.data
-    print(data)
-    print(loads(data))
-    
-    return "\n<p>Hello, World!</p>\n"
-
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=7777, debug = True)
