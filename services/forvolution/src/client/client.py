@@ -96,8 +96,7 @@ class Client:
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
 
-        self.writer.write((Download + Delimiter).encode(encoding='ascii'))
-        self.writer.write(bytes([len(bkey)]))
+        self.writer.write((Delimiter.join([Download, str(len(bkey))]) + Delimiter).encode(encoding='ascii'))
         self.writer.write(bmid)
         self.writer.write(bkey)
         await self.writer.drain()

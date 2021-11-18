@@ -170,7 +170,7 @@ contains
           call self%set_read_fields(2 * 4, 3 * 4, 4)
           self%request_state = request_upload_size
         elseif (command.eq.command_download) then
-          call self%set_read_bytes(1)
+          call self%set_read_fields(2 * 1, 3 * 1, 1)
           self%request_state = request_download_size
         elseif (command.eq.command_convolution) then
           call self%set_read_bytes(2)
@@ -345,8 +345,18 @@ contains
     class(connection), intent(inout) :: self
     integer :: key
 
-    key = iachar(self%buffer(1))
-    if (key.le.0) then
+    integer, dimension(1:1) :: offset
+    integer :: kpos
+    
+    offset = findloc(self%buffer(1:self%processed), delimiter)
+    kpos = offset(1)
+    if (kpos.le.1.or.kpos.gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    key = parse_int(self%buffer(1:kpos-1))
+
+    if (key.le.0.or.key.gt.text_size) then
       call self%set_error(error_bad_size)
       return
     end if
