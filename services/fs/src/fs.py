@@ -4,6 +4,7 @@ import ujson as json
 import re
 import pathlib
 import os
+import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -12,6 +13,7 @@ from Crypto.Hash import MD5
 from Crypto.PublicKey import RSA
 
 import base64
+
 
 class ShareRequest:
     def __init__(self, u, l, m):
@@ -67,6 +69,8 @@ class UsersRepository:
             return None
 
         user_dir = self.get_user_dir(username)
+        os.makedirs(os.path.dirname(user_dir), exist_ok=True)
+
         password_hash_path = user_dir / ".pass_hash"
         
         if not user_dir.exists():
@@ -84,15 +88,49 @@ class UsersRepository:
             return self.get_user(username)
 
 
+def load_or_gen_rsa_key():
+    key_path = pathlib.Path("secret") / "key.pem"
+    os.makedirs(os.path.dirname(key_path), exist_ok=True)
+    try:
+        key = RSA.import_key(open(key_path).read())
+    except FileNotFoundError:
+        key = RSA.generate(2048)
+        try:
+            with open(key_path, "wb") as key_file:
+                key_file.write(key.exportKey("PEM"))
+        except:
+            key = RSA.import_key(open(key_path).read())
+    return key
+
+
+def load_or_gen_secret_key():
+    key_path = pathlib.Path("secret") / "key.secret"
+    os.makedirs(os.path.dirname(key_path), exist_ok=True)
+    try:
+        key = open(key_path).read()
+    except FileNotFoundError:
+        key = secrets.token_hex()
+        try:
+            with open(key_path,'w') as key_file:
+                key_file.write(key)
+        except Exception as e:            
+            key = open(key_path).read()
+    return key
+
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '############### AUTOGENERATE IT #################'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
+app.config['SECRET_KEY'] = load_or_gen_secret_key()
+app.config['signing_key'] = load_or_gen_rsa_key()
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
 
 users_repository = UsersRepository()
+
+
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -101,7 +139,6 @@ def login():
         password = request.form['password']
         registeredUser = users_repository.get_or_create_user(username, password)
         if registeredUser != None:
-            # print(f'Proceeding to login {registeredUser.get_id()}')
             login_user(registeredUser)
             return redirect(url_for('whoami'))
         else:
@@ -119,8 +156,6 @@ def login():
 @login_required
 def share():
     len = int(request.headers["Content-Length"])
-    # if len > 1024:
-    #     return "Request data is too big", 400
 
     data = request.get_data()
     share_request = ShareRequest(**loads(data))
@@ -148,7 +183,7 @@ def access():
     try:
         pkcs1_15.new(key).verify(h, signature)
     except:
-        return f"Signature invalid", 403
+        return "Signature invalid", 403
 
     share_request = ShareRequest(**loads(data))
     if share_request.username != current_user.username:
@@ -172,7 +207,9 @@ def upload():
             filepath = pathlib.Path(current_user.username) / file.filename
             if not users_repository.is_safe_path(current_user.username, filepath):
                 return f"Can't upload not to user's folder", 403
-            file.save(pathlib.Path("data") / filepath)
+            real_path = pathlib.Path("data") / filepath
+            os.makedirs(os.path.dirname(real_path), exist_ok=True)
+            file.save(real_path)
             return redirect(url_for('download_file', file=filepath))
     return '''
     <!doctype html>
@@ -205,7 +242,7 @@ def load_user(userid):
 
 @app.route('/')
 def index():
-    return "<h2>This is a next-gen file sharing service</h2>"
+    return "<h2>This is a next-gen file upload and sharing service</h2>"
 
 @app.route('/whoami')
 @login_required
