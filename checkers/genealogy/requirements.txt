@@ -1,0 +1,3 @@
+# Requirements for the checker of the Genealogy service (HITB+ PRO CTF 2021)
+
+requests

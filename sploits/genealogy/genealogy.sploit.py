@@ -87,7 +87,7 @@ async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     login = generate_random_string()
     password = generate_random_string()
 
-    description_length = 0x257 - 160  # 0x217 is desired total length, 160 is a total size of other fields
+    description_length = 0x257 - 160  # 0x257 is desired total length, 160 is a total size of other fields
 
     async with GenealogyClient(endpoint) as client:
         user_id = await client.create_user(login, password)
