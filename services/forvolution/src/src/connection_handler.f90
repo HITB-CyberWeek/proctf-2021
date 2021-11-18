@@ -4,7 +4,7 @@ module connection_handler
   use database, only: db_store, db_load, id_size
   use string_utils, only: to_int, to_char
   use sha256, only: sha256_calc, sha256_size
-  use matrix, only: expand, convolution
+  use matrix, only: convolution
 
   implicit none
   private
@@ -326,11 +326,6 @@ contains
       return
     end if
 
-    if ((mod(n, 2) * mod(m, 2)).eq.0) then
-      call self%set_error(error_bad_size)
-      return
-    end if
-
     self%extra%n = n
     self%extra%m = m
     call self%set_read(id_size + n * m)
@@ -341,7 +336,7 @@ contains
     class(connection), intent(inout) :: self
 
     integer :: kn
-    integer km
+    integer :: km
 
     integer(1), pointer :: n
     integer(1), pointer :: m
@@ -349,12 +344,12 @@ contains
     integer(1), pointer :: ndesc
     character, dimension(:), pointer :: desc
     character, dimension(:), pointer :: stored_key_hash
-    integer(1), dimension(1:matrix_size, 1:matrix_size) :: padded
-    integer, dimension(1:matrix_size, 1:matrix_size) :: res
+    integer, dimension(:,:), allocatable :: res
 
     logical :: success
     character, dimension(:), allocatable :: id
     integer(1), dimension(:,:), allocatable :: kernel
+    integer, dimension(1:2) :: rsize
 
     kn = self%extra%n
     km = self%extra%m
@@ -368,15 +363,20 @@ contains
       return
     end if
 
-    padded(1:n+kn-1,1:m+km-1) = expand(int(n), int(m), matrix, kn)
-    res(1:n, 1:m) = convolution(int(n), int(m), padded(1:n+kn-1,1:m+km-1), kn, kernel)
+    if (kn.gt.n.or.km.gt.m) then
+      call self%set_error(error_bad_size)
+      return
+    end if
+
+    res = convolution(matrix, kernel)
+    rsize = shape(res)
 
     self%processed = 0
     self%needed = 3+ 4 * n * m
     self%buffer(1) = achar(ok)
     self%buffer(2) = achar(n)
     self%buffer(3) = achar(m)
-    self%buffer(4:4+4*n*m-1) = transfer(res(1:n,1:m), self%buffer(4:4+4*n*m-1))
+    self%buffer(4:4+4*size(res)-1) = transfer(res, self%buffer(1), size(res) * 4)
     self%connection_state = connection_write
   end subroutine handle_convolution
 
