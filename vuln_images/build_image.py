@@ -132,6 +132,12 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
         # Step 3 — run packer and build the image
         typer.echo(typer.style("Step 3", fg=typer.colors.GREEN, bold=True) + f". Run packer tool and build the image!")
 
+        process = subprocess.Popen(
+            [PACKER_TOOL, "init", "-upgrade", pathlib.Path(filename).name],
+            cwd=config_folder.as_posix(),
+        )
+        process.wait()
+
         packer_env = None
         debug_options = []
         if packer_debug:
