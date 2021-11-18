@@ -6,10 +6,10 @@ from itertools import chain
 MAX_SIZE = 255
 ID_BSIZE = 32
 
-class Commands(IntEnum):
-    Upload = 0
-    Download = 1
-    Convolution = 2 
+Upload = 'UPLOAD'.encode(encoding='ascii')
+Download = 'DOWNLOAD'.encode(encoding='ascii')
+Convolution = 'CONVOLUTION'.encode(encoding='ascii')
+Delimiter = ';'.encode(encoding='ascii')
 
 class Errors(Enum):
     UnknownCommand = 1
@@ -82,7 +82,8 @@ class Client:
         bdesc = prepare_str(desc)
         bkey = prepare_str(key)
 
-        self.writer.write(bytes([Commands.Upload, n, m, len(bdesc), len(bkey)]))
+        self.writer.write(Upload + Delimiter)
+        self.writer.write(bytes([n, m, len(bdesc), len(bkey)]))
         self.writer.write(bmatrix)
         self.writer.write(bdesc)
         self.writer.write(bkey)
@@ -95,7 +96,8 @@ class Client:
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
 
-        self.writer.write(bytes([Commands.Download, len(bkey)]))
+        self.writer.write(Download + Delimiter)
+        self.writer.write(bytes([len(bkey)]))
         self.writer.write(bmid)
         self.writer.write(bkey)
         await self.writer.drain()
@@ -113,7 +115,8 @@ class Client:
         bmid = prepare_id(mid)
         kn, km, bkernel = prepare_matrix(kernel)
 
-        self.writer.write(bytes([Commands.Convolution, kn, km]))
+        self.writer.write(Convolution + Delimiter)
+        self.writer.write(bytes([kn, km]))
         self.writer.write(bmid)
         self.writer.write(bkernel)
         await self.writer.drain()

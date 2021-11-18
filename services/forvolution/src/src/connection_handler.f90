@@ -2,11 +2,12 @@ module connection_handler
   use iso_c_binding, only: c_char
   use tcp, only: tcp_read, tcp_write, tcp_close
   use database, only: db_store, db_load, id_size
-  use string_utils, only: to_int, to_char
+  use string_utils, only: to_int, to_char, to_string
   use sha256, only: sha256_calc, sha256_size
   use matrix, only: convolution
 
   implicit none
+
   private
   public connection, connection_dead, connection_read, connection_write
 
@@ -22,14 +23,19 @@ module connection_handler
   integer, parameter :: request_convolution_size = 5
   integer, parameter :: request_convolution = 6
 
-  integer, parameter :: command_upload = 0
-  integer, parameter :: command_download = 1
-  integer, parameter :: command_convolution = 2
+  character, parameter :: delimiter = ';'
+
+  integer, parameter :: command_minimal_length = 6
+  integer, parameter :: command_length = 11
+  character(len=command_length), parameter :: command_upload = 'UPLOAD'
+  character(len=command_length), parameter :: command_download = 'DOWNLOAD'
+  character(len=command_length), parameter :: command_convolution = 'CONVOLUTION'
 
   integer, parameter :: ok = 0
   integer, parameter :: error_unknown_command = 1
   integer, parameter :: error_bad_size = 2
   integer, parameter :: error_unauthorized = 3
+  integer, parameter :: error_bad_fields = 4
   integer, parameter :: error_exception = 255
 
   integer, parameter :: matrix_size = 100
@@ -45,10 +51,13 @@ module connection_handler
   end type extra_data
 
   type :: connection
-    integer, private :: socket
     character(kind=c_char), dimension(1:buffer_size), private :: buffer
     integer, private :: processed
-    integer, private :: needed
+    integer, private :: needed_bytes
+    integer, private :: needed_fields
+    integer, private :: bytes_limit
+
+    integer, private :: socket
     integer, public :: connection_state = connection_dead
     integer, private :: request_state = request_command
     type(extra_data), private :: extra
@@ -57,7 +66,8 @@ module connection_handler
     procedure, public :: handle
     procedure, private :: handle_internal
     procedure, private :: handle_request
-    procedure, private :: set_read
+    procedure, private :: set_read_bytes
+    procedure, private :: set_read_fields
     procedure, private :: set_result
     procedure, private :: set_error
     procedure, private :: init_upload
@@ -76,7 +86,7 @@ contains
     integer :: state
 
     self%socket = socket
-    call self%set_read(1)
+    call self%set_read_fields(command_minimal_length+1, command_length+1, 1)
     self%request_state = request_command
     state = self%connection_state
   end function init
@@ -92,9 +102,11 @@ contains
   subroutine handle_internal(self, event_mode)
     class(connection), intent(inout) :: self
     integer, intent(in) :: event_mode
-    integer :: new_processed
 
-    if (event_mode .ne. self%connection_state) then
+    integer :: new_processed
+    integer :: fields
+
+    if (event_mode.ne.self%connection_state) then
       call tcp_close(self%socket)
       self%connection_state = connection_dead
       return
@@ -102,21 +114,34 @@ contains
 
     select case (self%connection_state)
       case(connection_read)
-        new_processed = tcp_read(self%socket, self%needed - self%processed, self%buffer(self%processed + 1 : self%needed))
-        if (new_processed .le. 0) then
+        new_processed = tcp_read(self%socket, self%needed_bytes - self%processed, &
+          self%buffer(self%processed + 1 : self%needed_bytes))
+        if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
           return
         end if
 
         self%processed = self%processed + new_processed
-        if (self%processed .lt. self%needed) then
+
+        if (self%needed_fields.gt.0) then
+          fields = count(self%buffer(1:self%processed).eq.delimiter)
+          if (fields.ge.self%needed_fields) then
+            call self%handle_request()
+          elseif (self%needed_bytes.ge.self%bytes_limit) then
+            call self%set_error(error_bad_fields)
+          else
+            self%needed_bytes = self%needed_bytes + 1
+          end if
           return
         end if
 
-        call self%handle_request()
+        if (self%processed.ge.self%needed_bytes) then
+          call self%handle_request()
+        end if
       case(connection_write)
-        new_processed = tcp_write(self%socket, self%needed - self%processed, self%buffer(self%processed + 1 : self%needed))
+        new_processed = tcp_write(self%socket, self%needed_bytes - self%processed, &
+          self%buffer(self%processed + 1 : self%needed_bytes))
         if (new_processed .le. 0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
@@ -124,11 +149,11 @@ contains
         end if
 
         self%processed = self%processed + new_processed
-        if (self%processed .lt. self%needed) then
+        if (self%processed.lt.self%needed_bytes) then
           return
         end if
 
-        call self%set_read(1)
+        call self%set_read_fields(command_minimal_length+1, command_length+1, 1)
         self%request_state = request_command
     end select
   end subroutine handle_internal
@@ -136,21 +161,23 @@ contains
   subroutine handle_request(self)
     class(connection), intent(inout) :: self
 
+    character(len=command_length) :: command
+
     select case(self%request_state)
       case(request_command)
-        select case(iachar(self%buffer(1)))
-          case(command_upload)
-            call self%set_read(4)
-            self%request_state = request_upload_size
-          case(command_download)
-            call self%set_read(1)
-            self%request_state = request_download_size
-          case(command_convolution)
-            call self%set_read(2)
-            self%request_state = request_convolution_size
-          case default
-            call self%set_error(error_unknown_command)
-        end select
+        command = to_string(self%buffer(1:self%processed-1), self%processed-1)
+        if (command.eq.command_upload) then
+          call self%set_read_bytes(4)
+          self%request_state = request_upload_size
+        elseif (command.eq.command_download) then
+          call self%set_read_bytes(1)
+          self%request_state = request_download_size
+        elseif (command.eq.command_convolution) then
+          call self%set_read_bytes(2)
+          self%request_state = request_convolution_size
+        else
+          call self%set_error(error_unknown_command)
+        end if
       case(request_upload_size)
         call self%init_upload()
       case(request_upload)
@@ -166,14 +193,29 @@ contains
     end select
   end subroutine handle_request
 
-  subroutine set_read(self, size)
+  subroutine set_read_bytes(self, size)
     class(connection), intent(inout) :: self
-    integer :: size
+    integer, intent(in) :: size
 
     self%processed = 0
-    self%needed = size
+    self%needed_bytes = size
+    self%bytes_limit = size
+    self%needed_fields = -1
     self%connection_state = connection_read
-  end subroutine set_read
+  end subroutine set_read_bytes
+
+  subroutine set_read_fields(self, min_size, max_size, fields_count)
+    class(connection), intent(inout) :: self
+    integer, intent(in) :: min_size
+    integer, intent(in) :: max_size
+    integer, intent(in) :: fields_count
+
+    self%processed = 0
+    self%needed_bytes = min_size
+    self%bytes_limit = max_size
+    self%needed_fields = fields_count
+    self%connection_state = connection_read
+  end subroutine set_read_fields
 
   subroutine set_result(self, size, res)
     class(connection), intent(inout) :: self
@@ -181,7 +223,7 @@ contains
     character, dimension(1:size), intent(in) :: res
 
     self%processed = 0
-    self%needed = size + 1
+    self%needed_bytes = size + 1
     self%buffer(1) = achar(ok)
     self%buffer(2:size+1) = res
     self%connection_state = connection_write
@@ -192,7 +234,7 @@ contains
     integer :: error
 
     self%processed = 0
-    self%needed = 1
+    self%needed_bytes = 1
     self%buffer(1:1) = achar(error)
     self%connection_state = connection_write
   end subroutine set_error
@@ -223,7 +265,7 @@ contains
     self%extra%m = m
     self%extra%desc = desc
     self%extra%key = key
-    call self%set_read(n * m + desc + key)
+    call self%set_read_bytes(n * m + desc + key)
     self%request_state = request_upload
   end subroutine init_upload
 
@@ -233,21 +275,23 @@ contains
     integer :: n
     integer :: m
     integer :: ndesc
-    integer :: key
+    integer :: nkey
     character, dimension(1:id_size) :: id
     character, dimension(1:sha256_size) :: key_hash
     integer(1), dimension(:,:), allocatable :: matrix
     character, dimension(:), allocatable :: desc
+    character, dimension(:), allocatable :: key
 
     n = self%extra%n
     m = self%extra%m
     ndesc = self%extra%desc
-    key = self%extra%key
+    nkey = self%extra%key
 
     matrix = reshape(to_int(self%buffer(1:n*m)), (/n, m/))
     desc = self%buffer(n*m+1:n*m+ndesc)
+    key = self%buffer(n*m+ndesc+1:n*m+ndesc+nkey)
 
-    key_hash = sha256_calc(self%buffer(n*m+ndesc+1:n*m+ndesc+key))
+    key_hash = sha256_calc(key)
 
     id = db_store(self%buffer, int(n, 1), int(m, 1), matrix, int(ndesc, 1), desc, key_hash)
 
@@ -270,7 +314,7 @@ contains
 
     self%extra%key = key
 
-    call self%set_read(key + id_size)
+    call self%set_read_bytes(key + id_size)
     self%request_state = request_download
   end subroutine init_download
 
@@ -303,7 +347,7 @@ contains
     end if
 
     self%processed = 0
-    self%needed = 4 + n * m + ndesc
+    self%needed_bytes = 4 + n * m + ndesc
     self%buffer(1) = achar(ok)
     self%buffer(2) = achar(n)
     self%buffer(3) = achar(m)
@@ -328,7 +372,7 @@ contains
 
     self%extra%n = n
     self%extra%m = m
-    call self%set_read(id_size + n * m)
+    call self%set_read_bytes(id_size + n * m)
     self%request_state = request_convolution
   end subroutine init_convolution
 
@@ -372,7 +416,7 @@ contains
     rsize = shape(res)
 
     self%processed = 0
-    self%needed = 3+ 4 * n * m
+    self%needed_bytes = 3 + 4 * n * m
     self%buffer(1) = achar(ok)
     self%buffer(2) = achar(n)
     self%buffer(3) = achar(m)
