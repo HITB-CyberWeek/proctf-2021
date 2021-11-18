@@ -34,9 +34,19 @@ class FileDeployConfigV1(YamlModel):
         # Packer's file provisioner works with "sources" option very bad: i.e., doesn't support directories there,
         # so we convert "sources" into multiple Files with "source"
         if self.sources:
-            files = [FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)]
+            files = [
+                FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)
+            ]
             for file in files:
                 yield from file.prepare_for_upload(config, config_folder)
+            return
+
+        # Support for glob in "source": interpreter them as "sources"
+        if len(list(config_folder.glob(self.source))) > 1:
+            yield from FileDeployConfigV1(
+                sources=[self.source],
+                destination=self.destination,
+            ).prepare_for_upload(config, config_folder)
             return
 
         destination = substitute_variables(self.destination, config)
