@@ -124,7 +124,9 @@ login_manager.init_app(app)
 users_repository = UsersRepository()
 
 
-
+@app.route('/publickey', methods=['GET'])
+def publickey():
+    return app.config["signing_key"].publickey().exportKey('PEM'), {"Content-Type": "application/x-pem-file"}
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
