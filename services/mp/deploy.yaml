@@ -13,8 +13,8 @@ files:
     destination: /home/$USERNAME/src/Controllers
   - source: src/Entities/*.cs
     destination: /home/$USERNAME/src/Entities
-  - source: src/Models/*.cs
-    destination: /home/$USERNAME/src/Models
+  - source: src/Models
+    destination: /home/$USERNAME/src
   - source: src/Services/*.cs
     destination: /home/$USERNAME/src/Services
   - source: settings/key.pem
