@@ -63,7 +63,7 @@ class UsersRepository:
         return User(username)
 
     def get_or_create_user(self, username, password):
-        if not re.match(r'^\w+$', username):
+        if not re.fullmatch(r'[a-zA-Z0-9_]+', username):
             return None
 
         user_dir = self.get_user_dir(username)
