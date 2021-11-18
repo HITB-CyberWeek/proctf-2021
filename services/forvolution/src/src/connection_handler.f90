@@ -173,7 +173,7 @@ contains
           call self%set_read_fields(2 * 1, 3 * 1, 1)
           self%request_state = request_download_size
         elseif (command.eq.command_convolution) then
-          call self%set_read_bytes(2)
+          call self%set_read_fields(2 * 2, 3 * 2, 2)
           self%request_state = request_convolution_size
         else
           call self%set_error(error_unknown_command)
@@ -411,8 +411,25 @@ contains
     integer :: n
     integer :: m
 
-    n = iachar(self%buffer(1))
-    m = iachar(self%buffer(2))
+    integer, dimension(1:1) :: offset
+    integer :: npos
+    integer :: mpos
+
+    offset = findloc(self%buffer(1:self%processed), delimiter)
+    npos = offset(1)
+    if (npos.le.1.or.npos.gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    n = parse_int(self%buffer(1:npos-1))
+
+    offset = findloc(self%buffer(npos+1:self%processed), delimiter)
+    mpos = offset(1) + npos
+    if ((mpos-npos).le.1.or.(mpos-npos).gt.3) then
+      call self%set_error(error_bad_fields)
+      return
+    end if
+    m = parse_int(self%buffer(npos+1:mpos-1))
 
     if ((n.gt.convolution_size).or.(m.gt.convolution_size)) then
       call self%set_error(error_bad_size)
