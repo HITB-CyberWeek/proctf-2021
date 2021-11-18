@@ -33,8 +33,7 @@ int c_db_store(void* start, void* end, char* filename) {
 	return writed;
 }
 
-void* c_db_read(void* buffer, void* data, int size) {
-	data = buffer;
+void* c_db_shift(void* buffer, int size) {
 	return buffer + size;
 }
 
@@ -43,7 +42,7 @@ int c_db_load(void* buffer, int size, char* filename) {
 	int readed;
 
 	file = fopen(filename, "r");
-	if (file = NULL)
+	if (file == NULL)
 		return 0;
 
 	readed = fread(buffer, 1, size, file);

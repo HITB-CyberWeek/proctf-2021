@@ -245,7 +245,6 @@ contains
     key = self%extra%key
 
     matrix = reshape(to_int(self%buffer(1:n*m)), (/n, m/))
-    allocate(desc(1:ndesc))
     desc = self%buffer(n*m+1:n*m+ndesc)
 
     key_hash = sha256_calc(self%buffer(n*m+ndesc+1:n*m+ndesc+key))
@@ -279,19 +278,26 @@ contains
     class(connection), intent(inout) :: self
 
     integer :: lkey
-    integer :: n
-    integer :: m
-    integer(1), dimension(1:matrix_size*matrix_size) :: matrix
-    integer :: ndesc
-    character, dimension(1:text_size) :: desc
-    character, dimension(1:sha256_size) :: stored_key_hash
+    integer(1), pointer :: n
+    integer(1), pointer :: m
+    integer(1), dimension(:,:), pointer :: matrix
+    integer(1), pointer :: ndesc
+    character, dimension(:), pointer :: desc
+    character, dimension(:), pointer :: stored_key_hash
     character, dimension(1:sha256_size) :: key_hash
+    character, dimension(:), allocatable :: id
+    logical :: success
 
     lkey = self%extra%key
+    id = self%buffer(1:id_size)
     key_hash = sha256_calc(self%buffer(id_size+1:id_size+lkey))
 
-    call db_load(self%buffer(1:id_size), n, m, matrix, ndesc, desc, stored_key_hash)
-    if (any(key_hash.ne.stored_key_hash)) then
+    success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
+    if (.not.success) then
+      call self%set_error(error_exception)
+      return
+    end if
+    if (size(stored_key_hash).ne.sha256_size.or.any(key_hash.ne.stored_key_hash)) then
       call self%set_error(error_unauthorized)
       return
     end if
@@ -302,8 +308,8 @@ contains
     self%buffer(2) = achar(n)
     self%buffer(3) = achar(m)
     self%buffer(4) = achar(ndesc)
-    self%buffer(5:5+n*m-1) = to_char(matrix(1:n*m))
-    self%buffer(5+n*m:5+n*m+ndesc-1) = desc(1:ndesc)
+    self%buffer(5:5+int(n)*m-1) = transfer(matrix, self%buffer(5:5+n*m-1))
+    self%buffer(5+int(n)*m:5+n*m+ndesc-1) = desc(1:ndesc)
     self%connection_state = connection_write
   end subroutine
 
@@ -337,22 +343,33 @@ contains
     integer :: kn
     integer km
 
-    integer :: n
-    integer :: m
-    integer(1), dimension(1:matrix_size*matrix_size) :: matrix
-    integer :: ndesc
-    character, dimension(1:text_size) :: desc
-    character, dimension(1:sha256_size) :: stored_key_hash
+    integer(1), pointer :: n
+    integer(1), pointer :: m
+    integer(1), dimension(:,:), pointer :: matrix
+    integer(1), pointer :: ndesc
+    character, dimension(:), pointer :: desc
+    character, dimension(:), pointer :: stored_key_hash
     integer(1), dimension(1:matrix_size, 1:matrix_size) :: padded
     integer, dimension(1:matrix_size, 1:matrix_size) :: res
+
+    logical :: success
+    character, dimension(:), allocatable :: id
+    integer(1), dimension(:,:), allocatable :: kernel
 
     kn = self%extra%n
     km = self%extra%m
 
-    call db_load(self%buffer(1:id_size), n, m, matrix, ndesc, desc, stored_key_hash)
-    padded(1:n+kn-1,1:m+km-1) = expand(n, m, reshape(matrix(1:n*m), (/n, m/)), kn)
-    res(1:n, 1:m) = convolution(n, m, padded(1:n+kn-1,1:m+km-1), &
-      kn, reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/)))
+    id = self%buffer(1:id_size)
+    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
+
+    success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
+    if (.not.success) then
+      call self%set_error(error_exception)
+      return
+    end if
+
+    padded(1:n+kn-1,1:m+km-1) = expand(int(n), int(m), matrix, kn)
+    res(1:n, 1:m) = convolution(int(n), int(m), padded(1:n+kn-1,1:m+km-1), kn, kernel)
 
     self%processed = 0
     self%needed = 3+ 4 * n * m
