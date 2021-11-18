@@ -20,7 +20,6 @@ public:
     HttpResponse get_tree(const HttpRequest & request);
     HttpResponse create_tree(const HttpRequest & request);
     HttpResponse update_tree(const HttpRequest & request);
-    HttpResponse update_links(const HttpRequest & request);
     HttpResponse update_owners(const HttpRequest & request);
     HttpResponse export_tree_archive(const HttpRequest & request);
     HttpResponse check_tree_achive(const HttpRequest & request);

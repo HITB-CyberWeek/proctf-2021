@@ -18,18 +18,6 @@ struct Tree {
     std::string description;
 };
 
-enum LinkType {
-    URL = 1,
-    EMAIL = 2,
-    PHONE = 3,
-    TELEGRAM = 4,    
-};
-
-struct Link {
-    LinkType type;
-    std::string value;
-};
-
 class TreesDatabase {
 public:
     TreesDatabase(std::shared_ptr<tao::pq::transaction> tx);
@@ -45,10 +33,6 @@ public:
         unsigned long long user_id, const std::string & title, const std::string & description,
         std::optional<unsigned long long> person_id
     );
-
-    std::vector<Link> get_links(unsigned long long tree_id);
-    void delete_links(unsigned long long tree_id);
-    void create_link(unsigned long long tree_id, LinkType type, const std::string & value);
 
     std::vector<unsigned long long> get_owners(unsigned long long tree_id);
     void set_owners(unsigned long long tree_id, const std::vector<unsigned long long> & owners);

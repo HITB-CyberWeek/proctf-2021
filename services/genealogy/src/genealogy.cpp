@@ -59,10 +59,6 @@ HttpResponse delete_person(const HttpRequest & request) {
     return PersonsController().delete_person(request);
 }
 
-HttpResponse update_links(const HttpRequest & request) {
-    return TreesController().update_links(request);
-}
-
 HttpResponse update_owners(const HttpRequest & request) {
     return TreesController().update_owners(request);
 }
@@ -93,8 +89,6 @@ int main() {
     server->add_route({HttpMethod::POST, "/tree/persons", false}, create_person);
     server->add_route({HttpMethod::PUT, "/tree/persons", true}, update_person);
     server->add_route({HttpMethod::DELETE, "/tree/persons", true}, delete_person);
-
-    server->add_route({HttpMethod::PUT, "/tree/links", false}, update_links);
 
     server->add_route({HttpMethod::PUT, "/tree/owners", false}, update_owners);
 

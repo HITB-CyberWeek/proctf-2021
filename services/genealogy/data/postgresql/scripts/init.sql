@@ -30,14 +30,6 @@ ALTER SEQUENCE tree_id_seq OWNED by genealogy_trees.id;
 CREATE INDEX genealogy_trees_user_id ON genealogy_trees (user_id);
 CREATE INDEX genealogy_trees_person_id ON genealogy_trees (person_id);
 
-CREATE TABLE genealogy_tree_links (
-	tree_id INTEGER,
-	type INTEGER NOT NULL,
-	value TEXT NOT NULL
-);
-
-CREATE INDEX genealogy_tree_links_tree_id ON genealogy_tree_links (tree_id);
-
 CREATE TABLE genealogy_tree_person_parents (
 	parent_id INTEGER NOT NULL,
 	child_id INTEGER NOT NULL

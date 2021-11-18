@@ -9,7 +9,7 @@
 
 class Database {
 public:
-    Database(const std::string & connection_string="host=172.19.0.3 port=6432 dbname=genealogy user=genealogy password=genealogy");
+    Database(const std::string & connection_string="host=database port=6432 dbname=genealogy user=genealogy password=genealogy");
 
     std::shared_ptr<tao::pq::connection> connection();
     std::shared_ptr<tao::pq::transaction> transaction();

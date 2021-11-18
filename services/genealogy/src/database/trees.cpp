@@ -24,16 +24,6 @@ TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : _tx(tx)
     );
 
     this->_tx->connection()->prepare(
-        "get_links", "SELECT * FROM genealogy_tree_links WHERE tree_id = $1"
-    );
-    this->_tx->connection()->prepare(
-        "delete_links", "DELETE FROM genealogy_tree_links WHERE tree_id = $1"
-    );
-    this->_tx->connection()->prepare(
-        "create_link", "INSERT INTO genealogy_tree_links (tree_id, type, value) VALUES ($1, $2, $3)"
-    );
-
-    this->_tx->connection()->prepare(
         "get_owners", "SELECT user_id FROM genealogy_tree_owners WHERE tree_id = $1"
     );
     this->_tx->connection()->prepare(
@@ -90,27 +80,6 @@ Tree TreesDatabase::update_tree(
     this->_tx->execute("update_tree", tree_id, person_id, title, description);
 
     return this->find_tree(tree_id).value();
-}
-
-std::vector<Link> TreesDatabase::get_links(unsigned long long tree_id) {
-    const auto result = this->_tx->execute("get_links", tree_id);
-
-    std::vector<Link> links;
-    for (const auto& row: result) {
-        links.push_back(Link {
-            (LinkType) row["type"].as<unsigned long long>(),
-            row["value"].as<std::string>()
-        });
-    }
-    return links;
-}
-
-void TreesDatabase::delete_links(unsigned long long tree_id) {
-    this->_tx->execute("delete_links", tree_id);
-}
-
-void TreesDatabase::create_link(unsigned long long tree_id, LinkType type, const std::string & value) {
-    this->_tx->execute("create_link", tree_id, (unsigned long long) type, value);
 }
 
 std::vector<unsigned long long> TreesDatabase::get_owners(unsigned long long tree_id) {
