@@ -1,11 +1,10 @@
 
 from asyncio import open_connection
-from binascii import hexlify, unhexlify
 from enum import Enum, IntEnum
 from itertools import chain
 
 MAX_SIZE = 255
-ID_BSIZE = 16
+ID_BSIZE = 32
 
 class Commands(IntEnum):
     Upload = 0
@@ -16,6 +15,7 @@ class Errors(Enum):
     UnknownCommand = 1
     BadSize = 2
     Unauthorized = 3
+    Exception = 255
 
 class Error(Exception):
     def __init__(self, error: int):
@@ -24,7 +24,7 @@ class Error(Exception):
 
 
 def prepare_id(mid: str) -> bytes:
-    bmid = unhexlify(mid.encode(encoding='ascii'))
+    bmid = mid.encode(encoding='ascii')
     if len(bmid) != ID_BSIZE:
         raise ValueError('len(bmid) != ID_BSIZE')
     return bmid
@@ -90,7 +90,7 @@ class Client:
     
         await self._check_status()
         id_raw = await self.reader.readexactly(ID_BSIZE)
-        return hexlify(id_raw).decode()
+        return id_raw.decode()
     async def download(self, mid: str, key: str) -> (list[list[int]], str):
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
