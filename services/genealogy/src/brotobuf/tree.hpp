@@ -3,7 +3,6 @@
 #ifndef _TREE_HPP_
 #define _TREE_HPP_
 #include "broto.hpp"
-#include "link.hpp"
 #include "person.hpp"
 #include <optional>
 #include <vector>
@@ -15,7 +14,6 @@ public:
   std::string description;
   std::vector<unsigned long long> owners;
   std::optional<Person> person;
-  std::vector<Link> links;
   GenealogyTree();
   void serialize(OutputStream &stream) const;
   void serialize(OutputStream &&stream) const;
@@ -24,13 +22,11 @@ public:
 
 private:
   std::vector<unsigned long long>::iterator _owners_iterator;
-  std::vector<Link>::iterator _links_iterator;
   void serialize_id(OutputStream &stream) const;
   void serialize_title(OutputStream &stream) const;
   void serialize_description(OutputStream &stream) const;
   void serialize_owners(OutputStream &stream) const;
   void serialize_person(OutputStream &stream) const;
-  void serialize_links(OutputStream &stream) const;
 };
 } // namespace brotobuf
 #endif

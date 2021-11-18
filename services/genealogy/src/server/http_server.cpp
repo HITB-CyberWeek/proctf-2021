@@ -80,7 +80,6 @@ void HttpServer::_handle_client(int client_socket) {
     auto headers = HttpRequest::Headers();
     std::string header = this->_read_line(client_socket);
     while (trim(header) != "") {
-        // TODO if header.starts_with("  ") ?
         auto colon = header.find_first_of(':');
         if (colon != std::string::npos) {
             auto header_name = trim(header.substr(0, colon));
