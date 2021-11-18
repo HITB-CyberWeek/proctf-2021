@@ -136,13 +136,13 @@ EOT
       "chown -R \"{{ username }}:{{ username }}\" \"/home/{{ username }}\""
     ]
   }
-  {% endif %}
 
   provisioner "shell" {
     inline = [
        "ls -laR \"/home/{{ username }}\""
     ]
   }
+  {% endif %}
   
   # Fix some internal digitalocean+cloud-init scripts to be compatible with our cloud infrastructure
   provisioner "shell" {
