@@ -8,7 +8,7 @@
 
 Database::Database(std::shared_ptr<tao::pq::transaction> tx) :
  _tx(tx) {    
- }
+}
 
 std::shared_ptr<tao::pq::transaction> Database::transaction() {
     return this->_tx;

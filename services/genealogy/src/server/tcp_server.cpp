@@ -1,6 +1,8 @@
 #include "tcp_server.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,8 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <cstring>
-#include <algorithm>
+#include <signal.h>
 
 #include "../utils.hpp"
 
@@ -20,6 +21,8 @@ TcpServer::TcpServer(unsigned short port): _port(port) {
 }
 
 void TcpServer::start() {
+    signal(SIGCHLD, SIG_IGN);
+
     int server_socket = this->_create_socket();
     for (;;) {
         int conn_fd = accept(server_socket, NULL, NULL);

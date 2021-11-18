@@ -1,6 +1,5 @@
 #include <memory>
 #include <string>
-#include <signal.h>
 
 #include "server/http_request.hpp"
 #include "server/http_status_code.hpp"
@@ -22,77 +21,52 @@ void ensure_keys_exist() {
     keys.get_signing_key();
 }
 
-HttpResponse create_user(const HttpRequest & request) {
-    return UsersController().create_user(request);
-}
-
-HttpResponse login(const HttpRequest & request) {
-    return UsersController().login(request);
-}
-
-HttpResponse get_me(const HttpRequest & request) {
-    return UsersController().get_me(request);
-}
-
-HttpResponse get_tree(const HttpRequest & request) {
-    return TreesController().get_tree(request);
-}
-
-HttpResponse create_tree(const HttpRequest & request) {
-    return TreesController().create_tree(request);
-}
-
-HttpResponse update_tree(const HttpRequest & request) {
-    return TreesController().update_tree(request);
-}
-
-HttpResponse create_person(const HttpRequest & request) {
-    return PersonsController().create_person(request);
-}
-
-HttpResponse update_person(const HttpRequest & request) {
-    return PersonsController().update_person(request);
-}
-
-HttpResponse delete_person(const HttpRequest & request) {
-    return PersonsController().delete_person(request);
-}
-
-HttpResponse update_owners(const HttpRequest & request) {
-    return TreesController().update_owners(request);
-}
-
-HttpResponse export_tree_archive(const HttpRequest & request) {
-    return TreesController().export_tree_archive(request);
-}
-
-HttpResponse check_tree_archive(const HttpRequest & request) {
-    return TreesController().check_tree_achive(request);
-}
-
 int main() {
-    signal(SIGCHLD, SIG_IGN);
-
     ensure_keys_exist();
 
     auto server = std::make_unique<HttpServer>(8888);
 
-    server->add_route({HttpMethod::POST, "/users", false}, create_user);
-    server->add_route({HttpMethod::POST, "/login", false}, login);
-    server->add_route({HttpMethod::GET, "/users/me", false}, get_me);
+    // Users Controller
+    server->add_route({HttpMethod::POST, "/users", false},
+        [](auto const & request){ return UsersController().create_user(request); }
+    );
+    server->add_route({HttpMethod::POST, "/login", false}, 
+        [](auto const & request){ return UsersController().login(request); }
+    );
+    server->add_route({HttpMethod::GET, "/users/me", false}, 
+        [](auto const & request){ return UsersController().get_me(request); }
+    );
 
-    server->add_route({HttpMethod::GET, "/tree", false}, get_tree);
-    server->add_route({HttpMethod::POST, "/tree", false}, create_tree);
-    server->add_route({HttpMethod::PUT, "/tree", false}, update_tree);
+    // Trees Controller
+    server->add_route({HttpMethod::GET, "/tree", false}, 
+        [](auto const & request){ return TreesController().get_tree(request); }
+    );
+    server->add_route({HttpMethod::POST, "/tree", false}, 
+        [](auto const & request){ return TreesController().create_tree(request); }
+    );
+    server->add_route({HttpMethod::PUT, "/tree", false}, 
+        [](auto const & request){ return TreesController().update_tree(request); }
+    );
+    server->add_route({HttpMethod::PUT, "/tree/owners", false}, 
+        [](auto const & request){ return TreesController().update_owners(request); }
+    );
+    server->add_route({HttpMethod::GET, "/tree/archive", false}, 
+        [](auto const & request){ return TreesController().export_tree_archive(request); }
+    );
+    server->add_route({HttpMethod::POST, "/tree/archive", false}, 
+        [](auto const & request){ return TreesController().check_tree_achive(request); }
+    );
 
-    server->add_route({HttpMethod::POST, "/tree/persons", false}, create_person);
-    server->add_route({HttpMethod::PUT, "/tree/persons", true}, update_person);
-    server->add_route({HttpMethod::DELETE, "/tree/persons", true}, delete_person);
-
-    server->add_route({HttpMethod::PUT, "/tree/owners", false}, update_owners);
-
-    server->add_route({HttpMethod::GET, "/tree/archive", false}, export_tree_archive);
-    server->add_route({HttpMethod::POST, "/tree/archive", false}, check_tree_archive);
+    // Persons Controller
+    server->add_route({HttpMethod::POST, "/tree/persons", false}, 
+        [](auto const & request){ return PersonsController().create_person(request); }
+    );
+    server->add_route({HttpMethod::PUT, "/tree/persons", true}, 
+        [](auto const & request){ return PersonsController().update_person(request); }
+    );
+    server->add_route({HttpMethod::DELETE, "/tree/persons", true}, 
+        [](auto const & request){ return PersonsController().delete_person(request); }
+    );
 
     server->start();
     return 0;

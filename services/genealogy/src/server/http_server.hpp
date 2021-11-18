@@ -29,7 +29,6 @@ public:
         bool operator<(const RouteKey & other) const;
         bool operator==(const RouteKey & other) const;
     };
-    // typedef std::tuple<HttpMethod, std::string, bool> RouteKey;
 
     HttpServer(unsigned short port);
     void add_route(RouteKey key, RouteHandler handler);
