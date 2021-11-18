@@ -258,7 +258,6 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
-    n = parse_int(self%buffer(1:npos-1))
 
     offset = findloc(self%buffer(npos+1:self%processed), delimiter)
     mpos = offset(1) + npos
@@ -266,7 +265,6 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
-    m = parse_int(self%buffer(npos+1:mpos-1))
 
     offset = findloc(self%buffer(mpos+1:self%processed), delimiter)
     ndpos = offset(1) + mpos
@@ -274,7 +272,6 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
-    desc = parse_int(self%buffer(mpos+1:ndpos-1))
 
     offset = findloc(self%buffer(ndpos+1:self%processed), delimiter)
     nkpos = offset(1) + ndpos
@@ -282,6 +279,10 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
+
+    n = parse_int(self%buffer(1:npos-1))
+    m = parse_int(self%buffer(npos+1:mpos-1))
+    desc = parse_int(self%buffer(mpos+1:ndpos-1))
     key = parse_int(self%buffer(ndpos+1:nkpos-1))
 
     if (n.le.0.or.m.le.0.or.desc.le.0.or.key.le.0) then
@@ -421,7 +422,6 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
-    n = parse_int(self%buffer(1:npos-1))
 
     offset = findloc(self%buffer(npos+1:self%processed), delimiter)
     mpos = offset(1) + npos
@@ -429,6 +429,8 @@ contains
       call self%set_error(error_bad_fields)
       return
     end if
+
+    n = parse_int(self%buffer(1:npos-1))
     m = parse_int(self%buffer(npos+1:mpos-1))
 
     if ((n.gt.convolution_size).or.(m.gt.convolution_size)) then

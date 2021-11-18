@@ -73,6 +73,9 @@ class Client:
     async def close(self):
         self.writer.close()
         await self.writer.wait_closed()
+    def _write_fields(self, *fields : str):
+        message = Delimiter.join(fields) + Delimiter
+        self.writer.write(message.encode(encoding='ascii'))
     async def _check_status(self):
         code_raw = await self.reader.readexactly(1)
         code = int(code_raw[0])
@@ -83,7 +86,7 @@ class Client:
         bdesc = prepare_str(desc)
         bkey = prepare_str(key)
 
-        self.writer.write((Delimiter.join([Upload, str(n), str(m), str(len(bdesc)), str(len(bkey))]) + Delimiter).encode(encoding='ascii'))
+        self._write_fields(Upload, str(n), str(m), str(len(bdesc)), str(len(bkey)))
         self.writer.write(bmatrix)
         self.writer.write(bdesc)
         self.writer.write(bkey)
@@ -96,7 +99,7 @@ class Client:
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
 
-        self.writer.write((Delimiter.join([Download, str(len(bkey))]) + Delimiter).encode(encoding='ascii'))
+        self._write_fields(Download, str(len(bkey)))
         self.writer.write(bmid)
         self.writer.write(bkey)
         await self.writer.drain()
@@ -114,8 +117,7 @@ class Client:
         bmid = prepare_id(mid)
         kn, km, bkernel = prepare_matrix(kernel)
 
-        self.writer.write((Convolution + Delimiter).encode(encoding='ascii'))
-        self.writer.write(bytes([kn, km]))
+        self._write_fields(Convolution, str(kn), str(km))
         self.writer.write(bmid)
         self.writer.write(bkernel)
         await self.writer.drain()
