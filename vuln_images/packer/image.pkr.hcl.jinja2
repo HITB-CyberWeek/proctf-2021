@@ -13,7 +13,7 @@ source "digitalocean" "service_image" {
   region        = "{{ region }}"
   size          = "{{ vm_size }}"
   ssh_username  = "root"
-  droplet_name  = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
+  droplet_name  = "{{ service }}-{% raw %}{{timestamp}}{% endraw %}"
   snapshot_name = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
 }
 

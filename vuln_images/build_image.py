@@ -4,7 +4,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from typing import Literal, Union, Optional, Iterable
+from typing import Literal, Union, Optional, Iterable, List
 
 import jinja2
 import typer
@@ -27,7 +27,7 @@ class ScriptsConfigV1(YamlModel):
 
 class FileDeployConfigV1(YamlModel):
     source: str = ""
-    sources: list[str] = []
+    sources: List[str] = []
     destination: str = "/home/$SERVICE"
 
     def prepare_for_upload(self, config: "DeployConfig", config_folder: pathlib.Path) -> Iterable["FileDeployConfigV1"]:
@@ -48,7 +48,7 @@ class FileDeployConfigV1(YamlModel):
         )
 
     @staticmethod
-    def _unfold_globs(sources: list[str], folder: pathlib.Path) -> list[str]:
+    def _unfold_globs(sources: List[str], folder: pathlib.Path) -> List[str]:
         result = []
         for source in sources:
             trailing_slash = "/" if source.endswith("/") else ""
@@ -62,7 +62,7 @@ class DeployConfigV1(YamlModel):
     service: str
     username: Optional[str] = None
     scripts: ScriptsConfigV1
-    files: list[FileDeployConfigV1]
+    files: List[FileDeployConfigV1]
 
 
 DeployConfig = Union[DeployConfigV1]
