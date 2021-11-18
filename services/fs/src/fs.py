@@ -34,24 +34,36 @@ class User(UserMixin):
 class UsersRepository:
     def get_user(self, username):
         return User(username)
+
+    def get_user_dir(self, username):
+        return pathlib.Path(f"users/{username}/")
     
+    def append_acl(self, username, path):
+        user_dir = self.get_user_dir(username)
+
+        acl_path = user_dir / ".acl"
+        with acl_path.open("a") as f:
+            f.write(f"{path}\n")        
+
+
     def get_or_create_user(self, username, password):
         if not re.match(r'^\w+$', username):
             return None
 
-        userDir = pathlib.Path(f"users/{username}/")
-        password_hash_path = userDir / ".pass_hash"
-        if not userDir.exists():
-            print(f"user not exists. creating")
-            userDir.mkdir()
+        user_dir = self.get_user_dir(username)
+        password_hash_path = user_dir / ".pass_hash"
+        
+        if not user_dir.exists():
+            user_dir.mkdir()
 
             password_hash = generate_password_hash(password)
             password_hash_path.write_text(password_hash)
+
+            self.append_acl(username, f"{username}")
+
             return self.get_user(username)
         else:
-            print(f"user exists")
             if not check_password_hash(password_hash_path.read_text(), password):
-                print(f"hash mismatch")
                 return None
             return self.get_user(username)
 
@@ -110,23 +122,19 @@ def share():
 
     key = RSA.import_key(open('key.pem').read())
     h = MD5.new(data)
-    print(h.hexdigest())
     signature = pkcs1_15.new(key).sign(h)
-    print(signature)
     result = url_for('get_access', request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
 
     return f'\n<a href="{result}">click here</a>\n';
 
 
-@app.route('/get_access', methods=['POST'])
+@app.route('/get_access', methods=['GET'])
 @login_required
 def get_access():
     data = base64.urlsafe_b64decode(request.args["request"])
-    h = MD5.new(data)
-    print(h.hexdigest())
 
+    h = MD5.new(data)
     signature = base64.urlsafe_b64decode(request.args["signature"])
-    print(signature)
 
     key = RSA.import_key(open('key.pem').read())    
     try:
@@ -135,9 +143,11 @@ def get_access():
         return f"Signature invalid", 403
 
     share_request = ShareRequest(**loads(data))
-    print(f"sharing location {share_request.location} to user {share_request.username} with message {share_request.message}")
+    if share_request.username != current_user.username:
+        return f"Current user '{current_user.username}' is not equal to ticket user '{share_request.username}'", 403
+    users_repository.append_acl(share_request.username, share_request.location)
 
-    return f"access granted"
+    return f"access to {share_request.location} granted"
 
 
 
