@@ -253,7 +253,7 @@ def main():
                     ssh_keys=do_cloud_params["vulnimage_ssh_keys"],
                     size=do_cloud_params.get("vulnimage_size"),
                     region=do_cloud_params.get("region"),
-                    user_data=userdata, vpc_uuid=vpc_id, tag="team-image")
+                    user_data=userdata, vpc_uuid=vpc_id, tag="team-image-closed")
                 if vulnimage_droplet_id is None:
                     log_stderr("failed to create vm, exiting")
                     return 1
