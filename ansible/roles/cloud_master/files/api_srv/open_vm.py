@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # Developed by Alexander Bersenev from Hackerdom team, bay@hackerdom.ru
 
-"""Connects vm network to the game network"""
+"""Opens vm to the game network, implemented as the iptables rule in router"""
 
 import sys
 import time

@@ -263,6 +263,7 @@ def restore_vm_from_snapshot_by_id(token, droplet_id, snapshot_id, attempts=5, t
     return None
 
 
+
 def delete_snapshot(token, snapshot_id, attempts=10, timeout=20):
     for i in range(attempts):
         try:
@@ -279,6 +280,95 @@ def delete_snapshot(token, snapshot_id, attempts=10, timeout=20):
             log("delete_snapshot trying again %s" % (e,))
         time.sleep(timeout)
     return False
+
+
+def add_tag(token, droplet_id, tag, attempts=5, timeout=20):
+    for i in range(attempts):
+        try:
+            url = "https://api.digitalocean.com/v2/tags/%s/resources" % tag
+            data = json.dumps({"resources":
+                [{"resource_id": str(droplet_id), "resource_type": "droplet"}]})
+            call_do_api(token, "post", url, data=data)
+
+            return True
+        except Exception as e:
+            log("add_tag trying again %s" % (e,))
+        time.sleep(timeout)
+    log("failed to add_tag by id")
+    return None
+
+
+def add_tag_by_vmname(token, vm_name, tag):
+    ids = set()
+
+    droplets = get_all_vms(token)
+    if droplets is None:
+        return None
+
+    for droplet in droplets:
+        if droplet["name"] == vm_name:
+            ids.add(droplet['id'])
+
+    if len(ids) > 1:
+        log("warning: there are more than one droplet with name " + vm_name +
+            ", using random :)")
+
+    if not ids:
+        return None
+
+    return add_tag(token, list(ids)[0], tag)
+
+
+
+def remove_tag(token, droplet_id, tag, attempts=5, timeout=20):
+    for i in range(attempts):
+        try:
+            url = "https://api.digitalocean.com/v2/tags/%s/resources" % tag
+            data = json.dumps({"resources":
+                [{"resource_id": str(droplet_id), "resource_type": "droplet"}]})
+            call_do_api(token, "delete", url, data=data)
+
+            return True
+        except Exception as e:
+            log("remove_tag trying again %s" % (e,))
+        time.sleep(timeout)
+    log("failed to remove_tag by id")
+    return None
+
+
+def remove_tag_by_vmname(token, vm_name, tag):
+    ids = set()
+
+    droplets = get_all_vms(token)
+    if droplets is None:
+        return None
+
+    for droplet in droplets:
+        if droplet["name"] == vm_name:
+            ids.add(droplet['id'])
+
+    if len(ids) > 1:
+        log("warning: there are more than one droplet with name " + vm_name +
+            ", using random :)")
+
+    if not ids:
+        return None
+
+    return remove_tag(token, list(ids)[0], tag)
+
+
+# def list_tags(token, attempts=5, timeout=20):
+#     for i in range(attempts):
+#         try:
+#             url = "https://api.digitalocean.com/v2/tags"
+#             print(call_do_api(token, "get", url))
+
+#             return True
+#         except Exception as e:
+#             log("list_tags trying again %s" % (e,))
+#         time.sleep(timeout)
+#     log("failed to list_tags by id")
+#     return None
 
 
 def get_all_domain_records(token, domain, attempts=5, timeout=20):
