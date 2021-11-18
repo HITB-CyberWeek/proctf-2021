@@ -96,7 +96,7 @@ def main():
         if not exists:
             droplet_id = do_api.create_vm(token,
                 ROUTER_VM_NAME, image=do_cloud_params["router_image"],
-                ssh_keys=do_cloud_params["ssh_keys"],
+                ssh_keys=do_cloud_params["router_ssh_keys"],
                 size=do_cloud_params.get("router_size"),
                 region=do_cloud_params.get("region"),
                 vpc_uuid=vpc_id, tag="team-router")
@@ -250,7 +250,7 @@ def main():
 
                 vulnimage_droplet_id = do_api.create_vm(token,
                     get_image_name(TEAM, VMNUM), image=do_cloud_params["vulnimages"][service_name],
-                    ssh_keys=do_cloud_params["ssh_keys"],
+                    ssh_keys=do_cloud_params["vulnimage_ssh_keys"],
                     size=do_cloud_params.get("vulnimage_size"),
                     region=do_cloud_params.get("region"),
                     user_data=userdata, vpc_uuid=vpc_id, tag="team-image")
