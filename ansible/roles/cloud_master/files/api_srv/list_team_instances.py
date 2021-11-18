@@ -26,6 +26,7 @@ def log_team(team, *params):
 def get_vm_states():
     net_states = {}
     image_states = {}
+    open_states = {}
     team_states = {}
 
     for filename in os.listdir("db"):
@@ -47,11 +48,21 @@ def get_vm_states():
             except FileNotFoundError:
                 log_team(team, "failed to load states")
 
+            try:
+                for vm, vmnum in get_available_services().items():
+                    open_state = open("db/%s/serv%d_open_state" %
+                                       (filename, vmnum)).read().strip()
+                    if team not in open_states:
+                        open_states[team] = {}
+                    open_states[team][vmnum] = open_state
+            except FileNotFoundError:
+                log_team(team, "failed to load open states")
+
             team_state = open("db/%s/team_state" % (filename)).read().strip()
             team_states[team] = team_state
         except FileNotFoundError: 
             log_team(team, "failed to load states")
-    return net_states, image_states, team_states
+    return net_states, image_states, open_states, team_states
 
 
 def get_cloud_names():
@@ -76,10 +87,10 @@ def get_cloud_names():
 
 
 def main():
-    net_states, image_states, team_states = get_vm_states()
+    net_states, image_states, open_states, team_states = get_vm_states()
     cloud_names = get_cloud_names()
 
-    assert net_states.keys() == image_states.keys() == team_states.keys()
+    assert net_states.keys() == image_states.keys() == open_states.keys() == team_states.keys()
     teams = list(net_states.keys())
 
     service_ids = sorted(list({s for k in image_states.values() for s in k}))
@@ -92,9 +103,12 @@ def main():
             if net_states[team] == "NOT_STARTED" and service_state == "NOT_STARTED":
                 continue
             service_name = get_service_name_by_num(service_id)
+            team_state = team_states[team]
+            if open_states.get(team, {}).get(service_id, "") == "CLOSED":
+                team_state = "ISOLATED"
             print("%4d %7d %16s %16s %16s %16s %s" % (
                 team, service_id, service_name, net_states[team],
-                service_state, team_states[team], cloud_names.get(team, "NO")))
+                service_state, team_state, cloud_names.get(team, "NO")))
             
     return 0
     
