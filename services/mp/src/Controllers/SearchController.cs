@@ -16,7 +16,7 @@ namespace mp.Controllers
 
         protected IEnumerable<Document> SearchInternal(string query, int pageNum)
         {
-            return openSearchService.Search(query, pageNum).Result;
+            return openSearchService.SearchAsync(query, pageNum).Result;
         }
 
         protected Document GetInternal(string id)

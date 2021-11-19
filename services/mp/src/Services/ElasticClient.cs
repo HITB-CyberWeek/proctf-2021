@@ -32,7 +32,7 @@ namespace mp.Services
             return response.Body;
         }
 
-        public async Task<string> SearchOrdersOfProduct(string userId, string parentId, int from, int size)
+        public async Task<string> SearchOrdersOfProductAsync(string userId, string parentId, int from, int size)
         {
             var request = JsonConvert.SerializeObject(new
                 {

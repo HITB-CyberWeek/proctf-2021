@@ -21,12 +21,12 @@ namespace mp.Services
             this.elasticClient = elasticClient;
         }
 
-        public async Task<string> IndexDocument(Document document, string routing = null)
+        public async Task<string> IndexDocumentAsync(Document document, string routing = null)
         {
             return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
 
-        public async Task<IEnumerable<Document>> Search(string queryString, int pageNum)
+        public async Task<IEnumerable<Document>> SearchAsync(string queryString, int pageNum)
         {
             return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
                 ?.Hits
@@ -35,9 +35,9 @@ namespace mp.Services
         }
 
         //TODO copypaste
-        public async Task<IEnumerable<Document>> SearchOrdersOfProduct(string productId, int pageNum)
+        public async Task<IEnumerable<Document>> SearchOrdersOfProductAsync(string productId, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProduct(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));

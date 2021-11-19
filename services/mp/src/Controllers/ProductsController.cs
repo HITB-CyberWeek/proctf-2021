@@ -28,7 +28,7 @@ namespace mp.Controllers
         [HttpPut("create")]
         public IActionResult CreateProduct([FromBody] ProductModel product)
         {
-            return Ok(openSearchService.IndexDocument(Document.CreateProduct(product.Name, product.Description, creator: HttpContext?.User.FindCurrentUserId())).Result);
+            return Ok(openSearchService.IndexDocumentAsync(Document.CreateProduct(product.Name, product.Description, creator: HttpContext?.User.FindCurrentUserId())).Result);
         }
 
         public ProductsController(OpenSearchService openSearchService) : base(openSearchService)
