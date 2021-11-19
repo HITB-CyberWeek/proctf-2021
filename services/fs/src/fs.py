@@ -36,7 +36,7 @@ class UsersRepository:
     def append_acl(self, username, path):        
         acl_path = f"users/{username}/.acl"
 
-        with open(acl_path, "a") as f:        
+        with open(acl_path, "a", encoding="ascii") as f:        
             f.write(f"{path}\n")
 
     def is_phys_subpath(self, basedir, path):        
@@ -186,7 +186,7 @@ def access():
         return f"Current user '{current_user.username}' is not equal to ticket user '{share_request.username}'", 403
     users_repository.append_acl(share_request.username, share_request.location)
 
-    return f"access to {share_request.location} granted: {share_request.message}"
+    return f"Access to {share_request.location} granted with message: '{share_request.message}'"
 
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
