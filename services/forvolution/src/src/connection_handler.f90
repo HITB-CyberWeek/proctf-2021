@@ -384,6 +384,7 @@ contains
     character, dimension(1:sha256_size) :: key_hash
     character, dimension(:), allocatable :: id
     logical :: success
+    integer :: msize
 
     lkey = self%extra%key
     id = self%buffer(1:id_size)
@@ -399,14 +400,16 @@ contains
       return
     end if
 
+    msize = int(n) * int(m)
+
     self%processed = 0
-    self%needed_bytes = 4 + n * m + ndesc
+    self%needed_bytes = 4 + msize + int(ndesc)
     self%buffer(1) = achar(ok)
     self%buffer(2) = achar(n)
     self%buffer(3) = achar(m)
     self%buffer(4) = achar(ndesc)
-    self%buffer(5:5+int(n)*m-1) = transfer(matrix, self%buffer(5:5+n*m-1))
-    self%buffer(5+int(n)*m:5+n*m+ndesc-1) = desc(1:ndesc)
+    self%buffer(5:5+msize-1) = transfer(matrix, self%buffer(5:5+msize-1))
+    self%buffer(5+msize:5+msize+ndesc-1) = desc(1:ndesc)
     self%connection_state = connection_write
   end subroutine
 
