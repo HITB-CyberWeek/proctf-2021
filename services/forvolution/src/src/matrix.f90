@@ -3,37 +3,29 @@ module matrix
 
   private
 
-  public expand, convolution
+  public convolution
 
 contains
-  function expand(n, m, matrix, k) result(r)
-    integer, intent(in) :: n
-    integer, intent(in) :: m
-    integer(1), dimension(1:n, 1:m), intent(in) :: matrix
-    integer, intent(in) :: k
-    integer(1), dimension(1:n+k-1, 1:m+k-1) :: r
+  function convolution(matrix, kernel) result(r)
+    integer(1), dimension(:,:), intent(in) :: matrix
+    integer(1), dimension(:,:), intent(in) :: kernel
 
-    integer :: p
-
-    p = k / 2
-    r(:,:) = 0
-    r(p+1:n+p, p+1:m+p) = matrix(1:n,1:m)
-  end function expand
-
-  function convolution(n, m, matrix, k, kernel) result(r)
-    integer, intent(in) :: n
-    integer, intent(in) :: m
-    integer, intent(in) :: k
-    integer(1), dimension(1 : n + k - 1, 1 : m + k - 1), intent(in) :: matrix
-    integer(1), dimension(1:k, 1:k), intent(in) :: kernel
-    integer(4), dimension(1:n, 1:m) :: r
+    integer(4), dimension(:,:), allocatable :: r
 
     integer :: i
     integer :: j
+    integer, dimension(1:2) :: msize
+    integer, dimension(1:2) :: ksize
+    integer, dimension(1:2) :: rsize
 
-    do j = 1, m
-      do i = 1, n
-        r(i, j) = sum(matrix(i:i+k-1, j:j+k-1) * int(kernel))
+    msize = shape(matrix)
+    ksize = shape(kernel)
+    allocate(r(1:msize(1)-ksize(1)+1, 1:msize(2)-ksize(1)+1))
+    rsize = shape(r)
+
+    do j = 1, rsize(2)
+      do i = 1, rsize(1)
+        r(i, j) = sum(matrix(i:i+ksize(1)-1, j:j+ksize(2)-1) * int(kernel))
       end do
     end do
   end function convolution
