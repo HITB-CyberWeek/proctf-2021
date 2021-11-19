@@ -29,13 +29,12 @@ cs_nginx_workers: 4
 cs_nginx_listen: 10.10.10.10:80
 cs_static_path: /home/cs/ctf-scoreboard-client/scoreboard/build
 
-cs_base_url: https://ctf.hitb.org
+cs_base_url: http://ctf.hitb.org
 cs_admin_auth: root:***REMOVED***
 cs_ctf_name: PROCTF 2021
 cs_flags_secret: ***REMOVED***
 cs_round_length: 60
 cs_flag_life_time: 15
-cs_disable_irrelevant_services: 0
 cs_checkers_hostname_cb: sub { my ($team, $service) = @_; $team->{ip_prefix} . $service->{ip_suffix} }
 cs_scoring: |
   start_flag_price => 10,
