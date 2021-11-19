@@ -224,9 +224,13 @@ brotobuf::Person TreesController::_build_brotobuf_person(unsigned long long pers
     if (!person) {
         return result;
     }
-    result.name = person->name;
+    result.title = person->title;
+    result.first_name = person->first_name;
+    result.middle_name = person->middle_name;
+    result.last_name = person->last_name;
+    result.photo_url = person->photo_url;
     result.birth_date = person->birth_date;
-    result.death_date = person->death_date.value_or(NO_DEATH_DATE);
+    result.death_date = person->death_date;
     for (auto parent_id: this->_persons_database->get_parents(person_id)) {
         result.parents.push_back(this->_build_brotobuf_person(parent_id));
     }
@@ -242,9 +246,13 @@ tao::json::value TreesController::_restore_brotobuf_person(const std::optional<b
         parents.push_back(this->_restore_brotobuf_person(parent));
     }
     return {
-        {"name", person->name},
+        {"title", person->title},
+        {"first_name", person->first_name},
+        {"middle_name", person->middle_name},
+        {"last_name", person->last_name},
+        {"photo_url", person->photo_url},
         {"birth_date", person->birth_date},
-        {"death_date", person->death_date == NO_DEATH_DATE ? tao::json::null : tao::json::value(person->death_date)},
+        {"death_date", person->death_date},
         {"parents", parents}
     };
 }

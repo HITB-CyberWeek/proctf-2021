@@ -39,11 +39,15 @@ class GenealogyClient:
         return r.json()["tree"]
 
     async def create_person(
-        self, name: str, birth_date: int, death_date: Optional[int],
+        self, name: str, birth_date: int, death_date: int,
         first_parent_id: Optional[int], second_parent_id: Optional[int],
     ) -> int:
         r = await self.client.post("/tree/persons", json={
-            "name": name,
+            "title": "",
+            "first_name": name,
+            "middle_name": "",
+            "last_name": "",
+            "photo_url": "",
             "birth_date": birth_date,
             "death_date": death_date,
             "first_parent": first_parent_id,
@@ -53,7 +57,7 @@ class GenealogyClient:
         return r.json()["person"]["id"]
 
     async def update_person(
-        self, person_id: int, name: str, birth_date: int, death_date: Optional[int],
+        self, person_id: int, name: str, birth_date: int, death_date: int,
         first_parent_id: Optional[int], second_parent_id: Optional[int],
     ):
         r = await self.client.put(f"/tree/persons/{person_id}", json={

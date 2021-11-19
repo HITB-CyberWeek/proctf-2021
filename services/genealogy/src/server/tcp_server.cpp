@@ -20,13 +20,21 @@ TcpServer::TcpServer(unsigned short port): _port(port) {
     this->_buffer_length = 0;
 }
 
+void _exit_on_alarm(int sig)
+{
+    printf("Client is too slow, kill the process\n");
+    exit(0);
+}
+
 void TcpServer::start() {
     signal(SIGCHLD, SIG_IGN);
+    signal(SIGALRM, (void (*)(int))_exit_on_alarm);
 
     int server_socket = this->_create_socket();
     for (;;) {
         int conn_fd = accept(server_socket, NULL, NULL);
         if (guard(fork(), "Could not fork") == 0) {
+            alarm(this->TIMEOUT_SECONDS);
             this->_handle_client(conn_fd);
         } else {
             close(conn_fd);

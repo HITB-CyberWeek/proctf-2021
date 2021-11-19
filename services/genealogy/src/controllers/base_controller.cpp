@@ -1,5 +1,6 @@
 #include "base_controller.hpp"
 
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include <memory>
@@ -13,7 +14,12 @@ BaseController::BaseController() {
     this->_hasher = std::make_unique<Hasher>();
     this->_keys = std::make_unique<KeyStorage>();
 
-    const std::string connection_string = "host=database port=6432 dbname=genealogy user=genealogy password=genealogy";
+    std::string connection_string = "host=database port=6432 dbname=genealogy user=genealogy password=genealogy";
+    const char* db_env = std::getenv("DATABASE");
+    if (db_env) {
+        connection_string = db_env;
+    }
+
     const auto connection = tao::pq::connection::create(connection_string);
     this->_tx = connection->transaction();
 }

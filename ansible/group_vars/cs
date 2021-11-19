@@ -26,7 +26,7 @@ cs_hypnotoad_accepts: 1024
 cs_hypnotoad_keep_alive_timeout: 100
 cs_nginx_upstream_keepalive: 8
 cs_nginx_workers: 4
-cs_nginx_listen: 0.0.0.0:80
+cs_nginx_listen: 10.10.10.10:80
 cs_static_path: /home/cs/ctf-scoreboard-client/scoreboard/build
 
 cs_base_url: https://ctf.hitb.org
@@ -85,11 +85,11 @@ services: |
   {name => 'timecapsule', tcp_port => 7007,  timeout => 30, ip_suffix => '4',  path => 'checkers/timecapsule/checker.sh'},
   {name => 'cells',       tcp_port => 5000,  timeout => 30, ip_suffix => '5',  path => 'checkers/cells/checker.py'},
   {name => 'chess',       tcp_port => 3255,  timeout => 30, ip_suffix => '6',  path => 'checkers/chess/checker.py'},
-  {name => 'forvolution', tcp_port => 12345, timeout => 30, ip_suffix => '7',  path => ''},
-  {name => 'mp',          tcp_port => 80,    timeout => 30, ip_suffix => '8',  path => 'checkers/mp/checker.sh'},
+  {name => 'mp',          tcp_port => 80,    timeout => 30, ip_suffix => '7',  path => 'checkers/mp/checker.sh'},
+  {name => 'forvolution', tcp_port => 12345, timeout => 30, ip_suffix => '8',  path => 'checkers/forvolution/checker.py'},
   {name => 'fs',          tcp_port => 7777,  timeout => 30, ip_suffix => '9',  path => ''},
   {name => 'genealogy',   tcp_port => 8888,  timeout => 30, ip_suffix => '10', path => 'checkers/genealogy/genealogy.checker.py'},
-  {name => 'authme',      tcp_port => 0,     timeout => 30, ip_suffix => '11', path => ''},
+  {name => 'authme',      tcp_port => 3256,  timeout => 30, ip_suffix => '11', path => 'checkers/authme/checker.py'},
   {name => 'hsm',         tcp_port => 0,     timeout => 30, ip_suffix => '12', path => ''},
   {name => 'p0ck37',      tcp_port => 3000,  timeout => 30, ip_suffix => '13', path => ''},
   {name => 's3rvic3',       tcp_port => 3128,  timeout => 30, ip_suffix => '14', path => ''},

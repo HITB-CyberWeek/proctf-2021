@@ -19,6 +19,7 @@ protected:
 
 private:
     const size_t BUFFER_SIZE = 100 * 1024;
+    const unsigned short TIMEOUT_SECONDS = 60;
     unsigned short _port;
     std::unique_ptr<char[]> _buffer;
     size_t _buffer_length;

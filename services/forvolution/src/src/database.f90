@@ -2,6 +2,7 @@ module database
   use iso_c_binding, only: c_int, c_ptr, c_char, c_loc, c_f_pointer, c_null_char
   use sha256, only: sha256_size
   use rand_helper, only: rand_fill_hex
+  use string_utils, only: to_array
   implicit none
 
   private
@@ -154,7 +155,7 @@ contains
 
     character, dimension(:), allocatable :: filename
 
-    filename = [(/'.', '/', 'd', 'b', '/'/), id, (/c_null_char/)]
+    filename = [to_array('db/'), id(1:2), (/'/'/), id(3:), (/c_null_char/)]
   end function get_name
 
 end module database

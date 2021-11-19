@@ -10,7 +10,11 @@ class Person : public _AbstractMessage {
 public:
   unsigned long long birth_date;
   unsigned long long death_date;
-  std::string name;
+  std::string title;
+  std::string first_name;
+  std::string middle_name;
+  std::string last_name;
+  std::string photo_url;
   std::vector<Person> parents;
   Person();
   void serialize(OutputStream &stream) const;
@@ -22,7 +26,11 @@ private:
   std::vector<Person>::iterator _parents_iterator;
   void serialize_birth_date(OutputStream &stream) const;
   void serialize_death_date(OutputStream &stream) const;
-  void serialize_name(OutputStream &stream) const;
+  void serialize_title(OutputStream &stream) const;
+  void serialize_first_name(OutputStream &stream) const;
+  void serialize_middle_name(OutputStream &stream) const;
+  void serialize_last_name(OutputStream &stream) const;
+  void serialize_photo_url(OutputStream &stream) const;
   void serialize_parents(OutputStream &stream) const;
 };
 } // namespace brotobuf

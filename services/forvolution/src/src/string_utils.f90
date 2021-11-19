@@ -3,7 +3,7 @@ module string_utils
   implicit none
 
   private
-  public :: from_c_string, to_int, to_char
+  public :: from_c_string, to_int, to_char, to_string, to_array, parse_int
  
 interface from_c_string
   module procedure from_c_string, from_c_ptr, from_c_nptr
@@ -62,5 +62,49 @@ contains
     character :: r
     r = transfer(i, r)
   end function to_char
+
+  function to_string(ar, len) result(r)
+    character, dimension(:), intent(in) :: ar
+    integer, intent(in) :: len
+    character(len=len) :: r
+
+    integer :: i
+    integer :: n
+
+    if (len.le.size(ar)) then
+      n = len
+    else
+      n = size(ar)
+    end if
+
+    do i = 1, n
+      r(i:i) = ar(i)
+    end do
+  end function to_string
+
+  function to_array(s) result(r)
+    character(len=*), intent(in) :: s
+    character, dimension(:), allocatable :: r
+
+    integer :: i
+
+    allocate(r(1:len(s)))
+
+    do i = 1, len(s)
+      r(i) = s(i:i)
+    end do
+  end function to_array
+
+  function parse_int(s) result(r)
+    character, dimension(:), intent(in) :: s
+    integer(1) :: r
+
+    integer :: i
+
+    r = 0
+    do i = 1, size(s)
+      r = r * 10 + iachar(s(i)) - 48
+    end do
+  end function parse_int
 
 end module string_utils

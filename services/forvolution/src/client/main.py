@@ -4,7 +4,8 @@ import client
 async def main():
     c = client.Client('127.0.0.1', 12345)
     await c.connect()
-    mid = await c.upload([[1, 2], [3, 4], [5, 6]], 'desc', 'key')
+
+    mid = await c.upload([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], 'desc', 'key')
     print('id:', mid)
 
     print()
@@ -20,13 +21,19 @@ async def main():
 
     print()
 
-    matrix = await c.convolution(mid, [[1]] * 9)
-    print('matrix: ', matrix)
+    try:
+        matrix = await c.convolution(mid, [[0], [1]])
+        print('matrix: ', matrix)
+    except Exception as ex:
+        print(ex)
 
     print()
 
-    matrix = await c.convolution(mid, [[1] * 9])
-    print('matrix: ', matrix)
+    try:
+        matrix = await c.convolution(mid, [[0, 0, 1]])
+        print('matrix: ', matrix)
+    except Exception as ex:
+        print(ex)
 
     print()
 

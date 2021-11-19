@@ -15,7 +15,9 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 COMPlus_JitTelemetry=0 COMPlus_legacyCorrupted
 COPY ./start.sh .
 COPY --from=build /app/out/ /app/
 
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && mkdir -p /app/settings
 VOLUME /app/data
+
+COPY ./settings/server.pfx /app/settings
 
 CMD ["./start.sh"]

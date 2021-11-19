@@ -91,7 +91,7 @@ class Client:
         self.writer.write(bdesc)
         self.writer.write(bkey)
         await self.writer.drain()
-    
+
         await self._check_status()
         id_raw = await self.reader.readexactly(ID_BSIZE)
         return id_raw.decode()
@@ -103,7 +103,7 @@ class Client:
         self.writer.write(bmid)
         self.writer.write(bkey)
         await self.writer.drain()
-         
+
         await self._check_status()
         sizes = await self.reader.readexactly(3)
         n, m, ndesc = (int(b) for b in sizes)
@@ -125,10 +125,7 @@ class Client:
         await self._check_status()
         sizes = await self.reader.readexactly(2)
         n, m = (int(b) for b in sizes)
-        print(n, m)
         matrix_raw = await self.reader.readexactly(n * m * 4)
         matrix = parse(4, n, m, matrix_raw)
 
         return matrix
-        
-

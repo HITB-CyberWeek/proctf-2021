@@ -1,6 +1,27 @@
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 
+void make_dir_recurcivly(const char* filename) {
+	const char* p;
+	char* tmp;
+
+	tmp = calloc(1, strlen(filename) + 1);
+	p = filename;
+
+	while((p = strchr(p, '/')) != NULL) {
+		memcpy(tmp, filename, p - filename);
+		tmp[filename - p] = 0;
+		++p;
+		if (mkdir(tmp, 0755) && errno != EEXIST)
+			break;
+	}
+
+	free(tmp);
+}
 
 void* c_db_write(void* buffer, void* data, int size) {
 	memcpy(buffer, data, size);
@@ -14,6 +35,7 @@ int c_db_store(void* start, void* end, char* filename) {
 
 	size = end - start;
 
+	make_dir_recurcivly(filename);
 	file = fopen(filename, "w");
 	if (file == NULL) {
 		perror("open: ");
