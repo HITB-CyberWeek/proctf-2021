@@ -93,12 +93,12 @@ namespace mp
 
             app.UseExceptionHandler(c => c.Run(async context =>
             {
-	            var exception = context.Features
-		            .Get<IExceptionHandlerPathFeature>()
-		            .Error;
-	            var id = DateTime.UtcNow.Ticks;
-	            await Console.Error.WriteLineAsync($"Unexpected exception occurred #{id}: {exception}");
-	            await context.Response.WriteAsJsonAsync(new { error = $"Unexpected error {id}" });
+                var exception = context.Features
+                    .Get<IExceptionHandlerPathFeature>()
+                    .Error;
+                var id = DateTime.UtcNow.Ticks;
+                await Console.Error.WriteLineAsync($"Unexpected exception occurred #{id}: {exception}");
+                await context.Response.WriteAsJsonAsync(new {error = $"Unexpected error {id}"});
             }));
 
             app.UseRouting();
