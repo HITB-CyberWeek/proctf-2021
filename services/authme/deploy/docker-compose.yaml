@@ -1,0 +1,13 @@
+version: '2.0'
+services:
+  authme:
+    build: .
+    network_mode: host
+    volumes:
+      - ./:/home/authme/
+    restart: unless-stopped
+    cap_add:
+      - LINUX_IMMUTABLE
+    ulimits:
+      core: 0
+      nproc: 2048
