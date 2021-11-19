@@ -145,7 +145,7 @@ namespace mp.Services
 
         private byte[] SerializeString(string s)
         {
-            var result = Encoding.GetEncoding(1251).GetBytes(s);
+            var result = Encoding.Latin1.GetBytes(s);
             return result;
         }
 
