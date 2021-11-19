@@ -1,3 +1,5 @@
+FROM archlinux
+
 WORKDIR /app
 
 RUN pacman-db-upgrade && \
