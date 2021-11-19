@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -17,7 +17,7 @@ namespace timecapsule
 			await new WebHostBuilder()
 				.UseKestrel(options =>
 				{
-					options.Listen(IPAddress.Any, settings.Port);
+					options.ConfigureHttpsDefaults(o => o.ServerCertificate = new X509Certificate2("settings/server.pfx", "31337"));
 					options.AddServerHeader = false;
 					options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(30.0);
 					options.Limits.MaxRequestBodySize = settings.MaxRequestBodySize;
@@ -25,7 +25,7 @@ namespace timecapsule
 					options.Limits.MaxRequestHeaderCount = 64;
 					options.Limits.MaxRequestHeadersTotalSize = settings.MaxRequestHeadersTotalSize;
 					options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(3.0);
-				}).UseContentRoot(Directory.GetCurrentDirectory()).UseStartup<Startup>().Build().RunAsync();
+				}).UseUrls($"http://0.0.0.0:{settings.Port}", $"https://0.0.0.0:{settings.Port + 1}").UseContentRoot(Directory.GetCurrentDirectory()).UseStartup<Startup>().Build().RunAsync();
 		}
 	}
 }
