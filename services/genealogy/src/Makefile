@@ -2,8 +2,8 @@ CC=gcc
 CXX=g++
 RM=rm -f
 
-CPPFLAGS=-g -O0 -Wall -std=c++20 -Iinclude/ -I/usr/include/postgresql/ -fstack-protector
-LDFLAGS=-g
+CPPFLAGS=-O2 -Wall -std=c++20 -Iinclude/ -I/usr/include/postgresql/ -fstack-protector
+LDFLAGS=
 
 SRCS=$(wildcard server/*.cpp) $(wildcard brotobuf/*.cpp) $(wildcard database/*.cpp) $(wildcard security/*.cpp) $(wildcard controllers/*.cpp) $(wildcard *.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))

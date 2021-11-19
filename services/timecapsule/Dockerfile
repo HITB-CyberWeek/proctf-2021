@@ -18,6 +18,4 @@ COPY --from=build /app/out/ /app/
 RUN mkdir -p /app/data && mkdir -p /app/settings
 VOLUME /app/data
 
-COPY ./settings/server.pfx /app/settings
-
 CMD ["./start.sh"]

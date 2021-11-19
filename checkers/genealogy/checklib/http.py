@@ -36,16 +36,22 @@ class HttpChecker(checklib.Checker):
         self.main_url = ''
 
     def _check_response(self, response):
+        if response.status_code == 412:
+            logging.error("Response is %s" % response.text[:500])
+            self.exit(
+                checklib.StatusCode.CORRUPT,
+                'Got HTTP status code %d on %s %s' % (response.status_code, response.request.method, response.url)
+            )
         if response.status_code >= 400:
             logging.error("Response is %s" % response.text[:500])
             self.exit(
                 checklib.StatusCode.DOWN,
-                'Got HTTP status code %d on %s' % (response.status_code, response.url)
+                'Got HTTP status code %d on %s %s' % (response.status_code, response.request.method, response.url)
             )
         if response.status_code < 200 or response.status_code >= 300:
             self.exit(
                 checklib.StatusCode.MUMBLE,
-                'Got HTTP status code %d on %s' % (response.status_code, response.url)
+                'Got HTTP status code %d on %s %s' % (response.status_code, response.request.method, response.url)
             )
         return response
 

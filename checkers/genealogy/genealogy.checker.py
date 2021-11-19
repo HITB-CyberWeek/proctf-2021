@@ -26,7 +26,8 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
         name = checklib.random.firstname() + " " + checklib.random.lastname()
         birth_date = random.randint(1000, 10000000)
-        person_id = self.create_person(name, birth_date, None, None, None)
+        death_date = birth_date + random.randint(30, 100) * 365 * 24 * 60 * 60
+        person_id = self.create_person(name, birth_date, death_date, None, None)
 
         tree_title = flag
         tree_description = checklib.random.string(string.ascii_letters + " ", random.randint(10, 100))
@@ -96,11 +97,17 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
         return r["tree"]
 
     def create_person(
-        self, name: str, birth_date: int, death_date: Optional[int],
+        self, name: str, birth_date: int, death_date: int,
         first_parent_id: Optional[int], second_parent_id: Optional[int],
     ) -> int:
         r = self.try_http_post("/tree/persons", json={
-            "name": name,
+            "title": "Mr",
+            "first_name": name,
+            # TODO ↓
+            "middle_name": "",
+            "last_name": "",
+            "photo_url": "",
+            # TODO ↑
             "birth_date": birth_date,
             "death_date": death_date,
             "first_parent": first_parent_id,
@@ -109,7 +116,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
         return r["person"]["id"]
 
     def update_person(
-        self, person_id: int, name: str, birth_date: int, death_date: Optional[int],
+        self, person_id: int, name: str, birth_date: int, death_date: int,
         first_parent_id: Optional[int], second_parent_id: Optional[int],
     ):
         self.try_http_put(f"/tree/persons/{person_id}", json={

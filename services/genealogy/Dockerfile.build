@@ -1,0 +1,7 @@
+FROM gcc:11-bullseye
+LABEL maintainer="andgein@hackerdom.ru"
+
+WORKDIR /src
+
+CMD ["make", "-j4"]
+
