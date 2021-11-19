@@ -1,3 +1,8 @@
+if(location.protocol === "http:") {
+	alert("SubtleCrypto is available only in secure contexts, so redirecting to https");
+	location.href = `https://${location.hostname}:${Number(location.port) + 1}${location.pathname}${location.search}`;
+}
+
 import { wrap, unwrap } from './wrapper.js';
 
 let $ = (selector, element) => (element || document).querySelector(selector);
