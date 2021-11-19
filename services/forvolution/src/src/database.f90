@@ -154,7 +154,7 @@ contains
 
     character, dimension(:), allocatable :: filename
 
-    filename = [(/'.', '/', 'd', 'b', '/'/), id, (/c_null_char/)]
+    filename = [(/'.', '/', 'd', 'b', '/'/), id(1:2), (/'/'/), id(3:), (/c_null_char/)]
   end function get_name
 
 end module database
