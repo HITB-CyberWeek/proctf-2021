@@ -17,7 +17,11 @@ struct Person {
     unsigned long long owner_id;
     unsigned long long birth_date;
     std::optional<unsigned long long> death_date;
-    std::string name;
+    std::string title;
+    std::string first_name;
+    std::string middle_name;
+    std::string last_name;
+    std::string photo_url;
 };
 
 class PersonsDatabase: public Database {
@@ -29,12 +33,20 @@ public:
     Person create_person(
         unsigned long long owner_id, 
         unsigned long long birth_date, std::optional<unsigned long long> death_date,
-        const std::string & name
+        const std::string & title,
+        const std::string & first_name,
+        const std::string & middle_name,
+        const std::string & last_name,
+        const std::string & photo_url
     );
     void update_person(
         unsigned long long person_id,
         unsigned long long birth_date, std::optional<unsigned long long> death_date,
-        const std::string & name
+        const std::string & title,
+        const std::string & first_name,
+        const std::string & middle_name,
+        const std::string & last_name,
+        const std::string & photo_url
     );
     void delete_person(unsigned long long person_id);
     void mark_as_parent(unsigned long long child_id, unsigned long long parent_id);

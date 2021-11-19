@@ -12,7 +12,11 @@
 
 namespace brotobuf {
 Person::Person() {
-  this->name = "";
+  this->title = "";
+  this->first_name = "";
+  this->middle_name = "";
+  this->last_name = "";
+  this->photo_url = "";
   this->parents = std::vector<Person>();
 }
 void Person::serialize(OutputStream &stream) const {
@@ -22,7 +26,11 @@ void Person::serialize(OutputStream &&stream) const {
   printf("== Starting serialization of Person at %p\n", this);
   this->serialize_birth_date(stream);
   this->serialize_death_date(stream);
-  this->serialize_name(stream);
+  this->serialize_title(stream);
+  this->serialize_first_name(stream);
+  this->serialize_middle_name(stream);
+  this->serialize_last_name(stream);
+  this->serialize_photo_url(stream);
   this->serialize_parents(stream);
 }
 void Person::deserialize(InputStream &stream) {
@@ -45,15 +53,31 @@ void Person::deserialize(InputStream &&stream) {
       this->death_date = this->_deserialize_varint(stream);
       break;
     case 2:
-      printf("Writing to %p->name\n", this);
-      this->_deserialize_string(this->name, stream);
+      printf("Writing to %p->title\n", this);
+      this->_deserialize_string(this->title, stream);
       break;
     case 3:
+      printf("Writing to %p->first_name\n", this);
+      this->_deserialize_string(this->first_name, stream);
+      break;
+    case 4:
+      printf("Writing to %p->middle_name\n", this);
+      this->_deserialize_string(this->middle_name, stream);
+      break;
+    case 5:
+      printf("Writing to %p->last_name\n", this);
+      this->_deserialize_string(this->last_name, stream);
+      break;
+    case 6:
+      printf("Writing to %p->photo_url\n", this);
+      this->_deserialize_string(this->photo_url, stream);
+      break;
+    case 7:
       if (this->parents.empty()) {
-        printf("Allocating %p->parents for 4 elements of %ld bytes = %ld = "
+        printf("Allocating %p->parents for 2 elements of %ld bytes = %ld = "
                "0x%lx\n",
-               this, sizeof(Person), 4 * sizeof(Person), 4 * sizeof(Person));
-        this->parents.resize(4);
+               this, sizeof(Person), 2 * sizeof(Person), 2 * sizeof(Person));
+        this->parents.resize(2);
         printf("Allocated %p->parents: %p\n", this, parents.data());
         this->_parents_iterator = this->parents.begin();
       }
@@ -83,21 +107,45 @@ void Person::serialize_death_date(OutputStream &stream) const {
   this->_serialize_varint(1, stream);
   this->_serialize_varint(this->death_date, stream);
 }
-void Person::serialize_name(OutputStream &stream) const {
-  if (this->name == "")
+void Person::serialize_title(OutputStream &stream) const {
+  if (this->title == "")
     return;
   this->_serialize_varint(2, stream);
-  this->_serialize_string(this->name, stream);
+  this->_serialize_string(this->title, stream);
+}
+void Person::serialize_first_name(OutputStream &stream) const {
+  if (this->first_name == "")
+    return;
+  this->_serialize_varint(3, stream);
+  this->_serialize_string(this->first_name, stream);
+}
+void Person::serialize_middle_name(OutputStream &stream) const {
+  if (this->middle_name == "")
+    return;
+  this->_serialize_varint(4, stream);
+  this->_serialize_string(this->middle_name, stream);
+}
+void Person::serialize_last_name(OutputStream &stream) const {
+  if (this->last_name == "")
+    return;
+  this->_serialize_varint(5, stream);
+  this->_serialize_string(this->last_name, stream);
+}
+void Person::serialize_photo_url(OutputStream &stream) const {
+  if (this->photo_url == "")
+    return;
+  this->_serialize_varint(6, stream);
+  this->_serialize_string(this->photo_url, stream);
 }
 void Person::serialize_parents(OutputStream &stream) const {
   if (this->parents.size() == 0)
     return;
-  if (this->parents.size() > 4) {
+  if (this->parents.size() > 2) {
     throw std::out_of_range(
-        "Can not serialize object: parents is too long, max length is 4");
+        "Can not serialize object: parents is too long, max length is 2");
   }
   for (auto &element : this->parents) {
-    this->_serialize_varint(3, stream);
+    this->_serialize_varint(7, stream);
     this->_serialize_object<Person>(element, stream);
   }
 }

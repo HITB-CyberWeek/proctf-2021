@@ -12,7 +12,11 @@ CREATE TABLE genealogy_tree_persons (
 	owner_id INTEGER NOT NULL,
 	birth_date BIGINT NOT NULL,
 	death_date BIGINT,
-	name VARCHAR(100) NOT NULL
+	title VARCHAR(100) NOT NULL,
+	first_name VARCHAR(100) NOT NULL,
+	middle_name VARCHAR(100) NOT NULL,
+	last_name VARCHAR(100) NOT NULL,
+	photo_url VARCHAR(100) NOT NULL
 );
 ALTER SEQUENCE person_id_seq OWNED by genealogy_tree_persons.id;
 CREATE INDEX genealogy_tree_persons_owner_id ON genealogy_tree_persons (owner_id);

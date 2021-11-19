@@ -43,7 +43,11 @@ class GenealogyClient:
         first_parent_id: Optional[int], second_parent_id: Optional[int],
     ) -> int:
         r = await self.client.post("/tree/persons", json={
-            "name": name,
+            "title": "",
+            "first_name": name,
+            "middle_name": "",
+            "last_name": "",
+            "photo_url": "",
             "birth_date": birth_date,
             "death_date": death_date,
             "first_parent": first_parent_id,

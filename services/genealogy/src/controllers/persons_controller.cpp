@@ -17,11 +17,15 @@ HttpResponse PersonsController::create_person(const HttpRequest &request) {
     };
 
     const auto json = request.get_json();
-    const auto name = json.at("name").get_string();
     const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
     const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
     const auto birth_date = json.at("birth_date").get_unsigned();
     const auto death_date = json.at("death_date").optional<unsigned long long>();
+    const auto title = json.at("title").get_string();
+    const auto first_name = json.at("first_name").get_string();
+    const auto middle_name = json.at("middle_name").get_string();
+    const auto last_name = json.at("last_name").get_string();
+    const auto photo_url = json.at("photo_url").get_string();
 
     if (first_parent_id.has_value() && !this->_persons_database->find_person(first_parent_id.value())) {
         return HttpResponse({
@@ -36,7 +40,10 @@ HttpResponse PersonsController::create_person(const HttpRequest &request) {
         }, HttpStatusCode::PRECONDITION_FAILED);
     }
 
-    const auto person = this->_persons_database->create_person(user_id.value(), birth_date, death_date, name);
+    const auto person = this->_persons_database->create_person(
+        user_id.value(), birth_date, death_date, 
+        title, first_name, middle_name, last_name, photo_url
+    );
 
     if (first_parent_id.has_value()) {
         this->_persons_database->mark_as_parent(person.id, first_parent_id.value());
@@ -73,11 +80,15 @@ HttpResponse PersonsController::update_person(const HttpRequest & request) {
     }
 
     const auto json = request.get_json();
-    const auto name = json.at("name").get_string();
     const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
     const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
     const auto birth_date = json.at("birth_date").get_unsigned();
     const auto death_date = json.at("death_date").optional<unsigned long long>();
+    const auto title = json.at("title").get_string();
+    const auto first_name = json.at("first_name").get_string();
+    const auto middle_name = json.at("middle_name").get_string();
+    const auto last_name = json.at("last_name").get_string();
+    const auto photo_url = json.at("photo_url").get_string();
 
     if (first_parent_id.has_value() && !this->_persons_database->find_person(first_parent_id.value())) {
         return HttpResponse({
@@ -92,7 +103,10 @@ HttpResponse PersonsController::update_person(const HttpRequest & request) {
         }, HttpStatusCode::PRECONDITION_FAILED);
     }
 
-    this->_persons_database->update_person(person->id, birth_date, death_date, name);
+    this->_persons_database->update_person(
+        person->id, birth_date, death_date,
+        title, first_name, middle_name, last_name, photo_url
+    );
     this->_persons_database->delete_parents(person->id);
 
     if (first_parent_id.has_value()) {

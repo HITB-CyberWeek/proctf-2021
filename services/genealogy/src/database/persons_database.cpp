@@ -8,13 +8,19 @@
 
 PersonsDatabase::PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx): Database(tx) {
     this->_tx->connection()->prepare(
-        "create_person", "INSERT INTO genealogy_tree_persons (owner_id, birth_date, death_date, name) VALUES ($1, $2, $3, $4) RETURNING id"
+        "create_person",
+        "INSERT INTO genealogy_tree_persons" 
+        "(owner_id, birth_date, death_date, title, first_name, middle_name, last_name, photo_url) "
+        "VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
     );
     this->_tx->connection()->prepare(
         "get_person", "SELECT * FROM genealogy_tree_persons WHERE id = $1"
     );
     this->_tx->connection()->prepare(
-        "update_person", "UPDATE genealogy_tree_persons SET name = $2, birth_date = $3, death_date = $4 WHERE id = $1"
+        "update_person",
+        "UPDATE genealogy_tree_persons "
+        "SET birth_date = $2, death_date = $3, title = $4, first_name = $5, middle_name = $6, last_name = $7, photo_url = $8"
+        "WHERE id = $1"
     );
     this->_tx->connection()->prepare(
         "mark_as_parent", "INSERT INTO genealogy_tree_person_parents (child_id, parent_id) VALUES ($1, $2)"
@@ -44,18 +50,27 @@ std::optional<Person> PersonsDatabase::find_person(unsigned long long id) {
         tree["owner_id"].as<unsigned long long>(),
         tree["birth_date"].as<unsigned long long>(),
         tree["death_date"].as< std::optional<unsigned long long> >(),
-        tree["name"].as<std::string>()
+        tree["title"].as<std::string>(),
+        tree["first_name"].as<std::string>(),
+        tree["middle_name"].as<std::string>(),
+        tree["last_name"].as<std::string>(),
+        tree["photo_url"].as<std::string>()
     };
 }
 
 Person PersonsDatabase::create_person(
     unsigned long long owner_id,
     unsigned long long birth_date, std::optional<unsigned long long> death_date,
-    const std::string & name
+    const std::string & title,
+    const std::string & first_name,
+    const std::string & middle_name,
+    const std::string & last_name,
+    const std::string & photo_url
 ) {
     const auto result = this->_tx->execute(
         "create_person",
-        owner_id, birth_date, death_date, name
+        owner_id, birth_date, death_date, 
+        title, first_name, middle_name, last_name, photo_url
     );
     assert(result.size() > 0);
     const auto person_id = result[0]["id"].as<unsigned long>();
@@ -65,9 +80,17 @@ Person PersonsDatabase::create_person(
 
 void PersonsDatabase::update_person(
     unsigned long long person_id,
-    unsigned long long birth_date, std::optional<unsigned long long> death_date, const std::string & name
+    unsigned long long birth_date, std::optional<unsigned long long> death_date,
+    const std::string & title,
+    const std::string & first_name,
+    const std::string & middle_name,
+    const std::string & last_name,
+    const std::string & photo_url
 ) {
-    this->_tx->execute("update_person", person_id, name, birth_date, death_date);
+    this->_tx->execute(
+        "update_person", person_id, birth_date, death_date, 
+        title, first_name, middle_name, last_name, photo_url
+    );
 }
 
 void PersonsDatabase::delete_person(unsigned long long person_id) {
@@ -111,7 +134,11 @@ tao::json::value PersonsDatabase::build_person_json(unsigned long long person_id
 
     return {
         {"id", person.id},
-        {"name", person.name},
+        {"title", person.title},
+        {"first_name", person.first_name},        
+        {"middle_name", person.middle_name},
+        {"last_name", person.last_name},
+        {"photo_url", person.photo_url},
         {"birth_date", person.birth_date},
         {"death_date", person.death_date},
         {"parents", parents}
