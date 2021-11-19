@@ -36,6 +36,7 @@ module connection_handler
   integer, parameter :: error_bad_size = 2
   integer, parameter :: error_unauthorized = 3
   integer, parameter :: error_bad_fields = 4
+  integer, parameter :: error_bad_kernel = 5
   integer, parameter :: error_exception = 255
 
   integer, parameter :: matrix_size = 50
@@ -142,7 +143,7 @@ contains
       case(connection_write)
         new_processed = tcp_write(self%socket, self%needed_bytes - self%processed, &
           self%buffer(self%processed + 1 : self%needed_bytes))
-        if (new_processed .le. 0) then
+        if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
           return
@@ -415,6 +416,8 @@ contains
     integer, dimension(1:1) :: offset
     integer :: npos
     integer :: mpos
+    character(len=2) :: ns
+    character(len=2) :: ms
 
     offset = findloc(self%buffer(1:self%processed), delimiter)
     npos = offset(1)
@@ -427,6 +430,13 @@ contains
     mpos = offset(1) + npos
     if ((mpos-npos).le.1.or.(mpos-npos).gt.3) then
       call self%set_error(error_bad_fields)
+      return
+    end if
+
+    ns = to_string(self%buffer(1:npos-1), npos-1)
+    ms = to_string(self%buffer(npos+1:mpos-1), mpos-npos-1)
+    if (ns.ne.ms) then
+      call self%set_error(error_bad_kernel)
       return
     end if
 

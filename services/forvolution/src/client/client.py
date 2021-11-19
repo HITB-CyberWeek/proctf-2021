@@ -16,6 +16,7 @@ class Errors(Enum):
     BadSize = 2
     Unauthorized = 3
     BadFiled = 4
+    BadKernel = 5
     Exception = 255
 
 class Error(Exception):
