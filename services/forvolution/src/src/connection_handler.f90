@@ -234,6 +234,8 @@ contains
     class(connection), intent(inout) :: self
     integer :: error
 
+    call skip(self%socket, self%buffer)
+
     self%processed = 0
     self%needed_bytes = 1
     self%buffer(1:1) = achar(error)
@@ -501,5 +503,18 @@ contains
     self%buffer(4:4+4*rsize(1)*rsize(2) - 1) = transfer(res, self%buffer(1), 4 * rsize(1) * rsize(2))
     self%connection_state = connection_write
   end subroutine handle_convolution
+
+  subroutine skip(socket, buffer)
+    integer :: socket
+    character(kind=c_char), dimension(:), intent(in) :: buffer
+    integer :: readed
+
+    do
+      readed = tcp_read(socket, size(buffer), buffer)
+      if (readed.le.0) then
+        return
+      end if
+    end do
+  end subroutine
 
 end module connection_handler
