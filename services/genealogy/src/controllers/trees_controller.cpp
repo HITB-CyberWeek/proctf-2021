@@ -10,16 +10,13 @@
 #include "tao/json/type.hpp"
 #include "tao/json/value.hpp"
 
-#include "../database/common.hpp"
-#include "../database/trees.hpp"
+#include "../database/trees_database.hpp"
 #include "../brotobuf/tree.hpp"
 
 
 TreesController::TreesController() {
-    const auto database = Database().connection();
-    const auto transaction = database->transaction();
-    this->_persons_database = std::make_shared<PersonsDatabase>(transaction);
-    this->_trees_database = std::make_shared<TreesDatabase>(transaction);
+    this->_persons_database = std::make_shared<PersonsDatabase>(this->_tx);
+    this->_trees_database = std::make_shared<TreesDatabase>(this->_tx);
     this->_signer = std::make_shared<Signer>(this->_keys->get_signing_key());
 }
 
@@ -105,44 +102,6 @@ HttpResponse TreesController::update_tree(const HttpRequest & request) {
     return response;
 }
 
-HttpResponse TreesController::update_links(const HttpRequest & request) {
-    const auto user_id = this->_current_user_id(request);
-    if (!user_id) {
-        return HttpResponse({
-            {"status", "error"},
-            {"message", "You're not authenticated"}
-        }, HttpStatusCode::UNAUTHORIZED);
-    };
-
-    const auto tree = this->_trees_database->find_tree_by_user(user_id.value());
-    if (!tree) {
-        return HttpResponse({
-            {"status", "error"},
-            {"message", "Your genealogy tree doesn't exist, create it first"}
-        }, HttpStatusCode::NOT_FOUND);
-    }
-
-    this->_trees_database->delete_links(tree->id);
-
-    const auto json = request.get_json();
-    if (!json.is_array() || json.get_array().size() > 10) {
-        return HttpResponse({
-            {"status", "error"},
-            {"message", "Invalid content: should be array of links not more than 10 elements"}
-        }, HttpStatusCode::BAD_REQUEST);
-    }
-
-    for (const auto& link: json.get_array()) {
-        const auto type = link.at("type").get_unsigned();
-        const auto value = link.at("value").get_string();
-        this->_trees_database->create_link(tree->id, (LinkType) type, value);
-    }
-
-    const auto response = this->_return_tree_json(tree.value());
-    this->_trees_database->transaction()->commit();
-    return response;
-}
-
 HttpResponse TreesController::update_owners(const HttpRequest &request) {
     const auto user_id = this->_current_user_id(request);
     if (!user_id) {
@@ -203,12 +162,6 @@ HttpResponse TreesController::export_tree_archive(const HttpRequest & request) {
     tree_message.title = tree->title;
     tree_message.description = tree->description;
     tree_message.owners = this->_trees_database->get_owners(tree->id);
-    for (const auto& link: this->_trees_database->get_links(tree->id)) {
-        brotobuf::Link link_message;
-        link_message.type = link.type;
-        link_message.value = link.value;
-        tree_message.links.push_back(link_message);
-    }
     if (tree->person_id) {
         tree_message.person = this->_build_brotobuf_person(tree->person_id.value());
     }
@@ -251,11 +204,6 @@ HttpResponse TreesController::check_tree_achive(const HttpRequest & request) {
         owners.push_back(owner);
     }
 
-    std::vector<tao::json::value> links;
-    for (auto link: tree_message.links) {
-        links.push_back({{"type", link.type}, {"value", link.value}});
-    }
-
     return HttpResponse({
         {"status", "ok"},
         {"message", "Your archive is correct"},
@@ -264,7 +212,6 @@ HttpResponse TreesController::check_tree_achive(const HttpRequest & request) {
             {"title", tree_message.title},
             {"description", tree_message.description},
             {"owners", owners},
-            {"links", links},
             {"person", this->_restore_brotobuf_person(tree_message.person)}
         }}
     });
@@ -303,14 +250,6 @@ tao::json::value TreesController::_restore_brotobuf_person(const std::optional<b
 }
 
 HttpResponse TreesController::_return_tree_json(const Tree & tree) {
-    std::vector<tao::json::value> links;
-    for (const auto& link: this->_trees_database->get_links(tree.id)) {
-        links.push_back({
-            {"type", (unsigned long long) link.type},
-            {"value", link.value}
-        });
-    }
-
     std::vector<tao::json::value> owners;
     for (auto owner: this->_trees_database->get_owners(tree.id)) {
         owners.push_back(owner);
@@ -328,7 +267,6 @@ HttpResponse TreesController::_return_tree_json(const Tree & tree) {
             {"person", person_json},
             {"title", tree.title},
             {"description", tree.description},
-            {"links", links},
             {"owners", owners}
         }}
     });

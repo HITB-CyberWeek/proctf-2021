@@ -96,7 +96,7 @@ def main():
         if not exists:
             droplet_id = do_api.create_vm(token,
                 ROUTER_VM_NAME, image=do_cloud_params["router_image"],
-                ssh_keys=do_cloud_params["ssh_keys"],
+                ssh_keys=do_cloud_params["router_ssh_keys"],
                 size=do_cloud_params.get("router_size"),
                 region=do_cloud_params.get("region"),
                 vpc_uuid=vpc_id, tag="team-router")
@@ -184,13 +184,13 @@ def main():
             return 1
 
         # UNCOMMENT BEFORE THE GAME
-        dest = "10.%d.%d.3" % (60 + TEAM//256, TEAM%256)
-        cmd = ["iptables -t nat -A PREROUTING -d %s -p tcp " % ip +
-               "--dport 22 -j DNAT --to-destination %s:22" % dest]
-        ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
-        if not ret:
-           log_stderr("unable to nat port 22")
-           return 1
+        #dest = "10.%d.%d.3" % (60 + TEAM//256, TEAM%256)
+        #cmd = ["iptables -t nat -A PREROUTING -d %s -p tcp " % ip +
+        #       "--dport 22 -j DNAT --to-destination %s:22" % dest]
+        #ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
+        #if not ret:
+        #   log_stderr("unable to nat port 22")
+        #   return 1
 
         log_progress("61%")
 
@@ -250,10 +250,10 @@ def main():
 
                 vulnimage_droplet_id = do_api.create_vm(token,
                     get_image_name(TEAM, VMNUM), image=do_cloud_params["vulnimages"][service_name],
-                    ssh_keys=do_cloud_params["ssh_keys"],
+                    ssh_keys=do_cloud_params["vulnimage_ssh_keys"],
                     size=do_cloud_params.get("vulnimage_size"),
                     region=do_cloud_params.get("region"),
-                    user_data=userdata, vpc_uuid=vpc_id, tag="team-image")
+                    user_data=userdata, vpc_uuid=vpc_id, tag="team-image-closed")
                 if vulnimage_droplet_id is None:
                     log_stderr("failed to create vm, exiting")
                     return 1

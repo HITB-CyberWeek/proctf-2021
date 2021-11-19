@@ -3,6 +3,9 @@
 #define _CONTROLLERS_BASE_CONTROLLER_HPP_
 
 #include <optional>
+#include <memory>
+
+#include "tao/pq/transaction.hpp"
 
 #include "../server/http_request.hpp"
 #include "../security/hasher.hpp"
@@ -18,6 +21,7 @@ protected:
 
     std::unique_ptr<Hasher> _hasher;
     std::unique_ptr<KeyStorage> _keys;
+    std::shared_ptr<tao::pq::transaction> _tx;
 };
 
 #endif

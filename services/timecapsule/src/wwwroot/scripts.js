@@ -11,7 +11,7 @@ fetch("/auth", {credentials:"same-origin"}).then(response => {
 		response.text().then(text => {
 			$("#login").value = text;
 			$("#my").href = "/?author=" + encodeURIComponent(text);
-			$(".auth").classList.add("signed");
+			if(!!text?.length) $(".auth").classList.add("signed");
 		}).catch(() => error("/auth failed"));
 	}
 });

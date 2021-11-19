@@ -2,7 +2,6 @@
  * It's like protoc, but much more cooler. */
 #include "tree.hpp"
 #include "broto.hpp"
-#include "link.hpp"
 #include "person.hpp"
 
 #include <memory>
@@ -18,7 +17,6 @@ GenealogyTree::GenealogyTree() {
   this->description = "";
   this->owners = std::vector<unsigned long long>();
   this->person = {};
-  this->links = std::vector<Link>();
 }
 void GenealogyTree::serialize(OutputStream &stream) const {
   this->serialize(std::move(stream));
@@ -30,7 +28,6 @@ void GenealogyTree::serialize(OutputStream &&stream) const {
   this->serialize_description(stream);
   this->serialize_owners(stream);
   this->serialize_person(stream);
-  this->serialize_links(stream);
 }
 void GenealogyTree::deserialize(InputStream &stream) {
   this->deserialize(std::move(stream));
@@ -38,7 +35,6 @@ void GenealogyTree::deserialize(InputStream &stream) {
 void GenealogyTree::deserialize(InputStream &&stream) {
   printf("== Starting deserialization of GenealogyTree at %p\n", this);
   this->owners = std::vector<unsigned long long>();
-  this->links = std::vector<Link>();
 
   while (stream.has_next()) {
     unsigned long long field_index = this->_deserialize_varint(stream);
@@ -77,20 +73,6 @@ void GenealogyTree::deserialize(InputStream &&stream) {
       this->person = Person();
       this->_deserialize_object<Person>(this->person.value(), stream);
       break;
-    case 5:
-      if (this->links.empty()) {
-        printf(
-            "Allocating %p->links for 10 elements of %ld bytes = %ld = 0x%lx\n",
-            this, sizeof(Link), 10 * sizeof(Link), 10 * sizeof(Link));
-        this->links.resize(10);
-        printf("Allocated %p->links: %p\n", this, links.data());
-        this->_links_iterator = this->links.begin();
-      }
-      printf("Writing to %p->links[%ld]\n", this,
-             this->_links_iterator - this->links.begin());
-      this->_deserialize_object<Link>(*(this->_links_iterator), stream);
-      this->_links_iterator++;
-      break;
     }
   }
 
@@ -99,10 +81,6 @@ void GenealogyTree::deserialize(InputStream &&stream) {
          owners.size(), owners.capacity() * sizeof(unsigned long long),
          owners.data());
   this->owners.shrink_to_fit();
-  this->links.resize(this->_links_iterator - this->links.begin());
-  printf("Shrinking %p->links for %ld elements, freed %ld bytes at %p\n", this,
-         links.size(), links.capacity() * sizeof(Link), links.data());
-  this->links.shrink_to_fit();
 }
 void GenealogyTree::serialize_id(OutputStream &stream) const {
   if (this->id == 0)
@@ -139,17 +117,5 @@ void GenealogyTree::serialize_person(OutputStream &stream) const {
     return;
   this->_serialize_varint(4, stream);
   this->_serialize_object<Person>(this->person.value(), stream);
-}
-void GenealogyTree::serialize_links(OutputStream &stream) const {
-  if (this->links.size() == 0)
-    return;
-  if (this->links.size() > 10) {
-    throw std::out_of_range(
-        "Can not serialize object: links is too long, max length is 10");
-  }
-  for (auto &element : this->links) {
-    this->_serialize_varint(5, stream);
-    this->_serialize_object<Link>(element, stream);
-  }
 }
 } // namespace brotobuf

@@ -4,7 +4,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from typing import Literal, Union, Optional, Iterable
+from typing import Literal, Union, Optional, Iterable, List
 
 import jinja2
 import typer
@@ -27,16 +27,26 @@ class ScriptsConfigV1(YamlModel):
 
 class FileDeployConfigV1(YamlModel):
     source: str = ""
-    sources: list[str] = []
+    sources: List[str] = []
     destination: str = "/home/$SERVICE"
 
     def prepare_for_upload(self, config: "DeployConfig", config_folder: pathlib.Path) -> Iterable["FileDeployConfigV1"]:
         # Packer's file provisioner works with "sources" option very bad: i.e., doesn't support directories there,
         # so we convert "sources" into multiple Files with "source"
         if self.sources:
-            files = [FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)]
+            files = [
+                FileDeployConfigV1(source=source, destination=self.destination) for source in self._unfold_globs(self.sources, config_folder)
+            ]
             for file in files:
                 yield from file.prepare_for_upload(config, config_folder)
+            return
+
+        # Support for glob in "source": interpreter them as "sources"
+        if len(list(config_folder.glob(self.source))) > 1:
+            yield from FileDeployConfigV1(
+                sources=[self.source],
+                destination=self.destination,
+            ).prepare_for_upload(config, config_folder)
             return
 
         destination = substitute_variables(self.destination, config)
@@ -48,7 +58,7 @@ class FileDeployConfigV1(YamlModel):
         )
 
     @staticmethod
-    def _unfold_globs(sources: list[str], folder: pathlib.Path) -> list[str]:
+    def _unfold_globs(sources: List[str], folder: pathlib.Path) -> List[str]:
         result = []
         for source in sources:
             trailing_slash = "/" if source.endswith("/") else ""
@@ -62,14 +72,14 @@ class DeployConfigV1(YamlModel):
     service: str
     username: Optional[str] = None
     scripts: ScriptsConfigV1
-    files: list[FileDeployConfigV1]
+    files: List[FileDeployConfigV1]
 
 
 DeployConfig = Union[DeployConfigV1]
 
 
 def substitute_variables(data: str, config: DeployConfig) -> str:
-    return data.replace("$SERVICE", config.service).replace("$USERNAME", config.username)
+    return data.replace("$SERVICE", config.service if config.service else "").replace("$USERNAME", config.username if config.username else "")
 
 
 def update_vulnimages_config(service_name: str, image_id: int):
@@ -131,6 +141,12 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
 
         # Step 3 — run packer and build the image
         typer.echo(typer.style("Step 3", fg=typer.colors.GREEN, bold=True) + f". Run packer tool and build the image!")
+
+        process = subprocess.Popen(
+            [PACKER_TOOL, "init", "-upgrade", pathlib.Path(filename).name],
+            cwd=config_folder.as_posix(),
+        )
+        process.wait()
 
         packer_env = None
         debug_options = []

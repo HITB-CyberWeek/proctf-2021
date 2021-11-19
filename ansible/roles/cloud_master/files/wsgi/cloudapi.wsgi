@@ -32,6 +32,8 @@ RATE_LIMITS = {
     "take_snapshot": 300,
     "open_network": 30,
     "isolate_network": 30,
+    "open_vm": 15,
+    "isolate_vm": 15,
     "list_snapshots": 10,
     "restore_vm_from_snapshot": 300,
     "remove_snapshot": 30,
@@ -212,12 +214,10 @@ def get_available_vms():
     try:
         ret = {}
         for line in open("%s/services.txt" % DB_PATH):
-            if line.strip().startswith("#"):
+            line = line.strip()
+            if not re.fullmatch(r"([0-9a-zA-Z_])+\s+\d+", line):
                 continue
             vm, vm_number = line.rsplit(maxsplit=1)
-            if "-" in vm:
-                # bad service name
-                continue
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
@@ -247,6 +247,7 @@ def cmd_get_vm_info(team, args):
 
     net_state = open("%s/team%d/net_deploy_state" % (DB_PATH, team)).read().strip()
     image_state = open("%s/team%d/serv%d_image_deploy_state" % (DB_PATH, team, vm)).read().strip()
+    open_state = open("%s/team%d/serv%d_open_state" % (DB_PATH, team, vm)).read().strip()
     team_state = open("%s/team%d/team_state" % (DB_PATH, team)).read().strip()
 
     info = {"state": "not started", "ip": "none",
@@ -262,6 +263,9 @@ def cmd_get_vm_info(team, args):
         
     if team_state == "CLOUD":
         info["net"] = "connected to game"
+
+    if open_state == "CLOSED":
+        info["net"] = "isolated"
         
     msglines = []
     for field in ["state", "ip", "root passwd", "net"]:
@@ -273,7 +277,7 @@ def cmd_login(team, args):
     COMMANDS_WITHOUT_VM = ["list_vms", "open_network",
                            "isolate_network", "help", "man",
                            "get_team_openvpn_config", "oblaka"]
-    COMMANDS_WITH_VM = ["create_vm", "get_vm_info",
+    COMMANDS_WITH_VM = ["create_vm", "get_vm_info", "open_vm", "isolate_vm",
                         "take_snapshot", "list_snapshots",
                         "restore_vm_from_snapshot", "remove_snapshot", "reboot_vm"]
     vms = get_available_vms()
@@ -286,6 +290,14 @@ def cmd_login(team, args):
             autocomplete.append(command + " " + vm)
     return "200 Ok", {"result": "ok", "msg": "access granted\n", "team": team,
                       "autocomplete": autocomplete}
+
+def cmd_open_vm(team, args):
+    vm = int(args[0])
+    return create_task(team, "open_vm", "open_vm.py", [str(team), str(vm)])
+
+def cmd_isolate_vm(team, args):
+    vm = int(args[0])
+    return create_task(team, "isolate_vm", "isolate_vm.py", [str(team), str(vm)])
 
 def cmd_open_network(team, args):
     return create_task(team, "open_network", "open_network.py", [str(team)])
@@ -333,8 +345,10 @@ def cmd_help(team, args):
   restore_vm_from_snapshot <vm> <name>  - restore vm from the snapshot
   remove_snapshot <vm> <name>           - remove a snapshot
   reboot_vm <vm>                        - reboot vm
-  open_network                          - connect vm to the game network
-  isolate_network                       - disconnect vm from the game network
+  open_vm <vm>                          - connect vm to the game network
+  isolate_vm <vm>                       - isolate vm from the game network
+  open_network                          - connect to the game network
+  isolate_network                       - disconnect from the game network
   help                                  - help
   man                                   - instructions
 """.strip("\n")
@@ -376,7 +390,7 @@ def cmd_man(team, args):
     # list_snapshots <vm> -> restore_vm_from_snapshot <vm> <name>
   If something goes terribly wrong, use this command:
     # isolate_network
-  The access to vuln images should remain from your only network.
+  The access to vuln images should remain from your network only.
   To open the network again, execute:
     # open_network""".lstrip("\n")
 
@@ -475,6 +489,8 @@ def application(environ, start_response):
         "create_vm": (cmd_create_vm, 1, True, False),
         "get_team_openvpn_config": (cmd_get_team_openvpn_config, 0, False, True),
         "get_vm_info": (cmd_get_vm_info, 1, True, False),
+        "open_vm": (cmd_open_vm, 0, True, True),
+        "isolate_vm": (cmd_isolate_vm, 0, True, True),
         "open_network": (cmd_open_network, 0, False, True),
         "isolate_network": (cmd_isolate_network, 0, False, True),
         "take_snapshot": (cmd_take_snapshot, 2, True, True),

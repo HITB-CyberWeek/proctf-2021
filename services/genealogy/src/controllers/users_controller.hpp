@@ -4,8 +4,8 @@
 
 #include "../security/hasher.hpp"
 #include "base_controller.hpp"
-#include "../database/users.hpp"
-#include "../database/trees.hpp"
+#include "../database/users_database.hpp"
+#include "../database/trees_database.hpp"
 #include "../server/http_request.hpp"
 #include "../server/http_response.hpp"
 

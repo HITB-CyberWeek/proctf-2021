@@ -13,7 +13,7 @@ source "digitalocean" "service_image" {
   region        = "{{ region }}"
   size          = "{{ vm_size }}"
   ssh_username  = "root"
-  droplet_name  = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
+  droplet_name  = "{{ service }}-{% raw %}{{timestamp}}{% endraw %}"
   snapshot_name = "{{ service }}-{% raw %}{{strftime \"%Y-%m-%d %H:%M:%S\"}}{% endraw %}"
 }
 
@@ -30,7 +30,8 @@ build {
       "while ps -opid= -C apt-get > /dev/null; do sleep 1; done",
 
       "apt-get clean",
-      "apt-get update",
+      # apt-get update sometime may fail
+      "for i in `seq 1 3`; do apt-get update && break; done",
 
       # Wait apt-get lock
       "while ps -opid= -C apt-get > /dev/null; do sleep 1; done",
@@ -135,13 +136,13 @@ EOT
       "chown -R \"{{ username }}:{{ username }}\" \"/home/{{ username }}\""
     ]
   }
-  {% endif %}
 
   provisioner "shell" {
     inline = [
        "ls -laR \"/home/{{ username }}\""
     ]
   }
+  {% endif %}
   
   # Fix some internal digitalocean+cloud-init scripts to be compatible with our cloud infrastructure
   provisioner "shell" {

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 
 import httpx
 
@@ -67,10 +67,6 @@ class GenealogyClient:
 
     async def delete_person(self, person_id):
         r = await self.client.delete(f"/tree/persons/{person_id}")
-        r.raise_for_status()
-
-    async def update_links(self, links: list[tuple[int, str]]):
-        r = await self.client.put(f"/tree/links", json=[{"type": type, "value": value} for type, value in links])
         r.raise_for_status()
 
     async def update_owners(self, owners: list[int]):
