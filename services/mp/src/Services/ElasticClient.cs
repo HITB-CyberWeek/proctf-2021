@@ -122,7 +122,7 @@ namespace mp.Services
             return response.Body;
         }
 
-        private const string KEY_PATH = @"..\opensearch\key.pem";
+        private const string KEY_PATH = "../settings/key.pem";
 
         private string CreateOpenSearchJwtTokenManually(string userId)
         {

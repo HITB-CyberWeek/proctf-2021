@@ -118,14 +118,17 @@ def get_do_router_ips(cloud_names):
     return team2routerip
 
 
-def get_do_image_local_ips_by_cloud(cloud_names):
+def get_do_image_local_ips_and_tags_by_cloud(cloud_names):
     cloud2team2service2ip = {}
+    cloud2team2service2tag = {}
 
     services2num = get_available_services()
 
     for cloud_name in cloud_names:
         if cloud_name not in cloud2team2service2ip:
             cloud2team2service2ip[cloud_name] = {}
+        if cloud_name not in cloud2team2service2tag:
+            cloud2team2service2tag[cloud_name] = {}
 
         token = DO_TOKENS.get(cloud_name)
         if not token:
@@ -144,6 +147,9 @@ def get_do_image_local_ips_by_cloud(cloud_names):
 
             if team not in cloud2team2service2ip[cloud_name]:
                 cloud2team2service2ip[cloud_name][team] = {}
+            if team not in cloud2team2service2tag[cloud_name]:
+                cloud2team2service2tag[cloud_name][team] = {}
+
 
             if service not in services2num:
                 log_team(team, "warning vm with unknown service exists on cloud %s: %s" %
@@ -154,6 +160,8 @@ def get_do_image_local_ips_by_cloud(cloud_names):
 
             if service not in cloud2team2service2ip[cloud_name][team]:
                 cloud2team2service2ip[cloud_name][team][service_num] = None
+            if service not in cloud2team2service2tag[cloud_name][team]:
+                cloud2team2service2tag[cloud_name][team][service_num] = None
 
             try:
                 ip = vm["networks"]["v4"][1]["ip_address"]
@@ -169,8 +177,18 @@ def get_do_image_local_ips_by_cloud(cloud_names):
                 cloud2team2service2ip[cloud_name][team][service_num] = ip
             except (KeyError, IndexError):
                 log_team(team, "warning no local ip for image", vm["name"])
-    return cloud2team2service2ip
 
+            try:
+                tags = vm["tags"]
+                if len(tags) != 1:
+                    log_team(team, "warning unexpected tags:", tags, "for image", vm["name"])
+                else:
+                    tag = tags[0]
+                    cloud2team2service2tag[cloud_name][team][service_num] = tag
+            except (KeyError, IndexError):
+                log_team(team, "warning no tags for image", vm["name"])
+
+    return cloud2team2service2ip, cloud2team2service2tag
 
 
 def check_do_domains(records, team, expected_ip):
@@ -208,11 +226,17 @@ def main():
 
     team2routerip = get_do_router_ips(list(set(team2cloud_name.values())))
 
-    cloud2team2service2ip = get_do_image_local_ips_by_cloud(list(set(team2cloud_name.values())))
+    cloud2team2service2ip, cloud2team2service2tag = (
+        get_do_image_local_ips_and_tags_by_cloud(list(set(team2cloud_name.values()))))
+
+    # print(cloud2team2service2tag)
 
     dns_token = DO_TOKENS[CLOUD_FOR_DNS]
 
     do_dns_records = do_api.get_all_domain_records(dns_token, DOMAIN)
+
+    visible_services = set(get_available_services(only="visible").values())
+    invisible_services = set(get_available_services(only="invisible").values())
 
     for team in teams:
         if net_states[team] in ["DO_LAUNCHED", "DNS_REGISTERED", "DO_DEPLOYED"]:
@@ -257,6 +281,21 @@ def main():
                     if cloud != team_cloud_name and service_num in team2service2ip.get(team, {}):
                         log_team(team, "service", service_num,
                                  "is in RUNNING state, but it also exists on cloud", cloud)
+
+                for cloud, team2service2tag in cloud2team2service2tag.items():
+                    tag = team2service2tag.get(team, {}).get(service_num, "")
+                    if service_num in invisible_services and tag != "team-image-closed":
+                        log_team(team, "service", service_num, "with tag", tag,
+                                 "is invisible to teams, but unfirewalled on cloud", cloud)
+                    if service_num in visible_services and tag != "team-image":
+                        log_team(team, "service", service_num, "with tag", tag,
+                                 "is visible to teams, but firewalled on cloud", cloud)
+                    if service_num not in visible_services and service_num not in invisible_services:
+                        log_team(team, "service", service_num, "with tag", tag,
+                                 "is not visible nor invisible on cloud", cloud)
+
+
+
 
         if team_states[team] == "CLOUD" and net_states[team] == "NOT_STARTED":
             log_team(team, "team state is CLOUD, but net state is NOT_STARTED")
