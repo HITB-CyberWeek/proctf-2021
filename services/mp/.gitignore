@@ -7,3 +7,5 @@ packages/
 
 *.DotSettings
 *.user
+
+src/state/*
