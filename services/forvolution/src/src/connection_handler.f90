@@ -27,9 +27,9 @@ module connection_handler
 
   integer, parameter :: command_minimal_length = 6
   integer, parameter :: command_length = 11
-  character(len=command_length), parameter :: command_upload = 'UPLOAD'
-  character(len=command_length), parameter :: command_download = 'DOWNLOAD'
-  character(len=command_length), parameter :: command_convolution = 'CONVOLUTION'
+  character(len=*), parameter :: command_upload = 'UPLOAD'
+  character(len=*), parameter :: command_download = 'DOWNLOAD'
+  character(len=*), parameter :: command_convolution = 'CONVOLUTION'
 
   integer, parameter :: ok = 0
   integer, parameter :: error_unknown_command = 1
