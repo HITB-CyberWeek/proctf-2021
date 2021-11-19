@@ -72,3 +72,4 @@
       requirements: "{{ cs_dir }}/checkers/{{ item }}/requirements.txt"
     loop:
       - genealogy
+      - forvolution
