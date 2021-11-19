@@ -5,6 +5,7 @@ using Elasticsearch.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -61,7 +62,7 @@ namespace mp
             services.AddSingleton(provider =>
             {
                 var settings = new ConnectionConfiguration(new Uri(Configuration["AppSettings:OpenSearchUrl"]))
-                    .RequestTimeout(TimeSpan.FromSeconds(30))
+                    .RequestTimeout(TimeSpan.FromSeconds(3))
                     .ThrowExceptions();
                 var elasticLowLevelClient =  new ElasticLowLevelClient(settings);
                 return new ElasticClient(elasticLowLevelClient, nameof(mp));
@@ -88,6 +89,16 @@ namespace mp
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "mp v1");
                 c.EnableTryItOutByDefault();
             });
+
+            app.UseExceptionHandler(c => c.Run(async context =>
+            {
+	            var exception = context.Features
+		            .Get<IExceptionHandlerPathFeature>()
+		            .Error;
+	            var id = DateTime.UtcNow.Ticks;
+	            await Console.Error.WriteLineAsync($"Unexpected exception occurred #{id}: {exception}");
+	            await context.Response.WriteAsJsonAsync(new { error = $"Unexpected error {id}" });
+            }));
 
             app.UseRouting();
 

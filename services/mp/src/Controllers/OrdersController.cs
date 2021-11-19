@@ -25,7 +25,7 @@ namespace mp.Controllers
             if(productId == null)
                 return BadRequest(new { message = $"{nameof(productId)} not specified" });
 
-            return Ok(openSearchService.SearchOrdersOfProduct(productId, pageNum).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
+            return Ok(openSearchService.SearchOrdersOfProductAsync(productId, pageNum).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
         }
 
         [HttpGet("search")]
@@ -41,7 +41,7 @@ namespace mp.Controllers
             if(document == null)
                 return BadRequest(new { message = $"Product {order.ProductId} not found" });
 
-            return Ok(openSearchService.IndexDocument(Document.CreateOrder(order.Description, document, creator: HttpContext?.User.FindCurrentUserId()), order.ProductId).Result);
+            return Ok(openSearchService.IndexDocumentAsync(Document.CreateOrder(order.Description, document, creator: HttpContext?.User.FindCurrentUserId()), order.ProductId).Result);
         }
 
         public OrdersController(OpenSearchService openSearchService) : base(openSearchService)
