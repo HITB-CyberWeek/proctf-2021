@@ -49,7 +49,7 @@ std::optional<Person> PersonsDatabase::find_person(unsigned long long id) {
         tree["id"].as<unsigned long long>(),
         tree["owner_id"].as<unsigned long long>(),
         tree["birth_date"].as<unsigned long long>(),
-        tree["death_date"].as< std::optional<unsigned long long> >(),
+        tree["death_date"].as<unsigned long long>(),
         tree["title"].as<std::string>(),
         tree["first_name"].as<std::string>(),
         tree["middle_name"].as<std::string>(),
@@ -60,7 +60,7 @@ std::optional<Person> PersonsDatabase::find_person(unsigned long long id) {
 
 Person PersonsDatabase::create_person(
     unsigned long long owner_id,
-    unsigned long long birth_date, std::optional<unsigned long long> death_date,
+    unsigned long long birth_date, unsigned long long death_date,
     const std::string & title,
     const std::string & first_name,
     const std::string & middle_name,
@@ -80,7 +80,7 @@ Person PersonsDatabase::create_person(
 
 void PersonsDatabase::update_person(
     unsigned long long person_id,
-    unsigned long long birth_date, std::optional<unsigned long long> death_date,
+    unsigned long long birth_date, unsigned long long death_date,
     const std::string & title,
     const std::string & first_name,
     const std::string & middle_name,

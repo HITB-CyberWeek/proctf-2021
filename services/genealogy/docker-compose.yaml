@@ -31,5 +31,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./.keys:/app/keys
+    environment:
+      DATABASE: "host=database port=6432 dbname=genealogy user=genealogy password=genealogy"
     ports:
       - "8888:8888"

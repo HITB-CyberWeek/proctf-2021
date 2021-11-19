@@ -12,7 +12,6 @@
 
 namespace brotobuf {
 Person::Person() {
-  this->death_date = {};
   this->title = "";
   this->first_name = "";
   this->middle_name = "";
@@ -51,8 +50,7 @@ void Person::deserialize(InputStream &&stream) {
       break;
     case 1:
       printf("Writing to %p->death_date\n", this);
-      this->death_date = 0;
-      this->death_date.value() = this->_deserialize_varint(stream);
+      this->death_date = this->_deserialize_varint(stream);
       break;
     case 2:
       printf("Writing to %p->title\n", this);
@@ -104,10 +102,10 @@ void Person::serialize_birth_date(OutputStream &stream) const {
   this->_serialize_varint(this->birth_date, stream);
 }
 void Person::serialize_death_date(OutputStream &stream) const {
-  if (!this->death_date)
+  if (this->death_date == 0)
     return;
   this->_serialize_varint(1, stream);
-  this->_serialize_varint(this->death_date.value(), stream);
+  this->_serialize_varint(this->death_date, stream);
 }
 void Person::serialize_title(OutputStream &stream) const {
   if (this->title == "")

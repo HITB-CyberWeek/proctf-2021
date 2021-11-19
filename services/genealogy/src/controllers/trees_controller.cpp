@@ -252,7 +252,7 @@ tao::json::value TreesController::_restore_brotobuf_person(const std::optional<b
         {"last_name", person->last_name},
         {"photo_url", person->photo_url},
         {"birth_date", person->birth_date},
-        {"death_date", person->death_date ? tao::json::value(person->death_date.value()) : tao::json::null},
+        {"death_date", person->death_date},
         {"parents", parents}
     };
 }

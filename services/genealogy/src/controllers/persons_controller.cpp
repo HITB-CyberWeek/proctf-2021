@@ -20,7 +20,7 @@ HttpResponse PersonsController::create_person(const HttpRequest &request) {
     const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
     const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
     const auto birth_date = json.at("birth_date").get_unsigned();
-    const auto death_date = json.at("death_date").optional<unsigned long long>();
+    const auto death_date = json.at("death_date").get_unsigned();
     const auto title = json.at("title").get_string();
     const auto first_name = json.at("first_name").get_string();
     const auto middle_name = json.at("middle_name").get_string();
@@ -83,7 +83,7 @@ HttpResponse PersonsController::update_person(const HttpRequest & request) {
     const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
     const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
     const auto birth_date = json.at("birth_date").get_unsigned();
-    const auto death_date = json.at("death_date").optional<unsigned long long>();
+    const auto death_date = json.at("death_date").get_unsigned();
     const auto title = json.at("title").get_string();
     const auto first_name = json.at("first_name").get_string();
     const auto middle_name = json.at("middle_name").get_string();

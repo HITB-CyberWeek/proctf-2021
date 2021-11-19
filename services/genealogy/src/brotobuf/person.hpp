@@ -9,7 +9,7 @@ namespace brotobuf {
 class Person : public _AbstractMessage {
 public:
   unsigned long long birth_date;
-  std::optional<unsigned long long> death_date;
+  unsigned long long death_date;
   std::string title;
   std::string first_name;
   std::string middle_name;

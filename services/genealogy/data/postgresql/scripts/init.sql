@@ -11,7 +11,7 @@ CREATE TABLE genealogy_tree_persons (
 	id INTEGER NOT NULL PRIMARY KEY DEFAULT nextval('person_id_seq'),
 	owner_id INTEGER NOT NULL,
 	birth_date BIGINT NOT NULL,
-	death_date BIGINT,
+	death_date BIGINT NOT NULL,
 	title VARCHAR(100) NOT NULL,
 	first_name VARCHAR(100) NOT NULL,
 	middle_name VARCHAR(100) NOT NULL,

@@ -16,7 +16,7 @@ struct Person {
     unsigned long long id;
     unsigned long long owner_id;
     unsigned long long birth_date;
-    std::optional<unsigned long long> death_date;
+    unsigned long long death_date;
     std::string title;
     std::string first_name;
     std::string middle_name;
@@ -32,7 +32,7 @@ public:
     std::optional<Person> find_person(unsigned long long id);
     Person create_person(
         unsigned long long owner_id, 
-        unsigned long long birth_date, std::optional<unsigned long long> death_date,
+        unsigned long long birth_date, unsigned long long death_date,
         const std::string & title,
         const std::string & first_name,
         const std::string & middle_name,
@@ -41,7 +41,7 @@ public:
     );
     void update_person(
         unsigned long long person_id,
-        unsigned long long birth_date, std::optional<unsigned long long> death_date,
+        unsigned long long birth_date, unsigned long long death_date,
         const std::string & title,
         const std::string & first_name,
         const std::string & middle_name,
