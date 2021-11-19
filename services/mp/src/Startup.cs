@@ -65,13 +65,14 @@ namespace mp
                     .RequestTimeout(TimeSpan.FromSeconds(3))
                     .ThrowExceptions();
                 var elasticLowLevelClient =  new ElasticLowLevelClient(settings);
-                return new ElasticClient(elasticLowLevelClient, nameof(mp));
+                return new OpenSearchClient(elasticLowLevelClient, nameof(mp));
             });
             services.AddSingleton<OpenSearchService>();
 
             services.AddSwaggerGen(c =>
             {
                 c.SchemaFilter<DefaultsAwareSchemaFilter>();
+                c.SchemaFilter<SwaggerIgnoreFilter>();
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = nameof(mp), Version = "v1"});
             });
             services.AddSwaggerGenNewtonsoftSupport();
@@ -106,25 +107,6 @@ namespace mp
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-        }
-    }
-
-    internal class DefaultsAwareSchemaFilter : ISchemaFilter
-    {
-        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
-        {
-            if (schema.Properties == null)
-            {
-                return;
-            }
-
-            foreach (var property in schema.Properties)
-            {
-                if (property.Value.Default != null && property.Value.Example == null)
-                {
-                    property.Value.Example = property.Value.Default;
-                }
-            }
         }
     }
 }

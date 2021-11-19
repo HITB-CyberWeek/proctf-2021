@@ -5,11 +5,11 @@ namespace mp.Models.Searchable
 {
     public class ProductModel
     {
-        public string Id { get; set; }
+	    [SwaggerIgnore] public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public string Creator { get; set; }
-        public DateTime Dt { get; set; }
+        [SwaggerIgnore] public string Creator { get; set; }
+        [SwaggerIgnore] public DateTime Dt { get; set; }
 
         public static ProductModel FromDocument(Document document)
         {

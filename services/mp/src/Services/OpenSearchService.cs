@@ -12,23 +12,23 @@ namespace mp.Services
     {
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly UserService userService;
-        private readonly ElasticClient elasticClient;
+        private readonly OpenSearchClient openSearchClient;
 
-        public OpenSearchService(IHttpContextAccessor httpContextAccessor, UserService userService, ElasticClient elasticClient)
+        public OpenSearchService(IHttpContextAccessor httpContextAccessor, UserService userService, OpenSearchClient openSearchClient)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.userService = userService;
-            this.elasticClient = elasticClient;
+            this.openSearchClient = openSearchClient;
         }
 
         public async Task<string> IndexDocumentAsync(Document document, string routing = null)
         {
-            return JsonConvert.DeserializeObject<IndexResponse>(await elasticClient.IndexAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
+            return JsonConvert.DeserializeObject<IndexResponse>(await openSearchClient.IndexAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
 
         public async Task<IEnumerable<Document>> SearchAsync(string queryString, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -37,7 +37,7 @@ namespace mp.Services
         //TODO copypaste
         public async Task<IEnumerable<Document>> SearchOrdersOfProductAsync(string productId, int pageNum)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await elasticClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -46,7 +46,7 @@ namespace mp.Services
         //TODO check DLS works with get by id
         public async Task<Document> Get(string documentId)
         {
-            var hit =  JsonConvert.DeserializeObject<Hit>(await elasticClient.GetAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), documentId));
+            var hit =  JsonConvert.DeserializeObject<Hit>(await openSearchClient.GetAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), documentId));
             return hit?.Source?.CloneAndSetId(hit.Id);
         }
 
