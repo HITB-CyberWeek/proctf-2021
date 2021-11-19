@@ -131,7 +131,7 @@ namespace checker.timecapsule
 			if(bytes == null || bytes.Length > MaxCookieSize)
 				throw new CheckerException(ExitCode.MUMBLE, "too large or invalid cookies");
 
-			return new TimeCapsulePutResult
+			return new PutResult
 			{
 				Login = login,
 				Password = password,
@@ -144,11 +144,8 @@ namespace checker.timecapsule
 			};
 		}
 
-		public async Task Get(string host, PutResult state, string flag, int vuln)
+		public async Task Get(string host, PutResult put, string flag, int vuln)
 		{
-			if(!(state is TimeCapsulePutResult put))
-				throw new Exception($"Invalid state '{JsonSerializer.Serialize(state)}'");
-
 			var baseUri = GetBaseUri(host);
 			var cookie = Encoding.UTF8.GetString(Convert.FromBase64String(put.Cookie));
 

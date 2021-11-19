@@ -84,9 +84,11 @@ namespace checker
 
 					await StderrWriteLineColoredAsync("PUT", ConsoleColor.Yellow).ConfigureAwait(false);
 					var result = await checker.Put(host, "", flag, vuln).ConfigureAwait(false);
-					await Console.Error.WriteLineAsync(JsonSerializer.Serialize(result, result.GetType())).ConfigureAwait(false);
+					var serialized = JsonSerializer.Serialize(result, result.GetType());
+					await Console.Error.WriteLineAsync(serialized).ConfigureAwait(false);
 					await StderrWriteLineColoredAsync("GET", ConsoleColor.Yellow).ConfigureAwait(false);
-					await checker.Get(host, result, flag, vuln).ConfigureAwait(false);
+					var deserialized = JsonSerializer.Deserialize<PutResult>(serialized);
+					await checker.Get(host, deserialized, flag, vuln).ConfigureAwait(false);
 
 					await StderrWriteLineColoredAsync(ExitCode.OK.ToString(), ConsoleColor.Green).ConfigureAwait(false);
 				}
