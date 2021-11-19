@@ -312,8 +312,8 @@ void login_and_get(int client_socket) {
     uint64_t last_pass = *((uint64_t *)(&password_hash[24]));
     uint64_t last_random = *((uint64_t *)(&random_hash[24]));
 
-    print_hex(password_hash, 32);
-    print_hex(random_hash, 32);
+    // print_hex(password_hash, 32);
+    // print_hex(random_hash, 32);
 
     uint64_t expected_response = fastpow(last_pass, last_random);
 
