@@ -40,13 +40,16 @@ def send_pkt(s, data):
     s.sendall(bytes([len(data)]) + data)
 
 def recv_pkt(s):
-    size = s.recv(1)[0]
+    size_byte = s.recv(1)
+    if len(size_byte) == 0:
+        return b""
+    size = size_byte[0]
 
     pkt = bytearray()
     while len(pkt) < size:
         data = s.recv(size - len(pkt))
         if not data:
-            raise ProtocolViolationError("server closed connection")
+            raise ProtocolViolationError("server closed connection in the middle of the packet")
         pkt += data
     return bytes(pkt)
 
@@ -74,7 +77,7 @@ def put(host, flag_id, flag, vuln):
     pkt = recv_pkt(s)
 
     if pkt != b'\x00':
-        verdict(MUMBLE, "Failed to register", "Failed to register: %s %s" % (flag_id, flag))
+        verdict(MUMBLE, "Failed to register", "Failed to register: %s %s %s" % (flag_id, flag, pkt))
 
     flag_id = base64.b64encode(json.dumps([flag_id, password]).encode()).decode()
     verdict(OK, flag_id)
@@ -85,6 +88,21 @@ def get(host, flag_id, flag, vuln):
         flag_id, password = json.loads(base64.b64decode(flag_id))
     except Exception:
         verdict(CHECKER_ERROR, "Bad flag id", "Bad flag_id: %s" % traceback.format_exc())
+
+    s = socket.socket()
+    s.settimeout(TIMEOUT)
+    s.connect((host, PORT))
+
+    send_pkt(s, b"\x02")
+
+    while True:
+        login = recv_pkt(s)
+        if not login:
+            verdict(MUMBLE, "Bad users listing", "User is not in users list: %s" % flag_id)
+
+        if flag_id.encode() == login:
+            break
+    s.close()
 
     s = socket.socket()
     s.settimeout(TIMEOUT)

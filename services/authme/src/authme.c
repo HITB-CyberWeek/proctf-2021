@@ -192,7 +192,7 @@ int validate_string(uint8_t* buf) {
             good = 1;
         } else if (buf[i] >= '0' && buf[i] <= '9') {
             good = 1;
-        } else if (buf[i] == '_' || buf[i] == '-') {
+        } else if (buf[i] == '_' || buf[i] == '-' || buf[i] == '=') {
             good = 1;
         }
 
@@ -288,6 +288,11 @@ void login_and_get(int client_socket) {
     }
 
     FILE* file = fopen("flags.txt", "a+");
+    if (file == NULL) {
+        fprintf(stderr, "failed to open flags.txt\n");
+        send_error_or_die(client_socket);
+        exit(1);
+    }
 
     while (getline(&line, &len, file) != -1) {
         if (sscanf(line, "%63s %63s %63s\n", login_buf, pass_buf, flag_buf) == 3) {
@@ -328,11 +333,52 @@ void login_and_get(int client_socket) {
         exit(1);
     }
 
-    write_packet_or_die(client_socket, flag_buf, strlen(flag_buf)) > 0;
+    write_packet_or_die(client_socket, flag_buf, strlen(flag_buf));
 }
 
 void list_users(int client_socket) {
+    uint8_t login_buf[64] = {0};
+    uint8_t pass_buf[64] = {0};
+    uint8_t flag_buf[64] = {0};
 
+    FILE* file = fopen("flags.txt", "a+");
+    if (file == NULL) {
+        fprintf(stderr, "failed to open flags.txt\n");
+        send_error_or_die(client_socket);
+        exit(1);
+    }
+
+    const int max_file_size_to_look = 500000;
+
+    fseek(file, 0, SEEK_END);
+    int size = ftell(file);
+    int start_offset = size - max_file_size_to_look;
+    if (start_offset < 0) {
+        start_offset = 0;
+    }
+
+    fseek(file, start_offset, SEEK_SET);
+
+    char *line = NULL;
+    size_t len = 0;
+
+    if (start_offset > 0) {
+        // skip one line
+        if (getline(&line, &len, file) == -1) {
+            send_error_or_die(client_socket);
+            exit(1);
+        }
+    }
+
+    while (getline(&line, &len, file) != -1) {
+        if (sscanf(line, "%63s", login_buf) == 1) {
+            write_packet_or_die(client_socket, login_buf, strlen(login_buf));
+        }
+    }
+
+    if(line) {
+        free(line);
+    }
 }
 
 int handle_client(int client_socket) {
