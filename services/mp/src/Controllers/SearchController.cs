@@ -21,7 +21,7 @@ namespace mp.Controllers
 
         protected Document GetInternal(string id)
         {
-            return openSearchService.Get(id).Result;
+            return openSearchService.TryGet(id).Result;
         }
 
         public SearchController(OpenSearchService openSearchService)

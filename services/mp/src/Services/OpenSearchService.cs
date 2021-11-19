@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using Elasticsearch.Net;
 using Microsoft.AspNetCore.Http;
 using mp.Entities;
 using Newtonsoft.Json;
@@ -44,10 +46,20 @@ namespace mp.Services
         }
 
         //TODO check DLS works with get by id
-        public async Task<Document> Get(string documentId)
+        public async Task<Document> TryGet(string documentId)
         {
-            var hit =  JsonConvert.DeserializeObject<Hit>(await openSearchClient.GetAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), documentId));
-            return hit?.Source?.CloneAndSetId(hit.Id);
+	        Hit hit;
+	        try
+	        {
+		        hit = JsonConvert.DeserializeObject<Hit>(await openSearchClient.GetAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), documentId));
+            }
+	        catch(ElasticsearchClientException e)
+	        {
+		        if(e.Response?.HttpStatusCode == (int?)HttpStatusCode.NotFound)
+			        return null;
+		        throw;
+	        }
+	        return hit?.Source?.CloneAndSetId(hit.Id);
         }
 
         private const int PageSize = 10;
