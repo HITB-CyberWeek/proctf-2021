@@ -3,7 +3,7 @@ module string_utils
   implicit none
 
   private
-  public :: from_c_string, to_int, to_char, to_string, parse_int
+  public :: from_c_string, to_int, to_char, to_string, to_array, parse_int
  
 interface from_c_string
   module procedure from_c_string, from_c_ptr, from_c_nptr
@@ -80,7 +80,20 @@ contains
     do i = 1, n
       r(i:i) = ar(i)
     end do
-  end function
+  end function to_string
+
+  function to_array(s) result(r)
+    character(len=*), intent(in) :: s
+    character, dimension(:), allocatable :: r
+
+    integer :: i
+
+    allocate(r(1:len(s)))
+
+    do i = 1, len(s)
+      r(i) = s(i:i)
+    end do
+  end function to_array
 
   function parse_int(s) result(r)
     character, dimension(:), intent(in) :: s
