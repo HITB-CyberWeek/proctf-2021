@@ -47,8 +47,7 @@ class UsersRepository:
     def validate_access(self, username, path):
         acl_path = f"users/{username}/.acl"
         with open(acl_path) as f:
-            acl = [x for x in f.read().splitlines() if not re.fullmatch(r"\s*", x)]
-            print(acl)
+            acl = [x for x in f.read().splitlines() if not re.fullmatch(r"\s*", x)][0:256]
         for allowed_path in acl:
             if self.is_phys_subpath(f"data/{allowed_path}", path):
                 return True
