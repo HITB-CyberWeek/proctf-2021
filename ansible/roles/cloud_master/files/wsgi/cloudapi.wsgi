@@ -210,14 +210,15 @@ def create_task(team, task_name, script_name, args, timeout=600):
     return "202 Accepted", {"result": "ok", "task": task_name}
 
 
-def get_available_vms():
+def get_available_and_visible_vms():
     try:
         ret = {}
         for line in open("%s/services.txt" % DB_PATH):
             line = line.strip()
-            if not re.fullmatch(r"([0-9a-zA-Z_])+\s+\d+", line):
+            m = re.fullmatch(r"([0-9a-zA-Z_]+)\s+(\d+)\s*\+", line)
+            if not m:
                 continue
-            vm, vm_number = line.rsplit(maxsplit=1)
+            vm, vm_number = m.groups()
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
@@ -225,7 +226,7 @@ def get_available_vms():
 
 
 def cmd_list_vms(team, args):
-    return "200 Ok", {"result": "ok", "msg": "\n".join(get_available_vms())}
+    return "200 Ok", {"result": "ok", "msg": "\n".join(get_available_and_visible_vms())}
 
 
 def cmd_create_vm(team, args):
@@ -280,7 +281,7 @@ def cmd_login(team, args):
     COMMANDS_WITH_VM = ["create_vm", "get_vm_info", "open_vm", "isolate_vm",
                         "take_snapshot", "list_snapshots",
                         "restore_vm_from_snapshot", "remove_snapshot", "reboot_vm"]
-    vms = get_available_vms()
+    vms = get_available_and_visible_vms()
     if not vms:
         return "200 Ok", {"result": "ok", "msg": "access granted\n", "team": team,
                           "autocomplete": COMMANDS_WITHOUT_VM + COMMANDS_WITH_VM}
@@ -529,7 +530,7 @@ def application(environ, start_response):
             start_response("422 Bad Request", RESP_HEADERS)
             return [json.dumps({"result": "bad vm name"}).encode()]
 
-        vms = get_available_vms()
+        vms = get_available_and_visible_vms()
         if vm_arg not in vms:
             start_response("422 Bad Request", RESP_HEADERS)
             return [json.dumps({"result": "no such vm"}).encode()]

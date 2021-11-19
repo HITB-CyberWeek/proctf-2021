@@ -102,18 +102,29 @@ def call_unitl_zero_exit(params, redirect_out_to_err=True, attempts=60, timeout=
 
     return None
 
-def get_available_services():
+def get_available_services(only=None):
     try:
         ret = {}
         for line in open("db/services.txt"):
             line = line.strip()
-            if not re.fullmatch(r"([0-9a-zA-Z_])+\s+\d+", line):
+            m = None
+            if only == "visible":
+                m = re.fullmatch(r"([0-9a-zA-Z_]+)+\s+(\d+)\s*(?:\+)", line)
+            elif only == "invisible":
+                m = re.fullmatch(r"([0-9a-zA-Z_]+)+\s+(\d+)\s*(?:\-)", line)
+            elif only is None:
+                m = re.fullmatch(r"([0-9a-zA-Z_]+)\s+(\d+)\s*(?:\+|\-)", line)
+            else:
+                raise Exception("Internal error: bad param for get_available_services")
+
+            if not m:
                 continue
-            vm, vm_number = line.rsplit(maxsplit=1)
+            vm, vm_number = m.groups()
             ret[vm] = int(vm_number)
         return ret
     except (OSError, ValueError):
         return {}
+
 
 def get_service_name_by_num(num):
     if list(get_available_services().values()).count(num) != 1:
