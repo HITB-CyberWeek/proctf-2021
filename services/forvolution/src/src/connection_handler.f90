@@ -484,11 +484,11 @@ contains
     rsize = shape(res)
 
     self%processed = 0
-    self%needed_bytes = 3 + 4 * n * m
+    self%needed_bytes = 3 + 4 * rsize(1) * rsize(2)
     self%buffer(1) = achar(ok)
-    self%buffer(2) = achar(n)
-    self%buffer(3) = achar(m)
-    self%buffer(4:4+4*size(res)-1) = transfer(res, self%buffer(1), size(res) * 4)
+    self%buffer(2) = achar(rsize(1))
+    self%buffer(3) = achar(rsize(2))
+    self%buffer(4:4+4*rsize(1)*rsize(2) - 1) = transfer(res, self%buffer(1), 4 * rsize(1) * rsize(2))
     self%connection_state = connection_write
   end subroutine handle_convolution
 
