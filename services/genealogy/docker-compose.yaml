@@ -28,7 +28,7 @@ services:
     build: .
     depends_on:
       - database
-    # restart: unless-stopped
+    restart: unless-stopped
     volumes:
       - ./.keys:/app/keys
     environment:

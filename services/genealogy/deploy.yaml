@@ -1,0 +1,13 @@
+version: 1
+
+service: genealogy
+username: genealogy
+
+scripts:
+  build_output_vm: ./build.sh
+  build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yaml build --pull
+  start_once: docker-compose -f /home/$USERNAME/docker-compose.yaml up -d
+  
+files:
+  - source: .deploy/
+    destination: /home/$USERNAME
