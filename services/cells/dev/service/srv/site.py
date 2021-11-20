@@ -15,6 +15,8 @@ def fs(s):
     return re.sub(re.compile(r'[^%s%s%s=\._]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
     
 def check_creadentials(login, password):
+    if not os.path.isdir("data"):
+        os.mkdir("data")
     user_dir = os.path.join("data",login)
     if not os.path.isdir(user_dir):
         return False

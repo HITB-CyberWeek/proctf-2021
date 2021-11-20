@@ -15,6 +15,8 @@ def fs(s):
     return re.sub(re.compile(r'[^%s%s%s=\._]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
     
 def check_creadentials(login, password):
+    if not os.path.isdir("data"):
+        os.mkdir("data")
     user_dir = os.path.join("data",login)
     if not os.path.isdir(user_dir):
         return False
@@ -135,7 +137,7 @@ def check(user,name):
 def search():
     tmpl = request.values["template"]
     tmpl = fs(tmpl)
-    if len(tmpl)<2:
+    if len(tmpl)<1:
         return redirect('/?m=Too short template')
     users = []
     res={}
