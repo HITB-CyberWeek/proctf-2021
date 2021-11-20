@@ -448,7 +448,7 @@ contains
     n = parse_int(self%buffer(1:npos-1))
     m = parse_int(self%buffer(npos+1:mpos-1))
 
-    if ((n.gt.convolution_size).or.(m.gt.convolution_size)) then
+    if ((0.ge.n.or.n.gt.convolution_size).or.(0.ge.m.or.m.gt.convolution_size)) then
       call self%set_error(error_bad_size)
       return
     end if
