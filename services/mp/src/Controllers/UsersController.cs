@@ -58,6 +58,8 @@ namespace mp.Controllers
         {
             try
             {
+                if(model.Login.Contains('"') || model.Login.Contains('\\'))
+                    throw new ApiException("Login contains forbidden symbols");
                 await userService.Create(model.Login, model.Password);
                 return Ok();
             }
