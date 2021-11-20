@@ -7,4 +7,6 @@ ADD genealogy /app/genealogy
 
 WORKDIR /app
 
+RUN useradd -M -u 1000 genealogy
+
 CMD /app/genealogy

@@ -95,8 +95,8 @@ async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     # 60 is max size of owners list
     payload = generate_payload(60)
 
-    # 0x257 is desired total length, 172 is a total size of other fields (may change if you change PAYLOAD)
-    description_length = 0x257 - 172
+    # 0x257 is desired total length, 173 is a total size of other fields (may change if you change PAYLOAD)
+    description_length = 0x257 - 173
 
     async with GenealogyClient(endpoint) as client:
         user_id = await client.create_user(login, password)

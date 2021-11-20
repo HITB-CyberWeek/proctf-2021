@@ -18,6 +18,7 @@ class GenealogyClient:
         r = await self.client.post("/users", json={"login": login, "password": password})
         r.raise_for_status()
         response = r.json()
+        print(f"[+] Registered user {login} with id = {response['user']['id']}")
         return response["user"]["id"]
 
     async def login(self, login: str, password: str):
