@@ -16,7 +16,7 @@ CLOUDS = {
         "router_size": "s-1vcpu-2gb",
         "router_ssh_keys": [27173548, 32353017],
         "vulnimages": vulnimages,
-        "vulnimage_size": "s-2vcpu-4gb",
+        "vulnimage_size": "s-1vcpu-2gb",
         "vulnimage_ssh_keys": [27173548]
     },
     "bay": {

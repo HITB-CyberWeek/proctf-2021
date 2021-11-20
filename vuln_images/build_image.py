@@ -123,7 +123,7 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
     jinja2_variables = {
         "api_token": settings.DO_API_TOKEN,
         "files_path": pathlib.Path("packer").absolute().as_posix(),
-        "vm_size": "s-2vcpu-4gb",
+        "vm_size": "s-1vcpu-2gb",
         "region": "ams3",
         "service": config.service,
         "username": config.username,
