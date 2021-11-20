@@ -1,0 +1,9 @@
+version: '3'
+services:
+  web:
+    image: 'jury/p0ck37'
+    build: web
+    container_name: jury-p0ck37
+    restart: unless-stopped
+    ports:
+      - 8080:8080

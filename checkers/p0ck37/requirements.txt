@@ -1,0 +1,4 @@
+# Requirements for the checker of the P0ck37 service (HITB+ PRO CTF 2021)
+
+requests
+pdfplumber
