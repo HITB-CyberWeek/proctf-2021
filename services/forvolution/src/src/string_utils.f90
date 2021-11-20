@@ -3,7 +3,7 @@ module string_utils
   implicit none
 
   private
-  public :: from_c_string, to_int, to_char, to_string, to_array, parse_int
+  public :: from_c_string, to_int, to_char, to_string, to_array, parse_int, is_hex
  
 interface from_c_string
   module procedure from_c_string, from_c_ptr, from_c_nptr
@@ -106,5 +106,12 @@ contains
       r = r * 10 + iachar(s(i)) - 48
     end do
   end function parse_int
+
+  elemental function is_hex(ch) result(r)
+    character, intent(in) :: ch
+    logical :: r
+
+    r = 'a'.le.ch.and.ch.le.'f'.or.'0'.le.ch.and.ch.le.'9'
+  end function is_hex
 
 end module string_utils

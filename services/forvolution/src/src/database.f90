@@ -2,7 +2,7 @@ module database
   use iso_c_binding, only: c_int, c_ptr, c_char, c_loc, c_f_pointer, c_null_char
   use sha256, only: sha256_size
   use rand_helper, only: rand_fill_hex
-  use string_utils, only: to_array
+  use string_utils, only: to_array, is_hex
   implicit none
 
   private
@@ -95,6 +95,11 @@ contains
     character(kind=c_char), dimension(:), allocatable, target :: filename
     type(c_ptr) :: b
     integer :: have
+
+    if(any(.not.is_hex(id))) then
+      r = .false.
+      return
+    end if
 
     filename = get_name(id)
     b = c_loc(buffer)
