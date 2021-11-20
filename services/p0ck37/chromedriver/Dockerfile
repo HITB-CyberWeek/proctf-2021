@@ -1,12 +1,3 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.17 AS dev
-WORKDIR /app
-COPY go.mod ./
-COPY go.sum ./
-COPY wrapper.go ./
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o wrapper .
-
 FROM debian:latest
 
 RUN  apt-get update \
@@ -22,7 +13,7 @@ WORKDIR /tmp
 RUN wget -O chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip
 RUN unzip chromedriver.zip chromedriver -d /usr/local/bin/ && rm chromedriver.zip
 
-COPY --from=dev /app/wrapper /usr/local/bin/
+COPY wrapper /usr/local/bin/
 COPY start.sh /usr/local/bin/
 
 RUN adduser --system --uid=31337 --disabled-password --disabled-login --gecos '' chromedriver

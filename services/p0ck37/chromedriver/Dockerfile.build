@@ -1,0 +1,9 @@
+FROM golang:1.17 AS dev
+WORKDIR /app
+COPY go.mod ./
+COPY go.sum ./
+COPY wrapper.go ./
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o wrapper .
+
+CMD ["cp", "/app/wrapper", "/build"]

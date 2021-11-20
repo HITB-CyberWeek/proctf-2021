@@ -1,0 +1,13 @@
+version: 1
+
+service: p0ck37
+username: p0ck37
+
+scripts:
+  build_outside_vm: ./build.sh
+  build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yml build --pull
+  start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d
+
+files:
+  - source: .deploy/
+    destination: /home/$USERNAME
