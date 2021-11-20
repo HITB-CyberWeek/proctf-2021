@@ -226,7 +226,9 @@ def get_available_and_visible_vms():
 
 
 def cmd_list_vms(team, args):
-    return "200 Ok", {"result": "ok", "msg": "\n".join(get_available_and_visible_vms())}
+    vms = ["%-16s 10.%d.%d.%d" % (vm, 60+team//256, team%256, vm_number)
+                                 for vm, vm_number in get_available_and_visible_vms().items()]
+    return "200 Ok", {"result": "ok", "msg": "\n".join(vms)}
 
 
 def cmd_create_vm(team, args):
