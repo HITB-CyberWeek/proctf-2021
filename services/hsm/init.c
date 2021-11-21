@@ -175,9 +175,6 @@ void parse_input_stdin(Input *input) {
 
   memset((void *) input, 0, sizeof(Input));
 
-  printf("\n[HSM/%d]> ", free_slot_index);
-  fflush(stdout);
-
   while (true) {
     c = fgetc(stdin);
     if (c == EOF) {
@@ -252,8 +249,8 @@ void print_int_text(const char *name, const unsigned char *buf, size_t len) {
   }
 #ifdef DEBUG
   printf(" (%d bytes = %d bits)", len, len*8);
-#endif
   printf("\n");
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -333,6 +330,10 @@ void rsa_test() {
 
 void generate(Slot *slot)
 {
+  char buf[16];
+  memset(buf, 0, sizeof(buf));
+  snprintf(buf, sizeof(buf), "%d", free_slot_index);
+
   br_rsa_keygen kg = br_rsa_keygen_get_default();
   if (!kg(&rng.vtable, &(slot->sk), slot->privkey, &(slot->pk), slot->pubkey, RSA_KEY_SIZE_BITS, RSA_PUB_EXP)) {
     printf("ERROR");
@@ -342,7 +343,7 @@ void generate(Slot *slot)
   print_private_key(&slot->sk);
   print_public_key(&slot->pk);
 #endif
-  print_int_text("", slot->pubkey, sizeof(slot->pubkey));
+  print_int_text(buf, slot->pubkey, sizeof(slot->pubkey));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -371,7 +372,7 @@ void encrypt(char *pubkey_hex, char *plaintext) {
 
   br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
   int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, buf, sizeof(buf), gamma, sizeof(gamma));
-  print_int_text("ct(gamma)", (unsigned char *)buf, len);
+//  print_int_text("ct(gamma)", (unsigned char *)buf, len);
 
   /* br_rsa_oaep_encrypt()
    *     rnd           source of random bytes.
@@ -417,17 +418,18 @@ void decrypt(Slot *slot, char *ciphertext_hex) {
 
   size_t len = 64;
   if (mdec(&br_sha1_vtable, NULL, 0, &slot->sk, ciphertext, &len) != 1) {
-    printf("ERROR: decryption failed\n");
+    printf("ERROR: decryption failed");
     return;
   }
   int i;
   for (i = 0; i < 32; i++) {
     ciphertext[64 + i] ^= ciphertext[i % 16];
   }
+  memset(slot->buf, 0, sizeof(slot->buf));
   for (i = 0; i < 32; i++) {
     slot->buf[i] = ciphertext[64 + i];
   }
-  slot->buf[32] = 0;
+  printf("OK");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -449,11 +451,12 @@ bool handle_input(Input *input)
       return false;
     }
     int slot = free_slot_index;
-    free_slot_index = (free_slot_index + 1) % MAX_SLOTS;
 
     memset((void *) &slots[slot], 0, sizeof(Slot));
     slots->idx = slot;
     generate(&slots[slot]);
+
+    free_slot_index = (free_slot_index + 1) % MAX_SLOTS;
 
     return true;
   }
@@ -476,10 +479,7 @@ bool handle_input(Input *input)
     if (!IS_VALID_SLOT(slot)) {
       return false;
     }
-    // FIXME: implement decryption
-    //strncpy(slots[slot].buf, input->arg2, CIPHERTEXT_SIZE);
     decrypt(&slots[slot], input->arg2);
-    printf("OK");
     return true;
   }
   else if (IS_COMMAND(input, "GETPLAINTEXT", 1)) {
@@ -539,6 +539,8 @@ rtems_task Init(rtems_task_argument ignored) {
         printf("PROTOCOL ERROR");
       }
     }
+    printf("\n");
+    fflush(stdout);
   }
 
   printf("\nBYE\n");
