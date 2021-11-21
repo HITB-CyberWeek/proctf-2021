@@ -31,7 +31,7 @@ async def main(host, mid):
     data = [int.from_bytes(raw[4*i:4*i+4], 'little', signed=True) for i in range(n * m)]
 
     result = []
-    for d in data[n * m - 2 * m:]:
+    for d in data[n * m - 2 * n:]:
         if is_flag_symbol(d):
             result.append(d)
     s = bytes(result).decode(encoding='ascii')

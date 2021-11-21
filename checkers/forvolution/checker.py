@@ -100,7 +100,7 @@ class LoggedClient(client.Client):
         log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
         matrix, desc = await super().download(mid, key)
         size = get_size(matrix)
-        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(mid)))
+        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(desc)))
         return matrix, desc
     async def convolution(self, mid, kernel):
         log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
@@ -191,9 +191,15 @@ async def get(host, flag_id, flag, vuln):
 
     verdict(OK, 'ok')
 
-async def print_debug(seed):
-    pass
-
+async def print_debug(method, seed):
+    if method == 'check':
+        data = generate_data_for_check(seed)
+    elif method == 'put':
+        data = generate_data_for_put(seed)
+    else:
+        data = generate_data_for_get(seed)
+    print(json.dumps(data))
+    verdict(OK)
 
 def main(args):
     CMD_MAPPING = {
@@ -201,7 +207,7 @@ def main(args):
         "check": (check, 1),
         "put": (put, 4),
         "get": (get, 4),
-        "DEBUG": (print_debug, 1)
+        "DEBUG": (print_debug, 2)
     }
 
     if not args:
