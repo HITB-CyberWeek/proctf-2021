@@ -14,9 +14,12 @@ namespace mp.Controllers
     public class OrdersController : SearchController
     {
         [HttpGet("{id}")]
-        public OrderModel Get(string id)
+        public IActionResult Get(string id)
         {
-            return OrderModel.FromDocument(GetInternal(id));
+            var result = GetInternal(id);
+            if(result == null)
+                return BadRequest(NotFound(""));
+            return Ok(OrderModel.FromDocument(result));
         }
 
         [HttpGet("searchForMyProduct")]
