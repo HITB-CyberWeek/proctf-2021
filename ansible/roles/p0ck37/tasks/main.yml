@@ -1,0 +1,26 @@
+---
+
+- name: Copy docker image
+  copy:
+    src: '../jury_services/p0ck37/p0ck37.tar'
+    dest: '/root'
+
+- name: Load docker image
+  community.docker.docker_image:
+    name: jury/p0ck37
+    tag: latest
+    load_path: /root/p0ck37.tar
+    source: load
+
+- name: Copy docker-compose.yml
+  copy:
+    src: '../jury_services/p0ck37/docker-compose.yml'
+    dest: '/root'
+
+- name: Create and start services
+  community.docker.docker_compose:
+    project_src: /root
+  register: output
+
+- ansible.builtin.debug:
+    var: output
