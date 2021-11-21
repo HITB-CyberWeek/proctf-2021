@@ -8,6 +8,7 @@ import traceback
 
 OK, CORRUPT, MUMBLE, DOWN, CHECKER_ERROR = 101, 102, 103, 104, 110
 
+SERVICE_PROTO = "http"  # FIXME: change to https!
 SERVICE_PORT = 9000
 HTTP_TIMEOUT = 10
 PASSWORD_LENGTH = 12
@@ -48,7 +49,7 @@ def assert_no_http_error(response: requests.Response, verdict_on_http_error: int
 
 class Client:
     def __init__(self, host: str, port: int, oauth: str = None, verdict_on_http_error: int = MUMBLE):
-        self.base_url = "https://{}:{}".format(host, port)
+        self.base_url = "{}://{}:{}".format(SERVICE_PROTO, host, port)
         self.session = requests.Session()
         self.verdict_on_http_error = verdict_on_http_error
         if oauth is not None:
@@ -138,7 +139,8 @@ def put(host, flag_id, flag, vuln):
     c.register(username=flag_id, password=make_password(flag_id))
 
     slot, pubkey = c.generate()
-    c.set_meta(flag_id)
+    long_meta = (flag_id + make_password(flag_id))[:33]  # Important to check all 33 chars!
+    c.set_meta(long_meta)
 
     plaintext = make_plaintext(flag)
     ciphertext = encrypt(plaintext, pubkey)  # Local encryption
@@ -149,7 +151,7 @@ def put(host, flag_id, flag, vuln):
         verdict(MUMBLE, public="Wrong decryption result")
 
     remote_meta = c.get_meta()
-    if remote_meta != flag_id:
+    if remote_meta != long_meta:
         verdict(MUMBLE, public="Corrupted meta-information")
 
     verdict(OK, "{}:{}".format(slot, flag_id))  # Slot is helpful for exploitation
