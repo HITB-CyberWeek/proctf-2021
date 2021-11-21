@@ -1,0 +1,26 @@
+---
+
+- name: Copy docker image
+  copy:
+    src: '../jury_services/oauth/oauth.tar'
+    dest: '/root'
+
+- name: Load docker image
+  community.docker.docker_image:
+    name: jury/oauth
+    tag: latest
+    load_path: /root/oauth.tar
+    source: load
+
+- name: Copy docker-compose.yml
+  copy:
+    src: '../jury_services/oauth/docker-compose.yml'
+    dest: '/root'
+
+- name: Create and start services
+  community.docker.docker_compose:
+    project_src: /root
+  register: output
+
+- ansible.builtin.debug:
+    var: output

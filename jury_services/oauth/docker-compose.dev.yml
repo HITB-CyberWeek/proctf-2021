@@ -2,6 +2,7 @@ version: '3'
 services:
   oauth:
     image: 'jury/oauth'
+    build: .
     container_name: oauth
     restart: unless-stopped
     ports:

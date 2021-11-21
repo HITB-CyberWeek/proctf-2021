@@ -1,0 +1,4 @@
+- hosts: oauth
+  gather_facts: no
+  roles:
+    - oauth

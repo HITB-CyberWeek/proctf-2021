@@ -6,3 +6,6 @@
 .vs/
 .idea/
 *.user
+
+# Deploy
+oauth.tar
