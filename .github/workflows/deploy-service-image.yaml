@@ -1,4 +1,4 @@
-name: Build and Deploy Service Image
+name: Deploy Service Image
 on:
   workflow_dispatch:
     inputs:
@@ -6,34 +6,8 @@ on:
         description: "Name of the service"
         required: true
 jobs:
-  build-image:
-    runs-on: self-hosted
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v2
-      - name: Install python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - name: Install dependencies
-        uses: BSFishy/pip-action@v1
-        with:
-          requirements: vuln_images/requirements.txt
-      - name: Build the image
-        run: python3 build_image.py ../services/${{ github.event.inputs.service_name }}/deploy.yaml
-        working-directory: "${{ github.workspace }}/vuln_images/"
-        env:
-          DO_API_TOKEN: ${{ secrets.DO_API_TOKEN }}
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          add: ansible/roles/cloud_master/files/api_srv/do_vulnimages.json
-          message: "${{ github.event.inputs.service_name }}] New image built on ${{ github.sha }}"
-          committer_name: GitHub Actions
-          committer_email: actions@github.com
   deploy-image:
     runs-on: self-hosted
-    needs: [build-image]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
