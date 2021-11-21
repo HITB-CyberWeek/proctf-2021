@@ -70,7 +70,7 @@ def add_link(host, link, session):
 
     if r.status_code != 200:
         verdict(MUMBLE, "Can't add new link", "Can't add new link: '%s'" % r.text)
-    print(r.text)
+    #print(r.text)
 
 def register_flag(flag):
     headers = {"x-api-key": FLAGS_API_KEY}
