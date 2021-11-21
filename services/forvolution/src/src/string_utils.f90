@@ -9,6 +9,10 @@ interface from_c_string
   module procedure from_c_string, from_c_ptr, from_c_nptr
 end interface from_c_string
 
+interface to_array
+  module procedure to_array_string, to_array_integer
+end interface
+
 contains
   function from_c_string(c_str) result(f_str)
     character(len=1), intent(in) :: c_str(:)
@@ -82,7 +86,7 @@ contains
     end do
   end function to_string
 
-  function to_array(s) result(r)
+  function to_array_string(s) result(r)
     character(len=*), intent(in) :: s
     character, dimension(:), allocatable :: r
 
@@ -93,7 +97,35 @@ contains
     do i = 1, len(s)
       r(i) = s(i:i)
     end do
-  end function to_array
+  end function to_array_string
+
+  function to_array_integer(a) result(r)
+    integer, intent(in) :: a
+    character, dimension(:), allocatable :: r
+
+    integer :: len
+    integer :: aa
+
+    if (a.eq.0) then
+      r = (/'0'/)
+      return
+    end if
+
+    len = 0
+    aa = a
+    do while (aa.gt.0)
+      aa = aa / 10
+      len = len + 1
+    end do
+
+    allocate(r(1:len))
+
+    aa = a
+    do while (aa.gt.0)
+      r(len) = char(mod(aa, 10) + 48)
+      len = len - 1
+    end do
+  end function to_array_integer
 
   function parse_int(s) result(r)
     character, dimension(:), intent(in) :: s
