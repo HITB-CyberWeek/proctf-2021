@@ -9,8 +9,9 @@ import traceback
 import numpy as np
 import json
 
-from asyncio import open_connection
-from client import Client, Error
+from asyncio import open_connection, IncompleteReadError
+from client import Error
+import client
 
 OK, CORRUPT, MUMBLE, DOWN, CHECKER_ERROR = 101, 102, 103, 104, 110
 
@@ -84,8 +85,32 @@ def calc_convolution(matrix, kernel):
 
     return output.tolist()
 
+
+class LoggedClient(client.Client):
+    async def connect(self):
+        log('try connect to %s:%d' % (self.host, self.port))
+        await super().connect()
+        log('connected')
+    async def upload(self, matrix, desc, key):
+        log('try upload matrix %dx%d with desc %s and key %s' % (len(matrix), len(matrix[0]), repr(desc), repr(key)))
+        mid = await super().upload(matrix, desc, key)
+        log('uploaded to id %s' % (repr(mid)))
+        return mid
+    async def download(self, mid, key):
+        log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
+        matrix, desc = await super().download(mid, key)
+        size = get_size(matrix)
+        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(mid)))
+        return matrix, desc
+    async def convolution(self, mid, kernel):
+        log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
+        convolution = await super().convolution(mid, kernel)
+        size = get_size(convolution)
+        log('convolution calculated: result is %dx%d' % (size[0], size[1]))
+        return convolution
+
 async def info():
-    verdict(OK, "vulns: 1\npublic_flag_description: desc")
+    verdict(OK, 'vulns: 1\npublic_flag_description: desc')
 
 def generate_data_for_check(seed):
     log('seed:', seed)
@@ -103,7 +128,7 @@ async def check(host):
     seed = ''.join((random.choice(string.ascii_letters)) for _ in range(10))
     matrix, kernel, desc, key = generate_data_for_check(seed)
 
-    client = Client(host, PORT)
+    client = LoggedClient(host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, desc, key)
@@ -132,7 +157,7 @@ def generate_data_for_put(seed):
 async def put(host, flag_id, flag, vuln):
     matrix, key = generate_data_for_put(flag_id)
 
-    client = Client(host, PORT)
+    client = LoggedClient(host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, flag, key)
@@ -151,7 +176,7 @@ async def get(host, flag_id, flag, vuln):
 
     matrix, kernel, key = generate_data_for_get(flag_id)
 
-    client = Client(host, PORT)
+    client = LoggedClient(host, PORT)
     await client.connect()
 
     dmatrix, ddesc = await client.download(mid, key)
@@ -195,6 +220,8 @@ def main(args):
 
     except Error as E:
         verdict(MUMBLE, "Request error", "Request error: %s" % traceback.format_exc())
+    except IncompleteReadError as E:
+        verdict(DOWN, "Reading error", "Reading error: %s" % traceback.format_exc())
     except ConnectionRefusedError as E:
         verdict(DOWN, "Connect refused", "Connect refused: %s" % E)
     except ConnectionError as E:
