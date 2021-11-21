@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using mp.Models.Searchable;
 using Newtonsoft.Json;
 
@@ -55,7 +56,7 @@ namespace mp.Entities
             {
                 Text = text,
                 Creator = creator,
-                ReadableBy = new[] {creator, product.Creator},
+                ReadableBy = (new[] {creator, product.Creator}).Distinct().ToArray(),
                 Dt = DateTime.UtcNow,
                 JoinField = JoinField.Order(product.Id)
             };

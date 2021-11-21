@@ -18,7 +18,7 @@ namespace mp.Controllers
         {
             var result = GetInternal(id);
             if(result == null)
-                return BadRequest(NotFound(""));
+                return BadRequest(NotFound($"Can't find order with id {id}"));
             return Ok(OrderModel.FromDocument(result));
         }
 

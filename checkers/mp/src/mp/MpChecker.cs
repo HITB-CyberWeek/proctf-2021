@@ -56,7 +56,7 @@ namespace checker.mp
                 ProductId = foundProduct.Id,
                 Description = GenerateOrderText()
             };
-            var orderId = await CreateOrder(order, cookie1);
+            var orderId = await CreateOrder(order, cookie2);
 
             await Task.Delay(1500);
 
