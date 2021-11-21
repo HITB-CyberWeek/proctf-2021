@@ -12,7 +12,7 @@ services:
     volumes:
       - data-volume:/data
     environment:
-      - "OAUTH_ENDPOINT=https://192.168.88.200:5000/"
+      - "OAUTH_ENDPOINT=https://auth.ctf.hitb.org:5000/"
 
   chromedriver:
     image: 'p0ck37/chromedriver'
