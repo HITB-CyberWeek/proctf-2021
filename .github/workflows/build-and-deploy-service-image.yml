@@ -62,4 +62,4 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
       - name: Recreate team VMs
-        run: ssh -i ~/cloud_ssh_private_key root@167.71.2.106 '/bin/bash -c "cd /cloud/backend; service_id=$(grep -E ^${{ github.event.inputs.service_name }}\s db/services.txt | awk '{print $2}'); for team in `seq 1 2`; do ./restore_vm_from_snapshot.py $team $service_id init; done"'
+        run: ssh -i ~/cloud_ssh_private_key root@167.71.2.106 '/bin/bash -c "cd /cloud/backend; service_id=$(grep -E ^${{ github.event.inputs.service_name }}\s db/services.txt | awk \'{print $2}\'); for team in `seq 1 2`; do ./restore_vm_from_snapshot.py $team $service_id init; done"'
