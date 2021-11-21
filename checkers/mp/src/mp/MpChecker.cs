@@ -389,7 +389,7 @@ namespace checker.mp
         private const int MaxHttpBodySize = 512 * 1024;
         private const int NetworkOpTimeout = 8000;
 
-        private const int Port = 54843;
+        private const int Port = 80;
 
         private static Uri GetBaseUri(string host) => new($"http://{host}:{Port}/");
     }
