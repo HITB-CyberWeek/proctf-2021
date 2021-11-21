@@ -100,7 +100,7 @@ class LoggedClient(client.Client):
         log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
         matrix, desc = await super().download(mid, key)
         size = get_size(matrix)
-        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(mid)))
+        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(desc)))
         return matrix, desc
     async def convolution(self, mid, kernel):
         log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
