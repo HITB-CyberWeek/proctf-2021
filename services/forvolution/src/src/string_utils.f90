@@ -10,7 +10,7 @@ interface from_c_string
 end interface from_c_string
 
 interface to_array
-  module procedure to_array_string, to_array_integer
+  module procedure to_array_string, to_array_integer, to_array_integer_1
 end interface
 
 contains
@@ -123,9 +123,17 @@ contains
     aa = a
     do while (aa.gt.0)
       r(len) = char(mod(aa, 10) + 48)
+      aa = aa / 10
       len = len - 1
     end do
   end function to_array_integer
+
+  function to_array_integer_1(a) result(r)
+    integer(1), intent(in) :: a
+    character, dimension(:), allocatable :: r
+
+    r = to_array_integer(int(a))
+  end function to_array_integer_1
 
   function parse_int(s) result(r)
     character, dimension(:), intent(in) :: s

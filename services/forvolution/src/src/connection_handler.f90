@@ -31,7 +31,7 @@ module connection_handler
   character(len=*), parameter :: command_download = 'DOWNLOAD'
   character(len=*), parameter :: command_convolution = 'CONVOLUTION'
 
-  integer, parameter :: ok = 0
+  character, dimension(1:2), parameter :: ok = (/'o','k'/)
 
   integer, parameter :: matrix_size = 50
   integer, parameter :: text_size = 99
@@ -63,7 +63,6 @@ module connection_handler
     procedure, private :: handle_request
     procedure, private :: set_read_bytes
     procedure, private :: set_read_fields
-    procedure, private :: set_result
     procedure, private :: set_error
     procedure, private :: init_upload
     procedure, private :: handle_upload
@@ -212,18 +211,6 @@ contains
     self%connection_state = connection_read
   end subroutine set_read_fields
 
-  subroutine set_result(self, size, res)
-    class(connection), intent(inout) :: self
-    integer, intent(in) :: size
-    character, dimension(1:size), intent(in) :: res
-
-    self%processed = 0
-    self%needed_bytes = size + 1
-    self%buffer(1) = achar(ok)
-    self%buffer(2:size+1) = res
-    self%connection_state = connection_write
-  end subroutine set_result
-
   subroutine set_error(self, error)
     class(connection), intent(inout) :: self
     character(len=*) :: error
@@ -341,7 +328,12 @@ contains
     if (id(1).eq.achar(0)) then
       call self%set_error('problem with image uploading')
     else
-      call self%set_result(id_size, id)
+      self%processed = 0
+      self%needed_bytes = 3 + id_size
+      self%buffer(1:2) = ok
+      self%buffer(3) = delimiter
+      self%buffer(4:4+id_size-1) = id
+      self%connection_state = connection_write
     end if
   end subroutine handle_upload
 
@@ -385,6 +377,8 @@ contains
     character, dimension(:), allocatable :: id
     logical :: success
     integer :: msize
+    character, dimension(:), allocatable :: tmp
+    integer :: result_size
 
     lkey = self%extra%key
     id = self%buffer(1:id_size)
@@ -403,13 +397,33 @@ contains
     msize = int(n) * int(m)
 
     self%processed = 0
-    self%needed_bytes = 4 + msize + int(ndesc)
-    self%buffer(1) = achar(ok)
-    self%buffer(2) = achar(n)
-    self%buffer(3) = achar(m)
-    self%buffer(4) = achar(ndesc)
-    self%buffer(5:5+msize-1) = transfer(matrix, self%buffer(5:5+msize-1))
-    self%buffer(5+msize:5+msize+ndesc-1) = desc(1:ndesc)
+
+    self%buffer(1:2) = ok
+    self%buffer(3) = delimiter
+
+    result_size = 3
+
+    tmp = to_array(n)
+    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
+    result_size = result_size + size(tmp) + 1
+    self%buffer(result_size) = ';'
+
+    tmp = to_array(m)
+    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
+    result_size = result_size + size(tmp) + 1
+    self%buffer(result_size) = ';'
+
+    tmp = to_array(ndesc)
+    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
+    result_size = result_size + size(tmp) + 1
+    self%buffer(result_size) = ';'
+
+    self%buffer(result_size+1 : result_size+msize) = transfer(matrix, self%buffer(1), msize)
+    result_size = result_size + msize
+    self%buffer(result_size+1 : result_size+ndesc) = desc(1:ndesc)
+    result_size = result_size + ndesc
+
+    self%needed_bytes = result_size
     self%connection_state = connection_write
   end subroutine
 
@@ -481,7 +495,10 @@ contains
     logical :: success
     character, dimension(:), allocatable :: id
     integer(1), dimension(:,:), allocatable :: kernel
-    integer, dimension(1:2) :: rsize
+    integer, dimension(1:2) :: rsizes
+    integer :: rsize
+    character, dimension(:), allocatable :: tmp
+    integer :: result_size
 
     kn = self%extra%n
     km = self%extra%m
@@ -501,14 +518,28 @@ contains
     end if
 
     res = convolution(matrix, kernel)
-    rsize = shape(res)
+    rsizes = shape(res)
+    rsize = 4 * rsizes(1) * rsizes(2)
 
     self%processed = 0
-    self%needed_bytes = 3 + 4 * rsize(1) * rsize(2)
-    self%buffer(1) = achar(ok)
-    self%buffer(2) = achar(rsize(1))
-    self%buffer(3) = achar(rsize(2))
-    self%buffer(4:4+4*rsize(1)*rsize(2) - 1) = transfer(res, self%buffer(1), 4 * rsize(1) * rsize(2))
+    self%buffer(1:2) = ok
+    self%buffer(3) = delimiter
+    result_size = 3
+
+    tmp = to_array(rsizes(1))
+    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
+    result_size = result_size + size(tmp) + 1
+    self%buffer(result_size) = ';'
+
+    tmp = to_array(rsizes(2))
+    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
+    result_size = result_size + size(tmp) + 1
+    self%buffer(result_size) = ';'
+
+    self%buffer(result_size+1 : result_size+rsize) = transfer(res, self%buffer(1), rsize)
+    result_size = result_size + rsize
+
+    self%needed_bytes = result_size
     self%connection_state = connection_write
   end subroutine handle_convolution
 
