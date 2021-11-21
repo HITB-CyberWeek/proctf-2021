@@ -33,14 +33,28 @@ jobs:
           committer_email: actions@github.com
   deploy-image:
     runs-on: self-hosted
+    needs: [build-image]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Save private key
-        run: 'echo "$SSH_KEY" > ./cloud_private_ssh_key'
+        run: 'echo "$SSH_KEY" > ~/cloud_private_ssh_key'
         shell: bash
         env:
           SSH_KEY: ${{ secrets.CLOUD_PRIVATE_SSH_KEY }}
       - name: Deploy new image to the cloud
-        run: ansible-playbook -vv --private-key=./cloud_private_ssh_key cloud_master.yaml
+        run: ansible-playbook -vv --private-key=~/cloud_private_ssh_key cloud_master.yaml
         working-directory: "${{ github.workspace }}/ansible/"
+  recreate-team-vms:
+    runs-on: self-hosted
+    needs: [deploy-image]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Save private key
+        run: 'echo "$SSH_KEY" > ~/cloud_private_ssh_key'
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.CLOUD_PRIVATE_SSH_KEY }}
+      - name: Recreate team VMs
+        run: ssh -i ~/cloud_private_ssh_key root@167.71.2.106 '/bin/bash -c "cd /cloud/backend; service_id=$(grep ${{ github.event.inputs.service_name }} db/services.txt | awk '{print $2}'); for team in `seq 1 2`; do ./restore_vm_from_snapshot.py $team $service_id init; done"'
