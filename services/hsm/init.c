@@ -54,18 +54,20 @@
 //#define DEBUG
 //#define DEBUG_INPUT
 #define MAX_SLOTS (17*30)
-// 17 teams x 1 max register(generate) per round x 30 rounds
-#define RSA_KEY_SIZE_BITS 512
-#define RSA_PUB_EXP 17
-#define META_SIZE 33    // So we can store here 32-byte flag + '\0'
-#define CIPHERTEXT_SIZE BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
-#define PUBKEY_SIZE     BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
-#define PRIVKEY_SIZE    BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS)
-#define IS_VALID_SLOT(slot) (0 <= slot && slot < MAX_SLOTS)
-#define MAX_CMD_LEN 16
-#define MAX_ARG1_LEN 200
-#define MAX_ARG2_LEN 200
-#define MAX_ARG3_LEN 200
+// 17 teams x 1 max register(generate) per round x 30 rounds = 510
+#define RSA_KEY_SIZE_BITS   512
+#define RSA_PUB_EXP          17
+#define META_SIZE            33                                       // So we can store here 32-byte flag + '\0'
+#define RSA_CIPHERTEXT_SIZE  BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)  // 68
+#define PLAINTEXT_SIZE       64
+#define CIPHERTEXT_SIZE      (RSA_CIPHERTEXT_SIZE + PLAINTEXT_SIZE)   // 132
+#define PUBKEY_SIZE          BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)  // 68
+#define PRIVKEY_SIZE         BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS) // 160
+#define IS_VALID_SLOT(slot)  (0 <= slot && slot < MAX_SLOTS)
+#define MAX_CMD_LEN          16
+#define MAX_ARG1_LEN         (2 * CIPHERTEXT_SIZE)                    // 264
+#define MAX_ARG2_LEN         (2 * CIPHERTEXT_SIZE)                    // 264
+#define MAX_ARG3_LEN         30
 #define IS_COMMAND(input, check_name, check_args) (strcmp(input->command, check_name) == 0 && input->argc == check_args)
 
 /******************************* Structures ***********************************/
@@ -73,12 +75,12 @@
 typedef struct {
   int idx;                              //   4
   char meta[META_SIZE];                 //  33
-  char buf[CIPHERTEXT_SIZE];            // 100
+  char buf[PLAINTEXT_SIZE + 1];         // 133
   br_rsa_private_key sk;
   unsigned char privkey[PRIVKEY_SIZE];  // 240
   br_rsa_public_key pk;
   unsigned char pubkey[PUBKEY_SIZE];    // 100
-} Slot;                                 // TOTAL = 441 bytes (with padding: 444)
+} Slot;                                 // TOTAL = 392 bytes
 
 typedef struct {
   char command[MAX_CMD_LEN + 1];
@@ -349,19 +351,27 @@ void generate(Slot *slot)
 /////////////////////////////////////////////////////////////////////////////////////////
 
 void encrypt(char *pubkey_hex, char *plaintext) {
-  unsigned char pubkey[PUBKEY_SIZE];
-  unsigned char buf[2 * CIPHERTEXT_SIZE];
+  unsigned char pubkey[PUBKEY_SIZE + 1];
+  unsigned char buf[CIPHERTEXT_SIZE + 1];
 
+  if (strlen(pubkey_hex) > PUBKEY_SIZE*2) {
+    printf("ERROR: too long public key (hex): %d > %d.", strlen(pubkey_hex), PUBKEY_SIZE*2);
+    return;
+  }
   memset((void *) pubkey, 0, sizeof(pubkey));
   hextobin(pubkey, pubkey_hex, sizeof(pubkey));
 
+  if (strlen(plaintext) > PLAINTEXT_SIZE) {
+    printf("ERROR: too long plaintext: %d > %d.", strlen(plaintext), PLAINTEXT_SIZE);
+    return;
+  }
   memset((void *) buf, 0, sizeof(buf));
-  strncpy((char *)buf, plaintext, sizeof(buf));
+  //strncpy((char *) buf, plaintext, sizeof(buf));
 
   br_rsa_public_key pk;
   pk.n = pubkey;
   pk.nlen = 64;
-  pk.e = pubkey + 67;
+  pk.e = pubkey + PUBKEY_SIZE - 1;  // Last byte of pubkey
   pk.elen = 1;
 #ifdef DEBUG
   print_public_key(&pk);
@@ -372,7 +382,6 @@ void encrypt(char *pubkey_hex, char *plaintext) {
 
   br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
   int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, buf, sizeof(buf), gamma, sizeof(gamma));
-//  print_int_text("ct(gamma)", (unsigned char *)buf, len);
 
   /* br_rsa_oaep_encrypt()
    *     rnd           source of random bytes.
@@ -388,20 +397,27 @@ void encrypt(char *pubkey_hex, char *plaintext) {
    */
 
   if (!len) {
-    printf("ERROR 1");
+    printf("ERROR: cryptography failed.");
     return;
   }
   size_t i;
-  for (i = 0; i < strlen(plaintext); i++) {
+  for (i = 0; i <= strlen(plaintext); i++) {
     buf[len + i] = plaintext[i] ^ gamma[i % sizeof(gamma)];
   }
-  print_int_text("", (unsigned char *)buf, len + strlen(plaintext));
+  // Total max length: len (RSA_CIPHERTEXT_SIZE) + PLAINTEXT_SIZE + 1 == CIPHERTEXT_SIZE + 1
+  print_int_text("", (unsigned char *)buf, len + strlen(plaintext) + 1);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 void decrypt(Slot *slot, char *ciphertext_hex) {
-  char ciphertext[1000];
+  char ciphertext[CIPHERTEXT_SIZE + 1];
+
+  if (strlen(ciphertext_hex) > CIPHERTEXT_SIZE*2) {
+    printf("ERROR: too long ciphertext (hex): %d > %d", strlen(ciphertext_hex), CIPHERTEXT_SIZE*2);
+    return;
+  }
+
   memset(ciphertext, 0, sizeof(ciphertext));
   hextobin((unsigned char *)ciphertext, ciphertext_hex, sizeof(ciphertext));
 
@@ -422,13 +438,14 @@ void decrypt(Slot *slot, char *ciphertext_hex) {
     return;
   }
   int i;
-  for (i = 0; i < 32; i++) {
+  for (i = 0; i < PLAINTEXT_SIZE; i++) {
     ciphertext[64 + i] ^= ciphertext[i % 16];
   }
   memset(slot->buf, 0, sizeof(slot->buf));
-  for (i = 0; i < 32; i++) {
+  for (i = 0; i < PLAINTEXT_SIZE; i++) {
     slot->buf[i] = ciphertext[64 + i];
   }
+  slot->buf[sizeof(slot->buf)-1] = 0;
   printf("OK");
 }
 
@@ -502,6 +519,7 @@ bool handle_input(Input *input)
 #endif
   else if (IS_COMMAND(input, "RANDINIT", 1)) {
     rand_init(input->arg1);
+    printf("OK");
     return true;
   }
   return false;
@@ -512,9 +530,12 @@ bool handle_input(Input *input)
 rtems_task Init(rtems_task_argument ignored) {
   Input input;
   bool command_result;
-
 #ifdef DEBUG
   printf("ATTENTION! DEBUG BUILD!\n\n");
+  printf("BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS) = %d\n", BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS));
+  printf("BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS) = %d\n", BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS));
+  printf("MAX_ARG1_LEN = %d\n", MAX_ARG1_LEN);
+  printf("CIPHERTEXT_SIZE = %d\n", CIPHERTEXT_SIZE);
   printf("sizeof(Slot) = %d\n", sizeof(Slot));
   printf("Slot %4d = %p\n", 0, &slots[0]);
   printf("Slot %4d = %p\n", 1, &slots[1]);

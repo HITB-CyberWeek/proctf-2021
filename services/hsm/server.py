@@ -2,8 +2,9 @@
 import argparse
 import asyncio
 import os
+import random
 import re
-import time
+import string
 import typing
 
 import sanic
@@ -17,9 +18,15 @@ AUTH_COOKIE = "auth"
 READ_BUF_SIZE = 256
 
 app = Sanic("HSM webapp")
+
 fw_lock = None  # type: typing.Optional[asyncio.Lock]
-fw_queries = None  # type: typing.Optional[asyncio.Queue]
+fw_query_queue = None  # type: typing.Optional[asyncio.Queue]
+fw_stdin_queue = None  # type: typing.Optional[asyncio.Queue]
+fw_stdout_queue = None  # type: typing.Optional[asyncio.Queue]
+fw_stderr_queue = None  # type: typing.Optional[asyncio.Queue]
+
 fw_proc = None  # type: typing.Optional[asyncio.subprocess.Process]
+
 prompt_re = re.compile(r"\[HSM/.*")
 hex_re = re.compile("[0-9a-fA-F]+")
 
@@ -33,6 +40,10 @@ class FwQuery:
     def finish(self, response):
         self.response = response
         self.completed.set()
+
+
+class StdoutStuckException(Exception):
+    pass
 
 
 def link(url: str, txt: str = None):
@@ -49,36 +60,34 @@ def authenticate():
     return 0  # FIXME
 
 
-# Note: must be called under fw_lock!
+def random_string(length):
+    return "".join(random.choice(string.ascii_lowercase) for i in range(length))
+
+
 async def fw_write_unsafe(proc: asyncio.subprocess.Process, data: str):
     logger.info("Sending command to firmware: %r ...", data)
-    proc.stdin.write((data + "\n").encode())
-    await proc.stdin.drain()
+    data = data + "\n"
+    chunk_size = 32
+    # Note: there is a 128-byte serial port buffer in firmware, avoid its overloading.
+    for chunk in [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]:
+        proc.stdin.write(chunk.encode())
+        await proc.stdin.drain()
+        await asyncio.sleep(0.01)
 
 
-# Note: must be called under fw_lock!
-async def fw_read_unsafe(proc: asyncio.subprocess.Process, timeout=3):
-    data = b""
-    start = time.monotonic()
-    while time.monotonic() < start + timeout:
-        try:
-            part = await asyncio.wait_for(proc.stdout.read(READ_BUF_SIZE), 0.005)
-            data += part
-        except asyncio.exceptions.TimeoutError:
-            pass
-        if data.endswith(b"]> "):
-            response = data.decode(errors="replace")
-            response = re.sub(prompt_re, "", response).strip()
-            logger.info("Firmware response: %r.", response)
-            return response
-    logger.warning("Firmware read has timed out after %.2f sec.", timeout)
-    return ""
+async def fw_read_unsafe(proc: asyncio.subprocess.Process):
+    data = await proc.stdout.readline()
+    if len(data) == 0:
+        raise EOFError()  # Probably the process is terminating.
+    line = data.decode(errors="replace").strip()
+    logger.info("Firmware stdout: %r.", line)
+    return line
 
 
 async def fw_communicate(command: str):
     try:
         query = FwQuery(command)
-        await fw_queries.put(query)
+        await fw_query_queue.put(query)
         logger.info("Waiting for query to complete ...")
         await query.completed.wait()  # FIXME: if qemu terminated unexpectedly and restarted, hangs here.
         logger.info("The query has completed")
@@ -86,12 +95,6 @@ async def fw_communicate(command: str):
     except Exception:
         logger.exception("Firmware communication problem.")
         return "Error: firmware communication problem."
-
-
-# @app.exception(Exception)
-# async def catch_error(request: sanic.Request, exception: Exception):
-#     logger.warning("Unhandled exception: %s.", exception)
-#     return text("Internal error.", status=500)
 
 
 @app.route("/")
@@ -189,47 +192,110 @@ async def favicon(request: sanic.Request):
 
 @app.listener("after_server_start")
 async def after_server_start(s: Sanic, loop: asyncio.AbstractEventLoop) -> None:
-    global fw_queries
+    global fw_query_queue
+    fw_query_queue = asyncio.Queue()
     global fw_lock
     fw_lock = asyncio.Lock()
-    fw_queries = asyncio.Queue()
-    s.add_task(firmware_start_task())
-    s.add_task(firmware_communicate_task())
-    s.add_task(firmware_stderr_reading_task())
+    global fw_stdin_queue
+    fw_stdin_queue = asyncio.Queue()
+    global fw_stdout_queue
+    fw_stdout_queue = asyncio.Queue()
+    global fw_stderr_queue
+    fw_stderr_queue = asyncio.Queue()
+
+    logger.info("Staring background tasks.")
+    s.background_tasks = [
+        loop.create_task(firmware_respawn_task()),
+        loop.create_task(firmware_communicate_task()),
+        loop.create_task(firmware_stdin_task()),
+        loop.create_task(firmware_stdout_task()),
+        loop.create_task(firmware_stderr_task()),
+    ]
 
 
-async def firmware_start_task():
+@app.listener("before_server_stop")
+async def before_server_stop(s: Sanic, loop: asyncio.AbstractEventLoop) -> None:
+    logger.info("Stopping background tasks.")
+    for task in s.background_tasks:
+        task.cancel()
+        await task
+
+
+async def firmware_respawn_task():
     global fw_proc
     while True:
         proc = await run_firmware()
-        async with fw_lock:
-            await fw_read_unsafe(proc, timeout=5)
         fw_proc = proc
+        await fw_communicate("RANDINIT " + random_string(10))
         while fw_proc.returncode is None:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
         proc = fw_proc
         fw_proc = None
         logger.error("Firmware has unexpectedly terminated with exit code %d.", proc.returncode)
         stdout, stderr = await proc.communicate()
         logger.warning("Stdout: %r", stdout.decode(errors="replace"))
         logger.warning("Stderr: %r", stderr.decode(errors="replace"))
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
+
+
+async def firmware_stdin_task():
+    while True:
+        try:
+            line = await fw_stdin_queue.get()
+            await fw_write_unsafe(fw_proc, line)
+        except AttributeError:  # Qemu is restarting, fw_proc is None.
+            await asyncio.sleep(0.1)
+            continue
+        except Exception:
+            logger.exception("Stdin reading error.")
+            await asyncio.sleep(0.1)
+
+
+async def firmware_stdout_task():
+    while True:
+        try:
+            line = await fw_read_unsafe(fw_proc)
+            await fw_stdout_queue.put(line)
+        except AttributeError:  # Qemu is restarting, fw_proc is None.
+            await asyncio.sleep(0.1)
+            continue
+        except Exception:
+            logger.exception("Stdout reading error.")
+            await asyncio.sleep(0.1)
+
+
+async def firmware_stderr_task():
+    while True:
+        await asyncio.sleep(0.1)
+        try:
+            if fw_proc is None:
+                continue
+            err_line = await fw_proc.stderr.readline()
+            err_line = err_line.decode(errors="replace").strip()
+            logger.warning("Firmware stderr: %r.", err_line)
+        except Exception as e:
+            logger.warning("Stderr reading error: %s.", e)
 
 
 async def firmware_communicate_task():
     while True:
-        query = await fw_queries.get()  # type: FwQuery
+        query = await fw_query_queue.get()  # type: FwQuery
         logger.info("Got new query from queue.")
         try:
             async with fw_lock:
                 logger.info("Lock acquired.")
-                if fw_proc is None:
-                    logger.warning("Firmware is not running.")
-                    query.finish("Firmware is not running. Try again later.")
-                    break
-                await fw_write_unsafe(fw_proc, query.command)
+                await fw_stdin_queue.put(query.command)
                 logger.info("Waiting for response from firmware...")
-                response = await fw_read_unsafe(fw_proc)
+                response = await fw_stdout_queue.get()
+                if response != query.command:
+                    logger.warning("Unexpected firmware behavior, doesn't echo commands (got %r).", response)
+                response = await fw_stdout_queue.get()
+                while True:
+                    try:
+                        # In case of multiline output.
+                        response += await asyncio.wait_for(fw_stdout_queue.get(), 0.002)
+                    except asyncio.TimeoutError:
+                        break
                 query.finish(response)
                 logger.info("Releasing lock...")
             logger.info("Lock released.")
@@ -238,29 +304,10 @@ async def firmware_communicate_task():
             query.finish("Firmware communication problem. Try again later.")
 
 
-async def firmware_stderr_reading_task():
-    while True:
-        await asyncio.sleep(1)
-        try:
-            if fw_proc is None:
-                continue
-            err_line = await fw_proc.stderr.readline()
-            err_line = err_line.strip()
-            logger.warning("Firmware stderr: %r.", err_line)
-        except Exception as e:
-            logger.warning("Stderr reading problem: %s.", e)
-
-
 async def run_firmware():
     env = os.environ.copy()
     env["QEMU_AUDIO_DRV"] = "none"
     args = ["qemu-system-lm32", "-M", "milkymist", "-kernel", FIRMWARE, "-nographic"]
-    # args = ["./proxy.sh"] + args
-    # proc = await asyncio.create_subprocess_shell(" ".join(args),
-    #                                              env=env,
-    #                                              stdin=asyncio.subprocess.PIPE,
-    #                                              stdout=asyncio.subprocess.PIPE,
-    #                                              stderr=asyncio.subprocess.PIPE)
     proc = await asyncio.create_subprocess_exec(*args,
                                                 env=env,
                                                 limit=64*1024,
