@@ -19,6 +19,8 @@ namespace checker.mp
 
 		public async Task Check(string host)
         {
+            baseUri = GetBaseUri(host);
+
             var user1 = new UserModel { Login = GenerateLogin(), Password = GeneratePassword() };
             await RegisterUser(user1);
             var cookie1 = (await LoginUser(user1))?.GetCookieHeader(baseUri);
