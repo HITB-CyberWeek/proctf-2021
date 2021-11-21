@@ -12,7 +12,7 @@ DOMAIN = "ctf.hitb.org"
 CLOUDS = {
     "hitb": {
         "region": "ams3",
-        "router_image": 89427587,
+        "router_image": 96197446,
         "router_size": "s-1vcpu-2gb",
         "router_ssh_keys": [27173548, 32353017],
         "vulnimages": vulnimages,
