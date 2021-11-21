@@ -13,7 +13,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Save private key
-        run: 'echo "$SSH_KEY" > ~/cs_private_ssh_key'
+        run: 'echo "$SSH_KEY" > ~/cs_private_ssh_key; chmod 600 ~/cs_private_ssh_key'
         shell: bash
         env:
           SSH_KEY: ${{ secrets.CS_PRIVATE_SSH_KEY }}

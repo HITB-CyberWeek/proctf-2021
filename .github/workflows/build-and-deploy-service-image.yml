@@ -38,7 +38,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Save private key
-        run: 'echo "$SSH_KEY" > ~/cloud_private_ssh_key'
+        run: 'echo "$SSH_KEY" > ~/cloud_private_ssh_key; chmod 600 ~/cloud_private_ssh_key'
         shell: bash
         env:
           SSH_KEY: ${{ secrets.CLOUD_PRIVATE_SSH_KEY }}
