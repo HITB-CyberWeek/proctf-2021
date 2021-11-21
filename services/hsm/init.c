@@ -49,17 +49,26 @@
 #include "rsa/rsa_oaep_unpad.c"
 #include "int/i31_reduce.c"
 
-#define DEBUG
-// #define DEBUG_INPUT
-#define MAX_SLOTS 1020
-// 1020 = 17 teams x 1 max put per round x 60 rounds
+/******************************** Macroses ************************************/
+
+//#define DEBUG
+//#define DEBUG_INPUT
+#define MAX_SLOTS (17*30)
+// 17 teams x 1 max register(generate) per round x 30 rounds
 #define RSA_KEY_SIZE_BITS 512
 #define RSA_PUB_EXP 17
-
 #define META_SIZE 33    // So we can store here 32-byte flag + '\0'
 #define CIPHERTEXT_SIZE BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
 #define PUBKEY_SIZE     BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS)
 #define PRIVKEY_SIZE    BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS)
+#define IS_VALID_SLOT(slot) (0 <= slot && slot < MAX_SLOTS)
+#define MAX_CMD_LEN 16
+#define MAX_ARG1_LEN 200
+#define MAX_ARG2_LEN 200
+#define MAX_ARG3_LEN 200
+#define IS_COMMAND(input, check_name, check_args) (strcmp(input->command, check_name) == 0 && input->argc == check_args)
+
+/******************************* Structures ***********************************/
 
 typedef struct {
   int idx;                              //   4
@@ -71,16 +80,6 @@ typedef struct {
   unsigned char pubkey[PUBKEY_SIZE];    // 100
 } Slot;                                 // TOTAL = 441 bytes (with padding: 444)
 
-Slot slots[MAX_SLOTS];
-int free_slot_index = 0; // round-robin
-
-#define IS_VALID_SLOT(slot) (0 <= slot && slot < MAX_SLOTS)
-
-#define MAX_CMD_LEN 16
-#define MAX_ARG1_LEN 200
-#define MAX_ARG2_LEN 200
-#define MAX_ARG3_LEN 200
-
 typedef struct {
   char command[MAX_CMD_LEN + 1];
   char argc;
@@ -91,31 +90,44 @@ typedef struct {
   bool eof;
 } Input;
 
-#define IS_COMMAND(input, check_name, check_args) (strcmp(input->command, check_name) == 0 && input->argc == check_args)
+/****************** forward declarations to avoid warnings ********************/
 
+rtems_task Init(rtems_task_argument argument);
+bool handle_input(Input *input);
+void parse_input_stdin(Input *input);
+bool set_meta(Slot* slot, char new_meta[]);
+bool get_meta(const Slot slot);
+void rand_init(char seed[]);
+void print_int_text(const char *name, const unsigned char *buf, size_t len);
+void generate(Slot *slot);
+void encrypt(char *pubkey_hex, char *plaintext);
+void decrypt(Slot *slot, char *ciphertext_hex);
+#ifdef DEBUG
+void rsa_test(void);
+#endif
+
+/******************************************************************************/
+
+Slot slots[MAX_SLOTS];
+int free_slot_index = 0; // round-robin
 int max_token_lengths[4] = {
   MAX_CMD_LEN, MAX_ARG1_LEN, MAX_ARG2_LEN, MAX_ARG3_LEN
 };
+br_hmac_drbg_context rng;
 
-/* forward declarations to avoid warnings */
-rtems_task Init(rtems_task_argument argument);
-void rsa_test(void);
+/////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef DEBUG_INPUT
 void print_input(Input *input) {
   printf("[DEBUG] input:\n");
-  printf("          error     : %s\n", input->error ? "true" : "false");
-  printf("          command   : '%s' (length %d, max %d)\n", input->command, strlen(input->command), MAX_CMD_LEN);
-  printf("          argc      : %d\n", input->argc);
-  printf("          arg1      : '%s' (length %d, max %d)\n", input->arg1, strlen(input->arg1), MAX_ARG1_LEN); 
-  printf("          arg2      : '%s' (length %d, max %d)\n", input->arg2, strlen(input->arg2), MAX_ARG2_LEN); 
-  printf("          arg3      : '%s' (length %d, max %d)\n", input->arg3, strlen(input->arg3), MAX_ARG3_LEN); 
+  printf("   error     : %s\n", input->error ? "true" : "false");
+  printf("   command   : '%s' (length %d, max %d)\n", input->command, strlen(input->command), MAX_CMD_LEN);
+  printf("   argc      : %d\n", input->argc);
+  printf("   arg1      : '%s' (length %d, max %d)\n", input->arg1, strlen(input->arg1), MAX_ARG1_LEN); 
+  printf("   arg2      : '%s' (length %d, max %d)\n", input->arg2, strlen(input->arg2), MAX_ARG2_LEN); 
+  printf("   arg3      : '%s' (length %d, max %d)\n", input->arg3, strlen(input->arg3), MAX_ARG3_LEN); 
 }
 #endif
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-br_hmac_drbg_context rng;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -269,6 +281,7 @@ void print_public_key(br_rsa_public_key *pk) {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG
 void rsa_test() {
   br_rsa_private_key sk;
   br_rsa_public_key pk;
@@ -303,7 +316,7 @@ void rsa_test() {
     printf("ERROR: RSA decryption failed\n");
     return;
   }
-  print_int_text("plaintext ", tmp, len);
+  print_int_text("plaintext ", (unsigned char *)tmp, len);
   printf("%s\n", tmp);
 
   char rand[16];
@@ -314,6 +327,7 @@ void rsa_test() {
   rng.vtable->generate(&rng.vtable, rand, sizeof(rand));
   print_int_text("rand", rand, sizeof(rand));
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -334,14 +348,14 @@ void generate(Slot *slot)
 /////////////////////////////////////////////////////////////////////////////////////////
 
 void encrypt(char *pubkey_hex, char *plaintext) {
-  char pubkey[PUBKEY_SIZE];
-  char buf[2 * CIPHERTEXT_SIZE];
+  unsigned char pubkey[PUBKEY_SIZE];
+  unsigned char buf[2 * CIPHERTEXT_SIZE];
 
   memset((void *) pubkey, 0, sizeof(pubkey));
   hextobin(pubkey, pubkey_hex, sizeof(pubkey));
 
   memset((void *) buf, 0, sizeof(buf));
-  strncpy(buf, plaintext, sizeof(buf));
+  strncpy((char *)buf, plaintext, sizeof(buf));
 
   br_rsa_public_key pk;
   pk.n = pubkey;
@@ -357,7 +371,7 @@ void encrypt(char *pubkey_hex, char *plaintext) {
 
   br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
   int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, buf, sizeof(buf), gamma, sizeof(gamma));
-  print_int_text("ct(gamma)", buf, len);
+  print_int_text("ct(gamma)", (unsigned char *)buf, len);
 
   /* br_rsa_oaep_encrypt()
    *     rnd           source of random bytes.
@@ -380,7 +394,7 @@ void encrypt(char *pubkey_hex, char *plaintext) {
   for (i = 0; i < strlen(plaintext); i++) {
     buf[len + i] = plaintext[i] ^ gamma[i % sizeof(gamma)];
   }
-  print_int_text("", buf, len + strlen(plaintext));
+  print_int_text("", (unsigned char *)buf, len + strlen(plaintext));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -388,10 +402,11 @@ void encrypt(char *pubkey_hex, char *plaintext) {
 void decrypt(Slot *slot, char *ciphertext_hex) {
   char ciphertext[1000];
   memset(ciphertext, 0, sizeof(ciphertext));
-  hextobin(ciphertext, ciphertext_hex, sizeof(ciphertext));
+  hextobin((unsigned char *)ciphertext, ciphertext_hex, sizeof(ciphertext));
 
   br_rsa_oaep_decrypt mdec = br_rsa_oaep_decrypt_get_default();
-  /*
+  /* \see br_rsa_oaep_decrypt
+   * \brief RSA decryption helper, for SSL/TLS.
    * \param dig         hash function to use with MGF1.
    * \param label       label value (may be `NULL` if `label_len` is zero).
    * \param label_len   label length, in bytes.
@@ -400,10 +415,9 @@ void decrypt(Slot *slot, char *ciphertext_hex) {
    * \param len         encrypted/decrypted message length.
    * \return  1 on success, 0 on error.                                        */
 
-  int len = 64;
-  print_private_key(&slot->sk);
+  size_t len = 64;
   if (mdec(&br_sha1_vtable, NULL, 0, &slot->sk, ciphertext, &len) != 1) {
-    printf("ERROR: RSA decryption failed\n");
+    printf("ERROR: decryption failed\n");
     return;
   }
   int i;
@@ -462,6 +476,8 @@ bool handle_input(Input *input)
     if (!IS_VALID_SLOT(slot)) {
       return false;
     }
+    // FIXME: implement decryption
+    //strncpy(slots[slot].buf, input->arg2, CIPHERTEXT_SIZE);
     decrypt(&slots[slot], input->arg2);
     printf("OK");
     return true;
@@ -478,10 +494,12 @@ bool handle_input(Input *input)
     encrypt(input->arg1, input->arg2);
     return true;
   }
+#ifdef DEBUG
   else if (IS_COMMAND(input, "RSA", 0)) {
     rsa_test();
     return true;
   }
+#endif
   else if (IS_COMMAND(input, "RANDINIT", 1)) {
     rand_init(input->arg1);
     return true;
