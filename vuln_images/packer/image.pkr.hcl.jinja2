@@ -94,7 +94,7 @@ build {
     inline = [
       {% for command in build_inside_vm %}
       "{{ command }}"{% if not loop.last %},{% endif %}
-      {% command %}
+      {% endfor %}
     ]
   }
   {% endif %}
