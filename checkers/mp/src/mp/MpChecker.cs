@@ -55,7 +55,7 @@ namespace checker.mp
             var products = await SearchProducts(RndUtil.Bool() ? product.Name : product.Description, cookie2);
 
             //TODO support paging
-            var found = products.FirstOrDefault(p => p.Id == productId);
+            var found = products?.FirstOrDefault(p => p.Id == productId);
             if(found == null)
                 throw new CheckerException(ExitCode.MUMBLE, "Can't find just created product");
 
@@ -85,8 +85,42 @@ namespace checker.mp
 
         public async Task Get(string host, PutResult state, string flag, int vuln)
 		{
-            throw new NotImplementedException();
+            //TODO randomly use cookies or login/pass
+            var orders = await SearchOrdersOfProduct(state.ProductId, state.Cookie1);
+            var order = orders?.FirstOrDefault(order => order.Description.Contains(flag));
+
+            //TODO support paging
+
+            //TODO is it ok to disclouse public flag id here?
+            if(order == null)
+                //TODO maybe it is ok to disclouse public flag id here?
+                // throw new CheckerException(ExitCode.CORRUPT, $"Can't find flag with id '{state.PublicFlagId}'");
+                throw new CheckerException(ExitCode.CORRUPT, $"Can't find flag");
+
         }
+
+        private async Task<IEnumerable<OrderModel>> SearchOrdersOfProduct(string productId, string cookies)
+        {
+            var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
+            var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
+            client.Cookies.SetCookies(baseUri, cookies);
+
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiOrdersSearchForMyProduct + $"?productId={productId}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            if (result.StatusCode != HttpStatusCode.OK)
+                throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiOrdersSearchForMyProduct} failed: {result.StatusCode.ToReadableCode()}");
+
+            var resultString = result.BodyAsString;
+            try
+            {
+                return JsonConvert.DeserializeObject<IEnumerable<OrderModel>>(resultString);
+            }
+            catch (Exception e)
+            {
+                await Console.Error.WriteLineAsync($"Failed to deserialize JSON of orders '{resultString}' found for product '{productId}': {e}");
+                throw new CheckerException(ExitCode.MUMBLE, $"Failed to deserialize JSON from {ApiOrdersSearchForMyProduct}");
+            }
+        }
+
 
         private async Task<string> CreateOrder(OrderModelPut order, string cookie)
         {
@@ -172,7 +206,7 @@ namespace checker.mp
             var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
             client.Cookies.SetCookies(baseUri, cookies);
 
-            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + $"?query={text}", contentTypeHeaders, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + $"?query={text}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
             if (result.StatusCode != HttpStatusCode.OK)
                 throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiProductsSearch} failed: {result.StatusCode.ToReadableCode()}");
 
