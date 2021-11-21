@@ -42,8 +42,10 @@ jobs:
         shell: bash
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
+      - name: Copy oblaka.mp3
+        run: 'cp ~/oblaka.mp3 "${{ github.workspace }}/ansible/roles/cloud_master/files/wsgi/oblaka.mp3"'
       - name: Deploy new image to the cloud
-        run: ansible-playbook -vvvv --private-key=~/cloud_ssh_private_key cloud_master.yaml
+        run: ansible-playbook -vv --private-key=~/cloud_ssh_private_key cloud_master.yaml
         working-directory: "${{ github.workspace }}/ansible/"
   recreate-team-vms:
     runs-on: self-hosted
