@@ -24,8 +24,14 @@ class Error(Exception):
         Exception.__init__(self, f'non-success code {self.error}')
 
 
+def encode(s: str) -> bytes:
+    return s.encode(encoding='utf-8', errors='surrogateescape')
+
+def decode(b: bytes) -> str:
+    return b.decode(encoding='utf-8', errors='surrogateescape')
+
 def prepare_id(mid: str) -> bytes:
-    bmid = mid.encode(encoding='ascii')
+    bmid = encode(mid)
     if len(bmid) != ID_BSIZE:
         raise ValueError('len(bmid) != ID_BSIZE')
     return bmid
@@ -51,7 +57,7 @@ def prepare_matrix(matrix: list[list[int]]) -> bytes:
     return n, m, bytes(res)
 
 def prepare_str(s: str) -> bytes:
-    bs = s.encode(encoding='ascii')
+    bs = encode(s)
     if len(bs) > MAX_SIZE:
         raise ValueError('len(bs) > MAX_SIZE')
     return bs
@@ -75,7 +81,7 @@ class Client:
         await self.writer.wait_closed()
     def _write_fields(self, *fields : str):
         message = Delimiter.join(fields) + Delimiter
-        self.writer.write(message.encode(encoding='ascii'))
+        self.writer.write(encode(message))
     async def _check_status(self):
         code_raw = await self.reader.readexactly(1)
         code = int(code_raw[0])
@@ -94,7 +100,7 @@ class Client:
 
         await self._check_status()
         id_raw = await self.reader.readexactly(ID_BSIZE)
-        return id_raw.decode()
+        return decode(id_raw)
     async def download(self, mid: str, key: str) -> (list[list[int]], str):
         bmid = prepare_id(mid)
         bkey = prepare_str(key)
@@ -110,7 +116,7 @@ class Client:
         matrix_raw = await self.reader.readexactly(n * m)
         matrix = parse(1, n, m, matrix_raw)
         desc_raw = await self.reader.readexactly(ndesc)
-        desc = desc_raw.decode(encoding='ascii')
+        desc = decode(desc_raw)
 
         return (matrix, desc)
     async def convolution(self, mid: str, kernel: list[list[int]]) -> list[list[int]]:
