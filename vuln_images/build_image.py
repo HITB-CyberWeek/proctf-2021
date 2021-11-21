@@ -128,7 +128,7 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
         "service": config.service,
         "username": config.username,
         "files": files,
-        "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config),
+        "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config).splitlines(),
         "start_once": substitute_variables(config.scripts.start_once, config),
     }
     template = jinja2.Template((CURRENT_FOLDER / "packer/image.pkr.hcl.jinja2").read_text())
