@@ -17,7 +17,7 @@ TIMEOUT = 10
 OAUTH_TOKEN = 'd7ae69cd-7e91-44de-8729-12cded47b3f2'
 OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org:5000/'
 FLAGS_API_KEY = '25807689-9ae1-4894-a6f8-940abd1c3a4a'
-FLAGS_ENDPOINT = 'http://192.168.88.200:8080/'
+FLAGS_ENDPOINT = 'http://jury-p0ck37.ctf.hitb.org:8080/'
 
 def info():
     verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is the ID of a user who has a flag")
