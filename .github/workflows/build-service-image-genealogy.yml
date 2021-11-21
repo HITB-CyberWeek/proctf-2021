@@ -24,7 +24,8 @@ jobs:
         with:
           requirements: vuln_images/requirements.txt
       - name: Build the image
-        run: python3 "${{ github.workspace }}/vuln_images/build_image.py" services/${{ env.SERVICE_NAME }}/deploy.yaml
+        run: python3 build_image.py ../services/${{ env.SERVICE_NAME }}/deploy.yaml
+        working-directory: "${{ github.workspace }}/vuln_images/"
         env:
           DO_API_TOKEN: ${{ secrets.DO_API_TOKEN }}
       - name: Commit changes
