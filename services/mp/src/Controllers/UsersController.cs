@@ -61,8 +61,8 @@ namespace mp.Controllers
                 var login = model.Login;
                 var password = model.Password;
 
-                if (login.Contains('"') || login.Contains('\\'))
-                    throw new ApiException("Login contains forbidden symbols");
+                if (login.Contains('"') || login.Contains('\\') || login.Length > 100)
+                    throw new ApiException("Login is unacceptable");
 
                 if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
                     throw new ApiException("Non-empty Login and Password required");
