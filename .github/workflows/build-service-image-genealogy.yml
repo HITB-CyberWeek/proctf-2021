@@ -1,4 +1,4 @@
-name: Build Genealogy Service Image
+name: Build and Deploy Service Image
 on:
   workflow_dispatch:
     inputs:
@@ -6,9 +6,8 @@ on:
         description: "Name of the service"
         required: true
 jobs:
-  build-service-image:
+  build-image:
     runs-on: self-hosted
-    # runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -32,3 +31,16 @@ jobs:
           message: "[${{ github.event.inputs.name.service_name }}] New image built on ${{ github.sha }}"
           committer_name: GitHub Actions
           committer_email: actions@github.com
+  deploy-image:
+    runs-on: self-hosted
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Save private key
+        run: 'echo "$SSH_KEY" > ./cloud_private_ssh_key'
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.CLOUD_PRIVATE_SSH_KEY }}
+      - name: Deploy new image to the cloud
+        run: ansible-playbook -vv --private-key=./cloud_private_ssh_key cloud_master.yaml
+        working-directory: "${{ github.workspace }}/ansible/"
