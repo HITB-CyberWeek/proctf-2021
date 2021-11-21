@@ -1,5 +1,6 @@
 name: Build Genealogy Service Image
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - master
