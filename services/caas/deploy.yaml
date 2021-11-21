@@ -4,7 +4,6 @@ service: caas
 username: caas
 
 scripts:
-  build_outside_vm:
   build_inside_vm: |
     docker-compose -f /home/$USERNAME/docker-compose.yaml build --pull
     mkdir -m 0777 /home/$USERNAME/data
