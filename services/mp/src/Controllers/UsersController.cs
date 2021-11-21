@@ -58,9 +58,16 @@ namespace mp.Controllers
         {
             try
             {
-                if(model.Login.Contains('"') || model.Login.Contains('\\'))
+                var login = model.Login;
+                var password = model.Password;
+
+                if (login.Contains('"') || login.Contains('\\'))
                     throw new ApiException("Login contains forbidden symbols");
-                await userService.Create(model.Login, model.Password);
+
+                if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
+                    throw new ApiException("Non-empty Login and Password required");
+
+                await userService.Create(login, password);
                 return Ok();
             }
             catch (ApiException ex)

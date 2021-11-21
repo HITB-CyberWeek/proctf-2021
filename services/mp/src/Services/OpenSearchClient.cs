@@ -94,6 +94,7 @@ namespace mp.Services
                                         {
                                             "product_name", "text"
                                         },
+                                        escape = true,
                                         query = queryString
                                     }
                                 }
