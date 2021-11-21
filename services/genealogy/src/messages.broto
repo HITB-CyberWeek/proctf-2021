@@ -1,0 +1,25 @@
+/*
+It's brotobuf file. Brotobufs are like protobufs but much cooler!
+
+This file has been compiled by brotoc to brotobuf/* files.
+Unfortunately, .cpp files have been lost as well as brotoc compiler.
+*/
+
+message Person {
+  required int64 birth_date = 0;
+  required int64 death_date = 1;
+  required string title = 2;
+  required string first_name = 3;
+  required string middle_name = 4;
+  required string last_name = 5;
+  required string photo_url = 6;
+  repeated Person parent = 7 [max_amount = 2];
+}
+
+message GenealogyTree {
+  required int64 id = 0;
+  required string title = 1;
+  required string description = 2;
+  repeated int64 owner = 3 [max_amount = 60];
+  optional Person person = 4;
+}
