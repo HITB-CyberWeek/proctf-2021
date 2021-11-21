@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
@@ -133,6 +134,14 @@ namespace timecapsule
 			return Ok(items);
 		}
 
+		[HttpGet("decrypt")]
+		public async Task<IActionResult> Decrypt(string wrapped, Guid secret)
+		{
+			var unwrapped = await TimeCapsuleWrapper.UnwrapAsync(wrapped, HttpContext.RequestAborted, secret);
+			unwrapped.Text = ImportantRegex.Replace(unwrapped.Text, m => m.Value.ToUpper());
+			return Ok(unwrapped);
+		}
+
 		private static TextContainer RemoveSecretFields(TextContainer capsule, string author, DateTime now)
 		{
 			if(capsule == null || capsule.ExpireDate <= now || capsule.Author == author)
@@ -173,6 +182,7 @@ namespace timecapsule
 		}
 
 		private static readonly Guid PublicKey = new("13371337-1337-1337-1337-133713371337");
+		private static readonly Regex ImportantRegex = new(@"\b[a-z0-9]{31}=", RegexOptions.Compiled);
 		private readonly DatabaseContext dbCtx;
 	}
 }
