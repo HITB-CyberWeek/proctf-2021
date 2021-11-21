@@ -42,8 +42,11 @@ jobs:
         shell: bash
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
-      - name: Copy oblaka.mp3
-        run: 'cp ~/oblaka.mp3 "${{ github.workspace }}/ansible/roles/cloud_master/files/wsgi/oblaka.mp3"'
+      - name: Copy a-la-secret files
+        run: |-
+          cp ~/oblaka.mp3 "${{ github.workspace }}/ansible/roles/cloud_master/files/wsgi/oblaka.mp3";
+          cp ~/hitb2021_do_deploy "${{ github.workspace }}/ansible/roles/cloud_master/files/api_srv/hitb2021_do_deploy";
+          cp ~/do_tokens.py "${{ github.workspace }}/ansible/roles/cloud_master/files/api_srv/do_tokens.py";
       - name: Deploy new image to the cloud
         run: ansible-playbook -vv --private-key=~/cloud_ssh_private_key cloud_master.yaml
         working-directory: "${{ github.workspace }}/ansible/"
