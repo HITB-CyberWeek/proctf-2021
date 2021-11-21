@@ -19,10 +19,59 @@ namespace checker.mp
 
 		public async Task Check(string host)
         {
-            // var api = new UsersApi(GetBaseUri(host));
-            // var result = api.UsersRegisterPostWithHttpInfo(new UserModel {Login = "test", Password = "test"});
+            var user1 = new UserModel { Login = GenerateLogin(), Password = GeneratePassword() };
+            await RegisterUser(user1);
+            var cookie1 = (await LoginUser(user1))?.GetCookieHeader(baseUri);
+            var gotUsername =await  WhoAmIUser(cookie1);
+            if(gotUsername != user1.Login)
+                throw new CheckerException(ExitCode.MUMBLE, "Could not login user correctly");
+            //TODO do it several times in parallel
 
-            throw new NotImplementedException();
+            var user2 = new UserModel { Login = GenerateLogin(), Password = GeneratePassword() };
+            await RegisterUser(user2);
+            var cookie2 = (await LoginUser(user2))?.GetCookieHeader(baseUri);
+
+            var product = new ProductModelPut
+            {
+                Name = RndText.RandomWord(RndUtil.GetInt(16, 32)).RandomUpperCase().RandomLeet(),
+                Description = GenerateProductDescription()
+            };
+            var productId = await CreateProduct(product, cookie1);
+            //NOTE give time for document to become searchable
+            await Task.Delay(1500);
+
+            var gotProduct = await GetProduct(productId, cookie2);
+            if (gotProduct?.Name != product.Name || gotProduct?.Description != product.Description || gotProduct?.Id != productId)
+                throw new CheckerException(ExitCode.MUMBLE, "Got modified or invalid product");
+
+            var products = await SearchProducts(RndUtil.Bool() ? product.Name : product.Description, RndUtil.Choice(cookie1, cookie2));
+            var foundProduct = products?.FirstOrDefault(p => p.Id == productId);
+            if (foundProduct == null)
+                throw new CheckerException(ExitCode.MUMBLE, "Can't find just created product");
+
+            var order = new OrderModelPut
+            {
+                ProductId = foundProduct.Id,
+                Description = GenerateOrderText()
+            };
+            var orderId = await CreateOrder(order, cookie1);
+
+            await Task.Delay(1500);
+
+            var gotOrder = await GetOrder(orderId, RndUtil.Choice(cookie1, cookie2));
+            if (gotOrder?.Description != order.Description || gotOrder?.ProductId != order.ProductId || gotOrder?.Id != orderId)
+                throw new CheckerException(ExitCode.MUMBLE, "Got modified or invalid order");
+
+            var foundOrders = await SearchOrders(order.Description, RndUtil.Choice(cookie1, cookie2));
+            var foundOrder  = foundOrders?.FirstOrDefault(o => o.Id == orderId);
+            if (foundOrder?.Description != order.Description || foundOrder?.ProductId != order.ProductId || foundOrder?.Id != orderId)
+                throw new CheckerException(ExitCode.MUMBLE, "Can't find just created order");
+
+            //TODO randomly use cookies or login/pass
+            var orders = await SearchOrdersOfProduct(productId, RndUtil.Choice(cookie1, cookie2));
+            var foundOrderOfProduct = orders?.FirstOrDefault(o => o.Id == orderId && o.ProductId == order.ProductId && o.Description == order.Description);
+            if (foundOrderOfProduct == null)
+                throw new CheckerException(ExitCode.MUMBLE, "Can't find just created order by productId");
         }
 
 		public async Task<PutResult> Put(string host, string flagId, string flag, int vuln)
@@ -42,28 +91,20 @@ namespace checker.mp
             //NOTE give time for document to become searchable
             await Task.Delay(1500);
 
-            var gotProduct = await GetProduct(productId, cookie1);
-
-            if(gotProduct?.Name != product.Name || gotProduct?.Description != product.Description || gotProduct?.Id != productId)
-                throw new CheckerException(ExitCode.MUMBLE, "Got modified product");
-
-            await Task.Delay(new Random().Next(200, 1000));
             var user2 = new UserModel { Login = GenerateLogin(), Password = GeneratePassword() };
             await RegisterUser(user2);
             var cookie2 = (await LoginUser(user2))?.GetCookieHeader(baseUri);
 
-            var products = await SearchProducts(RndUtil.Bool() ? product.Name : product.Description, cookie2);
-
-            //TODO support paging
-            var found = products?.FirstOrDefault(p => p.Id == productId);
-            if(found == null)
+            var products = await SearchProducts(RndUtil.Bool() ? product.Name : product.Description, RndUtil.Choice(cookie1, cookie2));
+            var foundProduct = products?.FirstOrDefault(p => p.Id == productId);
+            if(foundProduct == null)
                 throw new CheckerException(ExitCode.MUMBLE, "Can't find just created product");
 
             var publicFlagId = Guid.NewGuid().ToString("N");
             var order = new OrderModelPut
             {
-                ProductId = found.Id,
-                Description = GenerateOrderText(flagId, publicFlagId, flag)
+                ProductId = foundProduct.Id,
+                Description = GenerateOrderText(flag, flagId, publicFlagId)
             };
             var orderId = await CreateOrder(order, cookie1);
 
@@ -85,9 +126,14 @@ namespace checker.mp
 
         public async Task Get(string host, PutResult state, string flag, int vuln)
 		{
+            baseUri = GetBaseUri(host);
+
+            //NOTE give time for document to become searchable
+            await Task.Delay(1500);
+
             //TODO randomly use cookies or login/pass
             var orders = await SearchOrdersOfProduct(state.ProductId, state.Cookie1);
-            var order = orders?.FirstOrDefault(order => order.Description.Contains(flag));
+            var order = orders?.FirstOrDefault(o => o.Description.Contains(flag));
 
             //TODO support paging
 
@@ -99,8 +145,32 @@ namespace checker.mp
 
         }
 
+        private async Task<IEnumerable<OrderModel>> SearchOrders(string text, string cookies)
+        {
+            //TODO support paging
+            var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
+            var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
+            client.Cookies.SetCookies(baseUri, cookies);
+
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiOrdersSearch + $"?query={text}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            if (result.StatusCode != HttpStatusCode.OK)
+                throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiOrdersSearch} failed: {result.StatusCode.ToReadableCode()}");
+
+            var resultString = result.BodyAsString;
+            try
+            {
+                return JsonConvert.DeserializeObject<IEnumerable<OrderModel>>(resultString);
+            }
+            catch (Exception e)
+            {
+                await Console.Error.WriteLineAsync($"Failed to deserialize JSON of orders '{resultString}' found by query '{text}': {e}");
+                throw new CheckerException(ExitCode.MUMBLE, $"Failed to deserialize JSON from {ApiOrdersSearch}");
+            }
+        }
+
         private async Task<IEnumerable<OrderModel>> SearchOrdersOfProduct(string productId, string cookies)
         {
+            //TODO support paging
             var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
             var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
             client.Cookies.SetCookies(baseUri, cookies);
@@ -121,6 +191,27 @@ namespace checker.mp
             }
         }
 
+        private async Task<OrderModel> GetOrder(string orderId, string cookies)
+        {
+            var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
+            var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
+            client.Cookies.SetCookies(baseUri, cookies);
+
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiOrdersGet + orderId, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            if (result.StatusCode != HttpStatusCode.OK)
+                throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiOrdersGet} failed: {result.StatusCode.ToReadableCode()}");
+
+            var resultString = result.BodyAsString;
+            try
+            {
+                return JsonConvert.DeserializeObject<OrderModel>(resultString);
+            }
+            catch (Exception e)
+            {
+                await Console.Error.WriteLineAsync($"Failed to deserialize JSON of order '{orderId}' from '{resultString}': {e}");
+                throw new CheckerException(ExitCode.MUMBLE, $"Failed to deserialize JSON from {ApiOrdersGet}");
+            }
+        }
 
         private async Task<string> CreateOrder(OrderModelPut order, string cookie)
         {
@@ -138,7 +229,7 @@ namespace checker.mp
             return orderId;
         }
 
-        private string GenerateOrderText(string checksystemFlagId, string randomGuid, string flag)
+        private string GenerateOrderText(string flag = null, string checksystemFlagId = null, string randomGuid = null)
         {
             var text = RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
             text = text + " " + checksystemFlagId;
@@ -148,9 +239,9 @@ namespace checker.mp
             else if (RndUtil.GetInt(0, 2) == 0) text += ". " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
             else if (RndUtil.GetInt(0, 3) == 0) text += "; " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
 
-            text =  text + " " + flag;
+            text += flag != null ? " " + flag : null;
             if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(32).RandomUpperCase();
-            text += $" v{randomGuid}";
+            text += randomGuid != null ? $" v{randomGuid}" : null;
             text += $" (it's for {RndUtil.Choice("my mom", "my dad", "me", "my brother", "my sister")})";
             return text;
         }
@@ -200,8 +291,22 @@ namespace checker.mp
             return client.Cookies;
         }
 
+        private async Task<string> WhoAmIUser(string cookies)
+        {
+            var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
+            var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
+            client.Cookies.SetCookies(baseUri, cookies);
+
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiWhoAmI, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            if (result.StatusCode != HttpStatusCode.OK)
+                throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiWhoAmI} failed: {result.StatusCode.ToReadableCode()}");
+
+            return result.BodyAsString;
+        }
+
         private async Task<IEnumerable<ProductModel>> SearchProducts(string text, string cookies)
         {
+            //TODO support paging
             var randomDefaultHeaders = RndHttp.RndDefaultHeaders(baseUri);
             var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
             client.Cookies.SetCookies(baseUri, cookies);
@@ -268,6 +373,7 @@ namespace checker.mp
 
         private const string ApiRegister = "/Users/register";
         private const string ApiLogin = "/Users/login";
+        private const string ApiWhoAmI = "/Users/whoami";
 
         private const string ApiProductsCreate = "/api/Products/create";
         private const string ApiProductsSearch = "/api/Products/search";
