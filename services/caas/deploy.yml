@@ -1,0 +1,19 @@
+version: 1
+
+service: caas
+username: caas
+
+scripts:
+  build_outside_vm:
+  build_inside_vm: |
+    docker-compose -f /home/$USERNAME/docker-compose.yaml build --pull
+    mkdir -m 0777 /home/$USERNAME/data
+    docker-compose -f /home/$USERNAME/docker-compose.yaml up -d db
+    sleep 10
+    docker-compose -f /home/$USERNAME/docker-compose.yaml stop db
+    cp -r /home/$USERNAME/data/db /home/$USERNAME/data/initdb
+  start_once: docker-compose -f /home/$USERNAME/docker-compose.yaml up -d
+  
+files:
+  - source: ./
+    destination: /home/$USERNAME

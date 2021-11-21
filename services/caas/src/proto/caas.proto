@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package caas;
+
+service user {
+  rpc Register (UserRegisterRequest) returns (UserRegisterReply) {}
+  rpc Info (UserInfoRequest) returns (UserInfoReply) {}
+}
+
+service curl {
+  rpc Enqueue (EnqueueRequest) returns (EnqueueResponse) {}
+  rpc GetReulst (ResultRequest) returns (Result) {}
+}
+
+message EnqueueRequest {
+  string token = 1;
+  string method = 2;
+  string url = 3;
+}
+
+message EnqueueResponse {
+  int32 task_id = 1;
+}
+
+message ResultRequest {
+  string token = 1;
+  int32 task_id = 2;
+}
+
+message Result {
+  bool result = 1;
+  string message = 2;
+  bytes data = 3;
+}
+
+message UserRegisterRequest {
+  string name = 1;
+  bytes image = 2;
+  string comment = 3;
+}
+
+message UserRegisterReply {
+  string token = 1;
+}
+
+message UserInfoRequest {
+  string token = 1;
+}
+
+message UserInfoReply {
+  string name = 1;
+  bytes image = 2;
+  string comment = 3;
+}
