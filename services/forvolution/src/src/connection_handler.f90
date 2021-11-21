@@ -31,7 +31,7 @@ module connection_handler
   character(len=*), parameter :: command_download = 'DOWNLOAD'
   character(len=*), parameter :: command_convolution = 'CONVOLUTION'
 
-  character, dimension(1:2), parameter :: ok = (/'o','k'/)
+  character(len=2), parameter :: ok = 'ok'
 
   integer, parameter :: matrix_size = 50
   integer, parameter :: text_size = 99
@@ -64,6 +64,9 @@ module connection_handler
     procedure, private :: set_read_bytes
     procedure, private :: set_read_fields
     procedure, private :: set_error
+    procedure, private :: add_to_response
+    procedure, private :: add_to_response_str
+    procedure, private :: add_to_response_int
     procedure, private :: init_upload
     procedure, private :: handle_upload
     procedure, private :: init_download
@@ -224,6 +227,31 @@ contains
     self%connection_state = connection_write
   end subroutine set_error
 
+  subroutine add_to_response(self, a)
+    class(connection), intent(inout) :: self
+    character, dimension(:), intent(in) :: a
+
+    integer :: pos
+
+    pos = self%needed_bytes
+    self%buffer(pos+1 : pos+size(a)) = a
+    self%needed_bytes = pos + size(a)
+  end subroutine add_to_response
+
+  subroutine add_to_response_str(self, s)
+    class(connection), intent(inout) :: self
+    character(len=*), intent(in) :: s
+    call self%add_to_response(to_array(s))
+    call self%add_to_response((/ Delimiter /))
+  end subroutine add_to_response_str
+
+  subroutine add_to_response_int(self, n)
+    class(connection), intent(inout) :: self
+    integer, intent(in) :: n
+    call self%add_to_response(to_array(n))
+    call self%add_to_response((/ Delimiter /))
+  end subroutine add_to_response_int
+
   subroutine init_upload(self)
     class(connection), intent(inout) :: self
     integer :: n
@@ -329,11 +357,11 @@ contains
       call self%set_error('problem with image uploading')
     else
       self%processed = 0
-      self%needed_bytes = 3 + id_size
-      self%buffer(1:2) = ok
-      self%buffer(3) = delimiter
-      self%buffer(4:4+id_size-1) = id
+      self%needed_bytes = 0
       self%connection_state = connection_write
+
+      call self%add_to_response_str(ok)
+      call self%add_to_response(id)
     end if
   end subroutine handle_upload
 
@@ -397,34 +425,15 @@ contains
     msize = int(n) * int(m)
 
     self%processed = 0
-
-    self%buffer(1:2) = ok
-    self%buffer(3) = delimiter
-
-    result_size = 3
-
-    tmp = to_array(n)
-    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
-    result_size = result_size + size(tmp) + 1
-    self%buffer(result_size) = ';'
-
-    tmp = to_array(m)
-    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
-    result_size = result_size + size(tmp) + 1
-    self%buffer(result_size) = ';'
-
-    tmp = to_array(ndesc)
-    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
-    result_size = result_size + size(tmp) + 1
-    self%buffer(result_size) = ';'
-
-    self%buffer(result_size+1 : result_size+msize) = transfer(matrix, self%buffer(1), msize)
-    result_size = result_size + msize
-    self%buffer(result_size+1 : result_size+ndesc) = desc(1:ndesc)
-    result_size = result_size + ndesc
-
-    self%needed_bytes = result_size
+    self%needed_bytes = 0
     self%connection_state = connection_write
+
+    call self%add_to_response_str(ok)
+    call self%add_to_response_int(int(n))
+    call self%add_to_response_int(int(m))
+    call self%add_to_response_int(int(ndesc))
+    call self%add_to_response(transfer(matrix, self%buffer(1), msize))
+    call self%add_to_response(desc)
   end subroutine
 
   subroutine init_convolution(self)
@@ -522,25 +531,13 @@ contains
     rsize = 4 * rsizes(1) * rsizes(2)
 
     self%processed = 0
-    self%buffer(1:2) = ok
-    self%buffer(3) = delimiter
-    result_size = 3
-
-    tmp = to_array(rsizes(1))
-    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
-    result_size = result_size + size(tmp) + 1
-    self%buffer(result_size) = ';'
-
-    tmp = to_array(rsizes(2))
-    self%buffer(result_size+1 : result_size+size(tmp)) = tmp
-    result_size = result_size + size(tmp) + 1
-    self%buffer(result_size) = ';'
-
-    self%buffer(result_size+1 : result_size+rsize) = transfer(res, self%buffer(1), rsize)
-    result_size = result_size + rsize
-
-    self%needed_bytes = result_size
+    self%needed_bytes = 0
     self%connection_state = connection_write
+
+    call self%add_to_response_str(ok)
+    call self%add_to_response_int(rsizes(1))
+    call self%add_to_response_int(rsizes(2))
+    call self%add_to_response(transfer(res, self%buffer(1), rsize))
   end subroutine handle_convolution
 
   subroutine skip(socket, buffer)
