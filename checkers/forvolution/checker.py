@@ -9,7 +9,7 @@ import traceback
 import numpy as np
 import json
 
-from asyncio import open_connection, IncompleteReadError
+from asyncio import open_connection, IncompleteReadError, LimitOverrunError
 from client import Error
 import client
 
@@ -222,6 +222,8 @@ def main(args):
         verdict(MUMBLE, "Request error", "Request error: %s" % traceback.format_exc())
     except IncompleteReadError as E:
         verdict(DOWN, "Reading error", "Reading error: %s" % traceback.format_exc())
+    except LimitOverrunError as E:
+        verdict(CORRUPT, "Reading error", "Reading error: %s" % traceback.format_exc())
     except ConnectionRefusedError as E:
         verdict(DOWN, "Connect refused", "Connect refused: %s" % E)
     except ConnectionError as E:

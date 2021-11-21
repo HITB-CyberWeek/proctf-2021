@@ -6,6 +6,7 @@ import sys
 
 PORT = 12345
 FLAG = re.compile('[0-9A-Z]{31}=')
+DELIMITER = ';'.encode()
 
 def is_flag_symbol(ch):
     if ch == ord('='):
@@ -23,7 +24,9 @@ async def main(host, mid):
     writer.write(bytes([0, 0, 0, 0, 0, 0, 1, 0]))
     await writer.drain()
 
-    _, n, m = (int(b) for b in await reader.readexactly(3))
+    await reader.readuntil(DELIMITER)
+    n = int((await reader.readuntil(DELIMITER))[:-1])
+    m = int((await reader.readuntil(DELIMITER))[:-1])
     raw = await reader.readexactly(4 * n * m)
     data = [int.from_bytes(raw[4*i:4*i+4], 'little', signed=True) for i in range(n * m)]
 
