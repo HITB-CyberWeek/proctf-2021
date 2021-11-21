@@ -35,8 +35,8 @@ namespace checker.mp
 
             var product = new ProductModelPut
             {
-                Name = RndText.RandomWord(RndUtil.GetInt(16, 32)).RandomLeet().RandomUpperCase(),
-                Description = GenerateProductText()
+                Name = RndText.RandomWord(RndUtil.GetInt(16, 32)).RandomUpperCase().RandomLeet(),
+                Description = GenerateProductDescription()
             };
             var productId = await CreateProduct(product, cookie1);
             //NOTE give time for document to become searchable
@@ -52,8 +52,6 @@ namespace checker.mp
             await RegisterUser(user2);
             var cookie2 = (await LoginUser(user2))?.GetCookieHeader(baseUri);
 
-            //NOTE give time for document to become searchable
-            await Task.Delay(1500);
             var products = await SearchProducts(RndUtil.Bool() ? product.Name : product.Description, cookie2);
 
             //TODO support paging
@@ -61,16 +59,18 @@ namespace checker.mp
             if(found == null)
                 throw new CheckerException(ExitCode.MUMBLE, "Can't find just created product");
 
-            // var publicFlagId = Guid.NewGuid().ToString("N");
+            var publicFlagId = Guid.NewGuid().ToString("N");
             var order = new OrderModelPut
             {
                 ProductId = found.Id,
-                Description = GenerateOrderText(flagId, flag)
+                Description = GenerateOrderText(flagId, publicFlagId, flag)
             };
             var orderId = await CreateOrder(order, cookie1);
 
             return new PutResult
             {
+                PublicFlagId = publicFlagId,
+                ChecksystemFlagId = flagId,
                 Login1 = user1.Login,
                 Password1 = user1.Password,
                 Cookie1 = cookie1,
@@ -78,8 +78,7 @@ namespace checker.mp
                 Password2 = user2.Password,
                 Cookie2 = cookie2,
                 ProductId = productId,
-                OrderId = orderId,
-                PublicFlagId = orderId
+                OrderId = orderId
             };
         }
 
@@ -105,38 +104,38 @@ namespace checker.mp
             return orderId;
         }
 
-        private string GenerateOrderText(string flagId, string flag)
+        private string GenerateOrderText(string checksystemFlagId, string randomGuid, string flag)
         {
-            var text = RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            text = text + " " + flagId;
+            var text = RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            text = text + " " + checksystemFlagId;
 
-            if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 2) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 2) == 0) text += ". " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 3) == 0) text += "; " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
+            if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 2) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 2) == 0) text += ". " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 3) == 0) text += "; " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
 
             text =  text + " " + flag;
             if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(32).RandomUpperCase();
-
+            text += $" v{randomGuid}";
+            text += $" (it's for {RndUtil.Choice("my mom", "my dad", "me", "my brother", "my sister")})";
             return text;
         }
 
-        private static string GenerateProductText()
+        private static string GenerateProductDescription()
         {
-            var text = RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 2) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 2) == 0) text += ". " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
-            else if (RndUtil.GetInt(0, 3) == 0) text += "; " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase();
+            var text = RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 2) == 0) text += ", " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 2) == 0) text += ". " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 3) == 0) text += "; " + RndText.RandomText(RndUtil.GetInt(10, 64)).RandomUpperCase().RandomLeet();
             return text;
         }
 
         private static string GenerateLogin()
         {
-            var login = RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUpperCase();
-            if (RndUtil.GetInt(0, 10) == 0) login += " " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUpperCase();
-            else if (RndUtil.GetInt(0, 10) == 0) login += ", " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUpperCase();
-            else if (RndUtil.GetInt(0, 10) == 0) login += " \"aka\" " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomLeet().RandomUpperCase();
+            var login = RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomUpperCase().RandomLeet();
+            if (RndUtil.GetInt(0, 10) == 0) login += " " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomUpperCase().RandomLeet();
+            else if (RndUtil.GetInt(0, 10) == 0) login += ", " + RndText.RandomWord(RndUtil.GetInt(10, 32)).RandomUpperCase().RandomLeet();
             return login;
         }
 

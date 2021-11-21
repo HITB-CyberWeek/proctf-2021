@@ -6,6 +6,8 @@ namespace checker
     {
         [JsonPropertyName("public_flag_id")] public string PublicFlagId { get; set; }
 
+        [JsonPropertyName("csOrigId")] public string ChecksystemFlagId { get; set; }
+
         [JsonPropertyName("login1")] public string Login1 { get; set; }
         [JsonPropertyName("pass1")] public string Password1 { get; set; }
         [JsonPropertyName("cookie1")] public string Cookie1 { get; set; }
