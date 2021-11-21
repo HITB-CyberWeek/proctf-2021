@@ -1,4 +1,4 @@
-name: Build Service Image
+name: Build Genealogy Service Image
 on:
   push:
     branches:
