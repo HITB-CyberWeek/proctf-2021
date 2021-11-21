@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import time
+start = time.time()
+
 import sys
 import string
-import time
 import asyncio
 import random
 import traceback
@@ -24,7 +26,6 @@ MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
 
 printable = string.digits + string.ascii_letters + string.punctuation + ' '
-start = time.time()
 
 def verdict(exit_code, public="", private=""):
     if public:
@@ -241,4 +242,5 @@ def main(args):
     verdict(CHECKER_ERROR, "Checker error", "No verdict")
 
 if __name__ == '__main__':
+    log('initialized')
     main(sys.argv[1:])
