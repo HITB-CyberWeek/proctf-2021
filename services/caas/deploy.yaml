@@ -20,6 +20,6 @@ scripts:
 files:
   - sources:
       - ./docker-compose.yaml
-      - ./db/
-      - ./src/
+      - ./db
+      - ./src
     destination: /home/$USERNAME
