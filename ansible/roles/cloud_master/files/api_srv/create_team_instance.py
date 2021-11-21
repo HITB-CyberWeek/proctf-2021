@@ -165,6 +165,16 @@ def main():
             log_stderr("scp to DO failed")
             return 1
 
+        log_progress("56%")
+
+        file_from = "db/team%d/server_wg.conf" % TEAM
+        file_to = "%s:/etc/wireguard/team%d.conf" % (ip, TEAM)
+        ret = call_unitl_zero_exit(["scp"] + SSH_DO_OPTS +
+                                   [file_from, file_to])
+        if not ret:
+            log_stderr("scp wg to DO failed")
+            return 1
+
         log_progress("57%")
 
         file_from = "db/team%d/game_network.conf" % TEAM
@@ -175,12 +185,21 @@ def main():
             log_stderr("scp to DO failed")
             return 1
 
-        log_progress("60%")
+        log_progress("58%")
 
         cmd = ["systemctl start openvpn@server_outside_team%d" % TEAM]
         ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
         if not ret:
             log_stderr("start internal tun")
+            return 1
+
+
+        log_progress("59%")
+
+        cmd = ["systemctl start wg-quick@team%d" % TEAM]
+        ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
+        if not ret:
+            log_stderr("start internal wg tun")
             return 1
 
         # UNCOMMENT BEFORE THE GAME

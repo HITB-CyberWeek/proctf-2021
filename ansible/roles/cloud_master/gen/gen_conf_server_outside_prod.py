@@ -8,9 +8,9 @@ tls-server
 topology subnet
 port {2}
 
-ifconfig 10.{0}.{1}.254 255.255.255.128
-ifconfig-pool 10.{0}.{1}.129 10.{0}.{1}.253 255.255.255.128
-push "route-gateway 10.{0}.{1}.254"
+ifconfig 10.{0}.{1}.191 255.255.255.192
+ifconfig-pool 10.{0}.{1}.129 10.{0}.{1}.190 255.255.255.192
+push "route-gateway 10.{0}.{1}.191"
 
 cipher AES-128-CBC
 dev team{3}
