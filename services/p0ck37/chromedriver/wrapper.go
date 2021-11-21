@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+//	"os"
 	"strings"
 )
 
@@ -18,6 +19,7 @@ const (
 
 func main() {
 	ops := []selenium.ServiceOption{
+//		selenium.Output(os.Stderr),
 	}
 	service, err := selenium.NewChromeDriverService(chromedriverPath, chromedriverPort, ops...)
 	if err != nil {
