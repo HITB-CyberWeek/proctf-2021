@@ -38,7 +38,12 @@ paths:
         required: true
       responses:
         200:
-          description: Successful operation
+          description: User has been created
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: user_id=10; Path=/, user_hash=bd3bed9372e761af8132968f958bde51; Path=/
           content:
             application/json:
               schema:
@@ -91,7 +96,7 @@ paths:
             Set-Cookie:
               schema: 
                 type: string
-                example: user_id=10; Path=/, user_hash=bd3bed9372e761af8132968f958bde51; Path=/                
+                example: user_id=10; Path=/, user_hash=bd3bed9372e761af8132968f958bde51; Path=/
           content:
             application/json:
               schema:

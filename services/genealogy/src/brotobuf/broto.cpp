@@ -2,6 +2,7 @@
  * It's like protoc, but much more cooler. */
 #include "broto.hpp"
 
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -92,6 +93,14 @@ void _AbstractMessage::_deserialize_string(std::string &variable,
   for (size_t i = 0; i < length; i++) {
     variable[i] = stream.read_byte();
   }
+}
+
+bool _AbstractMessage::_debug_memory_logs_enabled() const {
+  const auto env = getenv("BROTOBUF_DEBUG_MEMORY");
+  if (!env) {
+    return false;
+  }
+  return strncmp(env, "1", 1) == 0;
 }
 
 } // namespace brotobuf
