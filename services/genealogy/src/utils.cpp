@@ -6,6 +6,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <filesystem>
+#include <fstream>
  
 
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -50,4 +52,22 @@ std::vector<std::string> string_split(const std::string & s, char delim) {
     }
 
     return result;
+}
+
+[[nodiscard]]
+std::string get_file_content(const std::filesystem::path & path) {
+    if (!std::filesystem::is_regular_file(path))
+        return "";
+
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file.is_open())
+        return "";
+
+    const std::size_t& size = std::filesystem::file_size(path);
+    std::string content(size, '\0');
+    file.read(content.data(), size);
+
+    file.close();
+
+    return content;
 }

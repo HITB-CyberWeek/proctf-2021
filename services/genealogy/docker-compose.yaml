@@ -2,6 +2,7 @@ version: '3.4'
 
 volumes:
   postgres-data:
+  keys:
 
 
 services:
@@ -30,9 +31,9 @@ services:
       - database
     restart: unless-stopped
     read_only: true
-    user: genealogy
+    user: "1000:1000"
     volumes:
-      - ./.keys:/app/keys
+      - keys:/app/keys
     environment:
       DATABASE: "host=database port=6432 dbname=genealogy user=genealogy password=genealogy"
     ports:

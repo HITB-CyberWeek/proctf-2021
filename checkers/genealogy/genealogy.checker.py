@@ -14,7 +14,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
     def info(self):
         print("vulns: 1")
-        print("public_flag_description: Flag ID is just a user ID")
+        print("public_flag_description: Flag id is just a user id")
 
     def check(self, address):
         self.exit(checklib.StatusCode.OK)
@@ -22,7 +22,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
     def put(self, address, flag_id, flag, vuln):
         login = checklib.random.firstname().lower() + "_" + checklib.random.lastname().lower()
         password = checklib.random.string(string.ascii_letters + string.digits, random.randint(8, 12))
-        self.create_user(login, password)
+        user_id = self.create_user(login, password)
 
         name = checklib.random.firstname() + " " + checklib.random.lastname()
         birth_date = random.randint(1000, 10000000)
@@ -36,7 +36,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
         # TODO: check /owners url
 
         print(json.dumps({
-            "public_flag_id": login,
+            "public_flag_id": user_id,
             "login": login,
             "password": password,
             "tree": {
@@ -80,6 +80,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
     def create_user(self, login: str, password: str) -> int:
         r = self.try_http_post("/users", json={"login": login, "password": password})
+        self.mumble_if_false("user" in r and "id" in r["user"], "Invalid format of response on POST /users")
         return r["user"]["id"]
 
     def login(self, login: str, password: str):
@@ -87,6 +88,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
     def create_tree(self, title: str, description: str, person_id: Optional[int] = None) -> int:
         r = self.try_http_post("/tree", json={"title": title, "description": description, "person": person_id})
+        self.mumble_if_false("tree" in r and "id" in r["tree"], "Invalid format of response on POST /tree")
         return r["tree"]["id"]
 
     def update_tree(self, title: str, description: str, person_id: int):
@@ -94,6 +96,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
     def get_tree(self) -> dict:
         r = self.try_http_get("/tree")
+        self.mumble_if_false("tree" in r, "Invalid format of response on GET /tree")
         return r["tree"]
 
     def create_person(

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "http_response.hpp"
 #include "http_status_code.hpp"
 #include "http_method.hpp"
 #include "../utils.hpp"
@@ -241,4 +242,34 @@ int HttpServer::_extract_id_from_path(const std::string & path) {
     }
 
     return -1;
+}
+
+void HttpServer::add_static_routes(const std::filesystem::path & path) {
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        auto path = std::string("/") + entry.path().filename().string();
+        if (path == "/index.html") {
+            path = "/";
+        }
+
+        this->add_route(
+            {HttpMethod::GET, path, false}, 
+            [entry](const auto & request) {
+                auto response = HttpResponse(get_file_content(entry.path()), HttpStatusCode::OK);
+                if (entry.path().string().ends_with(".html")) {
+                    response.set_header("Content-Type", "text/html");
+                } else if (entry.path().string().ends_with(".css")) {
+                    response.set_header("Content-Type", "text/css");
+                } else if (entry.path().string().ends_with(".js")) {
+                    response.set_header("Content-Type", "text/javascript");
+                } else {
+                    response.set_header("Content-Type", "application/octet-stream");
+                }
+                return response;
+            }
+        );
+    }
 }

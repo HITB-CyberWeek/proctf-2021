@@ -68,6 +68,10 @@ int main() {
         [](auto const & request){ return PersonsController().delete_person(request); }
     );
 
+    // Static content for the Swagger UI
+    server->add_static_routes("./static/swagger/");
+    server->add_static_routes("./static/");
+
     server->start();
     return 0;
 }

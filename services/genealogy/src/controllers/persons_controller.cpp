@@ -17,15 +17,15 @@ HttpResponse PersonsController::create_person(const HttpRequest &request) {
     };
 
     const auto json = request.get_json();
-    const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
-    const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
-    const auto birth_date = json.at("birth_date").get_unsigned();
-    const auto death_date = json.at("death_date").get_unsigned();
     const auto title = json.at("title").get_string();
     const auto first_name = json.at("first_name").get_string();
     const auto middle_name = json.at("middle_name").get_string();
     const auto last_name = json.at("last_name").get_string();
     const auto photo_url = json.at("photo_url").get_string();
+    const auto birth_date = json.at("birth_date").get_unsigned();
+    const auto death_date = json.at("death_date").get_unsigned();
+    const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
+    const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
 
     if (first_parent_id.has_value() && !this->_persons_database->find_person(first_parent_id.value())) {
         return HttpResponse({
@@ -75,20 +75,20 @@ HttpResponse PersonsController::update_person(const HttpRequest & request) {
     if (!person.has_value() || person->owner_id != user_id.value()) {
         return HttpResponse({
             {"status", "error"},
-            {"message", string_format("Person %d not found or is not owned by you", request.id)}
+            {"message", string_format("Person %d not found or is owned not by you", request.id)}
         }, HttpStatusCode::NOT_FOUND);
     }
 
     const auto json = request.get_json();
-    const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
-    const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
-    const auto birth_date = json.at("birth_date").get_unsigned();
-    const auto death_date = json.at("death_date").get_unsigned();
     const auto title = json.at("title").get_string();
     const auto first_name = json.at("first_name").get_string();
     const auto middle_name = json.at("middle_name").get_string();
     const auto last_name = json.at("last_name").get_string();
     const auto photo_url = json.at("photo_url").get_string();
+    const auto birth_date = json.at("birth_date").get_unsigned();
+    const auto death_date = json.at("death_date").get_unsigned();
+    const auto first_parent_id = json.at("first_parent").optional<unsigned long long>();
+    const auto second_parent_id = json.at("second_parent").optional<unsigned long long>();
 
     if (first_parent_id.has_value() && !this->_persons_database->find_person(first_parent_id.value())) {
         return HttpResponse({
@@ -139,7 +139,7 @@ HttpResponse PersonsController::delete_person(const HttpRequest & request) {
     if (!person.has_value() || person->owner_id != user_id.value()) {
         return HttpResponse({
             {"status", "error"},
-            {"message", string_format("Person %d not found or is not owned by you", request.id)}
+            {"message", string_format("Person %d not found or is owned not by you", request.id)}
         }, HttpStatusCode::NOT_FOUND);
     }
 

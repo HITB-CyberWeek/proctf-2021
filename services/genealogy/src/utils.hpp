@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 std::string ltrim(const std::string & s); 
 std::string rtrim(const std::string & s); 
@@ -15,6 +16,8 @@ void to_lower_case(std::string & s);
 int guard(int n, const char * err);
 
 std::vector<std::string> string_split(const std::string & s, char delim);
+
+std::string get_file_content(const std::filesystem::path & path);
 
 // Are you waiting for std::format() as much as I do?
 template<typename ... Args>
