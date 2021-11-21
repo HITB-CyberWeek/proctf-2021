@@ -1,17 +1,14 @@
 name: Build Genealogy Service Image
 on:
-  workflow_dispatch: {}
-  push:
-    branches:
-      - master
-    paths:
-      - services/genealogy
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: "Name of the service"
+        required: true
 jobs:
   build-service-image:
-    # runs-on: self-hosted
-    runs-on: ubuntu-latest
-    env:
-      SERVICE_NAME: genealogy
+    runs-on: self-hosted
+    # runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -24,7 +21,7 @@ jobs:
         with:
           requirements: vuln_images/requirements.txt
       - name: Build the image
-        run: python3 build_image.py ../services/${{ env.SERVICE_NAME }}/deploy.yaml
+        run: python3 build_image.py ../services/${{ github.event.inputs.service_name }}/deploy.yaml
         working-directory: "${{ github.workspace }}/vuln_images/"
         env:
           DO_API_TOKEN: ${{ secrets.DO_API_TOKEN }}
@@ -32,7 +29,6 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           add: ansible/roles/cloud_master/files/api_srv/do_vulnimages.json
-          message: "[${{ env.SERVICE_NAME }}] New image"
+          message: "[${{ github.event.inputs.name.service_name }}] New image built on ${{ github.sha }}"
           committer_name: GitHub Actions
           committer_email: actions@github.com
-      - run: echo "🍏 This job's status is ${{ job.status }}."
