@@ -92,7 +92,9 @@ build {
   # Build the service
   provisioner "shell" {
     inline = [
-      "{{ build_inside_vm }}"
+      {% for command in build_inside_vm %}
+      "{{ command }}"{% if not loop.last %},{% endif %}
+      {% command %}
     ]
   }
   {% endif %}
