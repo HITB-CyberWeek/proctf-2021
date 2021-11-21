@@ -28,7 +28,7 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           add: ansible/roles/cloud_master/files/api_srv/do_vulnimages.json
-          message: "[${{ github.event.inputs.name.service_name }}] New image built on ${{ github.sha }}"
+          message: "${{ github.event.inputs.service_name }}] New image built on ${{ github.sha }}"
           committer_name: GitHub Actions
           committer_email: actions@github.com
   deploy-image:
@@ -43,7 +43,7 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
       - name: Deploy new image to the cloud
-        run: ansible-playbook -vv --private-key=~/cloud_ssh_private_key cloud_master.yaml
+        run: ansible-playbook -vvvv --private-key=~/cloud_ssh_private_key cloud_master.yaml
         working-directory: "${{ github.workspace }}/ansible/"
   recreate-team-vms:
     runs-on: self-hosted
