@@ -55,7 +55,6 @@ contains
     allocate(connection_pool(0:connection_pool_size))
 
     socket = tcp_open(12345)
-    print *, 'socket:', socket
     if (socket .lt. 0) then
       print *, 'open error: ', get_error_message()
       call exit(1)
