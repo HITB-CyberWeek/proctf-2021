@@ -56,6 +56,7 @@ std::string TcpServer::_read_line(int socket) {
 }
 
 std::string TcpServer::_read_from_buffer(size_t length) {
+    // Read data from the internal buffer
     assert(length <= this->_buffer_length);
 
     auto buffer = this->_buffer.get();
@@ -70,6 +71,7 @@ std::string TcpServer::_read_from_buffer(size_t length) {
 }
 
 void TcpServer::_fill_up_buffer(int socket) {
+    // Read data from the socket once and put it into the internal buffer
     size_t length = this->BUFFER_SIZE - this->_buffer_length;
     auto buffer = this->_buffer.get() + this->_buffer_length;
 
@@ -86,28 +88,13 @@ void TcpServer::_fill_up_buffer(int socket) {
 std::string TcpServer::_read(int socket, size_t bytes_count) {
     assert(bytes_count <= BUFFER_SIZE);
 
+    // Wait for the data in the internal buffer until it has length smaller than needed
     while (bytes_count > this->_buffer_length) {
         this->_fill_up_buffer(socket);
     }
+
+    // Now buffer has enough data
     return this->_read_from_buffer(bytes_count);
-}
-
-void TcpServer::_handle_client(int client_socket) {
-    pid_t my_pid = getpid();
-    char buf[100];
-    for (;;) {
-        ssize_t num_bytes_received = guard(recv(client_socket, buf, sizeof(buf) - 1, 0), "Could not recv on TCP connection");
-        if (num_bytes_received == 0) {
-            printf("%d: received end-of-connection; closing connection and exiting\n", my_pid);
-            guard(shutdown(client_socket, SHUT_WR), "Could not shutdown TCP connection");
-            guard(close(client_socket), "Could not close TCP connection");
-            exit(0);
-        }
-        printf("%d: received %zu, bytes; echoing\n", my_pid, strlen(buf));
-
-        guard(send(client_socket, buf, num_bytes_received, 0), "Could not send to TCP connection");
-        printf("%d: echoed %zu bytes; receiving more\n", my_pid, strlen(buf));
-    }
 }
 
 void TcpServer::_send(int client_socket, const std::string & data) {

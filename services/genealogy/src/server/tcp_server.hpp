@@ -13,7 +13,7 @@ public:
 protected:
     std::string _read_line(int socket);
     std::string _read(int socket, size_t bytes_count);
-    virtual void _handle_client(int client_socket);
+    virtual void _handle_client(int client_socket) = 0;
     void _send(int socket, const std::string & data);
     void _close(int socket);
 
