@@ -19,7 +19,7 @@ scripts:
   
 files:
   - sources:
-      - ./docker-compose.yml
+      - ./docker-compose.yaml
       - ./db/
       - ./src/
     destination: /home/$USERNAME
