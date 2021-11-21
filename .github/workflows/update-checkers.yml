@@ -18,5 +18,5 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.CS_PRIVATE_SSH_KEY }}
       - name: Deploy checkers to the checking system
-        run: ansible-playbook -vv --private-key=~/cs_private_ssh_key checkers.yaml
+        run: ansible-playbook -vv --private-key=~/cs_private_ssh_key checkers.yml
         working-directory: "${{ github.workspace }}/ansible/"
