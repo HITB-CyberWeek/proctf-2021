@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = "qweqwe"
 
 def fs(s):
-    return re.sub(re.compile(r'[^%s%s%s=\._]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
+    return re.sub(re.compile(r'[^%s%s%s=\._-]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
     
 def check_creadentials(login, password):
     if not os.path.isdir("data"):
@@ -137,7 +137,7 @@ def check(user,name):
 def search():
     tmpl = request.values["template"]
     tmpl = fs(tmpl)
-    if len(tmpl)<2:
+    if len(tmpl)<1:
         return redirect('/?m=Too short template')
     users = []
     res={}

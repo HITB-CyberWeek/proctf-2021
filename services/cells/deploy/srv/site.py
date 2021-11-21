@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = "qweqwe"
 
 def fs(s):
-    return re.sub(re.compile(r'[^%s%s%s=\._]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
+    return re.sub(re.compile(r'[^%s%s%s=\._-]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
     
 def check_creadentials(login, password):
     if not os.path.isdir("data"):

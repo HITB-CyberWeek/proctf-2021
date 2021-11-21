@@ -142,8 +142,8 @@ try:
         dockercmd=["docker","run","-v",pwd+":/home/checker","cells_container","execute",local_filename,password_message,"0"]
         res = sp.Popen(dockercmd,stdout=sp.PIPE)
         
-        out = res.communicate()
         
+        out = res.communicate()
         toks = out[0].split(b",")
         if len(toks)!=2:
             os.unlink(local_filename)
