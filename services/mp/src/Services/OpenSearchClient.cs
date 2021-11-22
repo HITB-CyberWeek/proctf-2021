@@ -88,13 +88,12 @@ namespace mp.Services
                                 },
                                 new
                                 {
-                                    query_string = new
+                                    simple_query_string = new
                                     {
                                         fields = new []
                                         {
                                             "product_name", "text"
                                         },
-                                        escape = true,
                                         query = queryString
                                     }
                                 }
