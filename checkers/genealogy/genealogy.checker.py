@@ -20,7 +20,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
     def check(self, address):
         login = checklib.random.firstname().lower() + "_" + checklib.random.lastname().lower()
         password = checklib.random.string(string.ascii_letters + string.digits, random.randint(8, 12))
-        user_id = self.create_user(login, password)
+        self.create_user(login, password)
 
         grandparent1 = self.generate_random_person(None, None)
         parent1 = self.generate_random_person(grandparent1, None)
