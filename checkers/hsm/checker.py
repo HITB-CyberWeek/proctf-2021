@@ -136,6 +136,8 @@ def check(host):
 
 
 def put(host, flag_id, flag, vuln):
+    flag_id = flag_id.replace("-", "")
+
     c = Client(host, SERVICE_PORT, get_oauth())
     c.register(username=flag_id, password=make_password(flag_id), token="nonce")
 
