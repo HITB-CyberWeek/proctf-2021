@@ -1,1 +1,4 @@
-sanic
+sanic==21.9.1
+aiofile==3.7.2
+pytest
+pytest-asyncio
