@@ -471,12 +471,12 @@ contains
     n = parse_int(self%buffer(1:npos-1))
     m = parse_int(self%buffer(npos+1:mpos-1))
 
-    if ((0.ge.n).or.(0.ge.m)) then
+    if (n.le.1) then
       call self%set_error('kernel is too small')
       return
     end if
 
-    if ((n.gt.convolution_size).or.(m.gt.convolution_size)) then
+    if (n.gt.convolution_size) then
       call self%set_error('kernel is too large')
       return
     end if
@@ -513,7 +513,6 @@ contains
     km = self%extra%m
 
     id = self%buffer(1:id_size)
-    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
 
     success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
     if (.not.success) then
@@ -522,7 +521,14 @@ contains
     end if
 
     if (kn.gt.n.or.km.gt.m) then
-      call self%set_error('kernel size is too large')
+      call self%set_error('kernel is larger than image')
+      return
+    end if
+
+    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
+
+    if (count(kernel.ne.0).le.1) then
+      call self%set_error('kernel is too simple')
       return
     end if
 
