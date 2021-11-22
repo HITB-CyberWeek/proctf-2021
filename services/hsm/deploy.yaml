@@ -5,5 +5,5 @@ scripts:
   build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yaml build --pull
   start_once: docker-compose -f /home/$USERNAME/docker-compose.yaml up -d
 files:
-  - source: ./src/
+  - source: ./deploy/
     destination: /home/$SERVICE
