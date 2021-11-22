@@ -278,6 +278,8 @@ void HttpServer::add_static_routes(const std::filesystem::path & path) {
                 } else {
                     response.set_header("Content-Type", "application/octet-stream");
                 }
+                response.set_header("Cache-Control", "public");
+
                 return response;
             }
         );
