@@ -2,7 +2,7 @@ FROM archlinux
 
 RUN pacman-db-upgrade
 RUN pacman -Syyu --noconfirm
-RUN pacman -S --noconfirm python3 python3-pip
+RUN pacman -S --noconfirm python3 python-pip
 RUN pip install	flask flask_login ujson pycryptodome
 RUN pacman -S --noconfirm gunicorn
 
