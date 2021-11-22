@@ -36,7 +36,6 @@ namespace mp.Services
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
         }
 
-        //TODO copypaste
         public async Task<IEnumerable<Document>> SearchOrdersOfProductAsync(string productId, int pageNum)
         {
             return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))

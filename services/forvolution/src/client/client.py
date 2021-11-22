@@ -1,6 +1,5 @@
 
 from asyncio import open_connection
-from enum import Enum, IntEnum
 
 MAX_SIZE = 255
 ID_BSIZE = 32

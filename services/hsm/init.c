@@ -454,6 +454,7 @@ void decrypt(Slot *slot, char *ciphertext_hex) {
 bool handle_input(Input *input)
 {
   if (IS_COMMAND(input, "HELP", 0)) {
+    printf("  SETSLOT <N>\n");
     printf("  RANDINIT <SEED>\n");
     printf("  GENERATE\n");
     printf("  SETMETA <SLOT> <META>\n");
@@ -462,11 +463,17 @@ bool handle_input(Input *input)
     printf("  GETPLAINTEXT <SLOT>");
     // printf("  ENCRYPT <PUBKEY_HEX> <PLAINTEXT>\n"); // Private API, probably no user will need.
     return true;
-  } 
-  else if (IS_COMMAND(input, "GENERATE", 0)) {
-    if (input->argc != 0) {
+  }
+  else if (IS_COMMAND(input, "SETSLOT", 1)) {
+    int slot = atoi(input->arg1);
+    if (!IS_VALID_SLOT(slot)) {
       return false;
     }
+    free_slot_index = (slot + 1) % MAX_SLOTS;
+    printf("OK: FREE SLOT: %d", free_slot_index);
+    return true;
+  }
+  else if (IS_COMMAND(input, "GENERATE", 0)) {
     int slot = free_slot_index;
 
     memset((void *) &slots[slot], 0, sizeof(Slot));
@@ -474,7 +481,6 @@ bool handle_input(Input *input)
     generate(&slots[slot]);
 
     free_slot_index = (free_slot_index + 1) % MAX_SLOTS;
-
     return true;
   }
   else if (IS_COMMAND(input, "SETMETA", 2)) {
