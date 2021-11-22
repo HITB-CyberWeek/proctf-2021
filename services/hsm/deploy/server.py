@@ -17,7 +17,7 @@ from slot import LastSlotStorage
 from users import UsersDB, UserAlreadyExists, AuthenticationError, USER_TTL_SECONDS, User
 
 DEFAULT_PORT = 9000
-FIRMWARE = "firmware.bin"
+FIRMWARE = "firmware.exe"
 AUTH_COOKIE = "auth"
 USERS_DB_DIR = "users"
 READ_BUF_SIZE = 256

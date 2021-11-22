@@ -42,6 +42,7 @@ def info():
 
 def assert_no_http_error(response: requests.Response, verdict_on_http_error: int, url: str = None):
     if response.status_code != 200:
+        logging.error("Error %d, response: %r.", response.status_code, response.text)
         public = "Got {!r} status code on {!r} request.".format(response.status_code, url)
         verdict(verdict_on_http_error, public=public)
     return response
@@ -63,27 +64,26 @@ class Client:
         logging.info("Sending GET %r ...", url)
         response = self.session.get(url, timeout=HTTP_TIMEOUT)
         text = assert_no_http_error(response, self.verdict_on_http_error, url).text
-        logging.info("Got response: %r.", text)
+        logging.info("Success, response: %r.", text)
         return text
 
     def post(self, url_suffix: str, **kwargs):
         url = self.url(url_suffix)
-        json = dict(**kwargs)
-        logging.info("Sending POST %r: %r ...", url, json)
-        response = self.session.post(url, timeout=HTTP_TIMEOUT, json=json)
+        logging.info("Sending POST %r: %r ...", url, kwargs)
+        response = self.session.post(url, timeout=HTTP_TIMEOUT, data=kwargs)
         text = assert_no_http_error(response, self.verdict_on_http_error, url).text
-        logging.info("Got response: %r.", text)
+        logging.info("Success, response: %r.", text)
         return text
 
-    def register(self, username: str, password: str):
-        return self.post("/register", username=username, password=password)
+    def register(self, username: str, password: str, token: str):
+        return self.post("/register", username=username, password=password, token=token)
 
     def login(self, username, password):
         return self.post("/login", username=username, password=password)
 
     def generate(self):
-        resp = self.post("/generate")
-        tokens = resp.split(" ")
+        resp = self.get("/generate")
+        tokens = resp.split(" = ")
         if len(tokens) != 2:
             verdict(MUMBLE, public="Generate returned wrong data")
         return tokens  # slot, pubkey
@@ -92,10 +92,10 @@ class Client:
         return self.post("/decrypt", ciphertext=ciphertext)
 
     def set_meta(self, meta: str):
-        return self.post("/meta", meta=meta)
+        return self.post("/setmeta", meta=meta)
 
     def get_meta(self):
-        return self.get("/meta")
+        return self.get("/getmeta")
 
     def get_plaintext(self):
         return self.get("/plaintext")
@@ -103,7 +103,7 @@ class Client:
 
 def make_password(flag_id: str):
     salt = "9cf53e9d-5f05-42c3-a04a-20b07be2b5fb"
-    charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     digest = hashlib.sha256((salt + flag_id).encode()).digest()
     return "".join(charset[b % len(charset)] for b in digest[:PASSWORD_LENGTH])
 
@@ -129,14 +129,15 @@ def encrypt(flag, pubkey):
 
 def check(host):
     c = Client(host, SERVICE_PORT, get_oauth())
-    c.get("/")
-    verdict(OK)
+    if "To use Cloud HSM Service, you must:" in c.get("/"):
+        verdict(OK)
+    else:
+        verdict(MUMBLE, public="Prompt not found")
 
 
 def put(host, flag_id, flag, vuln):
     c = Client(host, SERVICE_PORT, get_oauth())
-
-    c.register(username=flag_id, password=make_password(flag_id))
+    c.register(username=flag_id, password=make_password(flag_id), token="nonce")
 
     slot, pubkey = c.generate()
     long_meta = (flag_id + make_password(flag_id))[:33]  # Important to check all 33 chars!
