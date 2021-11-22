@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import hashlib
 import logging
+import os
 import random
 import requests
+import subprocess
 import sys
 import traceback
 
@@ -98,7 +100,7 @@ class Client:
         return self.get("/getmeta")
 
     def get_plaintext(self):
-        return self.get("/plaintext")
+        return self.get("/getplaintext")
 
 
 def make_password(flag_id: str):
@@ -106,10 +108,6 @@ def make_password(flag_id: str):
     charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     digest = hashlib.sha256((salt + flag_id).encode()).digest()
     return "".join(charset[b % len(charset)] for b in digest[:PASSWORD_LENGTH])
-
-
-def make_plaintext(flag: str):
-    return "Hello, Mr. John Doe! Did you know that " + flag + "?"
 
 
 def get_oauth():
@@ -123,8 +121,15 @@ def get_oauth():
     return oauth
 
 
-def encrypt(flag, pubkey):
-    return "FIXME:" + flag + ":" + pubkey
+def encrypt(plaintext, pubkey_hex):
+    logging.info("Encrypting %r with pubkey %r ...", plaintext, pubkey_hex)
+    env = os.environ.copy()
+    env["LD_LIBRARY_PATH"] = "."
+    proc = subprocess.Popen(["./encrypt", pubkey_hex, plaintext], stdout=subprocess.PIPE, env=env)
+    stdout, _ = proc.communicate()
+    ciphertext = stdout.decode().strip()
+    logging.info("Ciphertext: %r.", ciphertext)
+    return ciphertext
 
 
 def check(host):
@@ -145,8 +150,8 @@ def put(host, flag_id, flag, vuln):
     long_meta = (flag_id + make_password(flag_id))[:33]  # Important to check all 33 chars!
     c.set_meta(long_meta)
 
-    plaintext = make_plaintext(flag)
-    ciphertext = encrypt(plaintext, pubkey)  # Local encryption
+    plaintext = flag
+    ciphertext = encrypt(flag, pubkey)  # Local encryption
 
     c.decrypt(ciphertext)
     remote_plaintext = c.get_plaintext()
@@ -167,12 +172,8 @@ def get(host, flag_id, flag, vuln):
     c.login(username=flag_id, password=make_password(flag_id))
 
     remote_plaintext = c.get_plaintext()
-    if flag not in remote_plaintext:
+    if flag != remote_plaintext:
         verdict(MUMBLE, public="Flag not found in plaintext")
-
-    plaintext = make_plaintext(flag)
-    if remote_plaintext != plaintext:
-        verdict(MUMBLE, public="Plaintext was tampered with")
 
     verdict(OK, "Flag found")
 
