@@ -37,10 +37,6 @@ namespace checker.fs
             await UploadFile(filePath, fileContent, cookie1);
             filePath = "/" + login1 + filePath;
 
-            var downloadedFileContent = await DownloadFile(filePath, cookie1);
-            if (downloadedFileContent != fileContent)
-                throw new CheckerException(ExitCode.MUMBLE, "Downloaded file is modified");
-
             return new PutResult
             {
                 PublicFlagId = filePath,
@@ -50,6 +46,16 @@ namespace checker.fs
                 FilePath = filePath
             };
         }
+
+        public async Task Get(string host, PutResult state, string flag, int vuln)
+        {
+            //TODO sometimes not use cookie but login
+	        var downloadedFileContent = await DownloadFile(state.FilePath, state.Cookie1);
+	        if (!downloadedFileContent.Contains(flag))
+		        throw new CheckerException(ExitCode.CORRUPT, "Can't find flag in downloaded content");
+        }
+
+
 
         private async Task UploadFile(string filePath, string fileContent, string cookies)
         {
@@ -73,11 +79,6 @@ namespace checker.fs
                 throw new CheckerException(result.StatusCode.ToExitCode(), $"post {ApiDownload} failed: {result.StatusCode.ToReadableCode()}");
 
             return Encoding.UTF8.GetString(result.Body.ToArray());
-        }
-
-        public async Task Get(string host, PutResult state, string flag, int vuln)
-        {
-            throw new NotImplementedException();
         }
 
         private (string path, string content) GenerateFilePathAndContent(string flag)
