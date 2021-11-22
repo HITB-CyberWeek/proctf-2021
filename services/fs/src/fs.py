@@ -143,10 +143,11 @@ def login():
             return abort(401)
     else:
         return Response('''
+            Register or Login
             <form action="" method="post">
-                <p><input type=text name=username>
-                <p><input type=password name=password>
-                <p><input type=submit value=Login>
+                <p><input type=text name=username placeholder=login>
+                <p><input type=password name=password placeholder=password>
+                <p><input type=submit value=Send>
             </form>
         ''')
 
@@ -240,7 +241,7 @@ def load_user(userid):
 
 @app.route("/")
 def index():
-    return "<h2>This is a next-gen file upload and sharing service</h2>"
+    return f"<h2>This is a next-gen file upload and sharing service</h2><a href='/login'>Login</a> here"
 
 @app.route("/whoami")
 @login_required
