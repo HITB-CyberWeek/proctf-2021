@@ -30,10 +30,8 @@ RESP_HEADERS = [
 RATE_LIMITS = {
     "create_vm": 20,
     "take_snapshot": 300,
-    "open_network": 30,
-    "isolate_network": 30,
-    "open_vm": 15,
-    "isolate_vm": 15,
+    "open_vm": 30,
+    "isolate_vm": 30,
     "list_snapshots": 10,
     "restore_vm_from_snapshot": 300,
     "remove_snapshot": 30,
@@ -289,8 +287,7 @@ def cmd_get_vm_info(team, args):
     return "200 Ok", {"result": "ok", "msg": "\n".join(msglines)}
 
 def cmd_login(team, args):
-    COMMANDS_WITHOUT_VM = ["list_vms", "open_network",
-                           "isolate_network", "help", "man",
+    COMMANDS_WITHOUT_VM = ["list_vms", "help", "man",
                            "get_team_openvpn_config", "get_team_wireguard_config",
                            "oblaka"]
     COMMANDS_WITH_VM = ["create_vm", "get_vm_info", "open_vm", "isolate_vm",
@@ -314,12 +311,6 @@ def cmd_open_vm(team, args):
 def cmd_isolate_vm(team, args):
     vm = int(args[0])
     return create_task(team, "isolate_vm", "isolate_vm.py", [str(team), str(vm)])
-
-def cmd_open_network(team, args):
-    return create_task(team, "open_network", "open_network.py", [str(team)])
-
-def cmd_isolate_network(team, args):
-    return create_task(team, "isolate_network", "isolate_network.py", [str(team)])
 
 def cmd_take_snapshot(team, args):
     vm = int(args[0])
@@ -364,8 +355,6 @@ def cmd_help(team, args):
   reboot_vm <vm>                        - reboot vm
   open_vm <vm>                          - connect vm to the game network
   isolate_vm <vm>                       - isolate vm from the game network
-  open_network                          - connect to the game network
-  isolate_network                       - disconnect from the game network
   help                                  - help
   man                                   - instructions
 """.strip("\n")
@@ -398,21 +387,16 @@ def cmd_man(team, args):
     that saved state later:
     # take_snapshot <vm> <name>
   Step 6:
-    Connect vm network to the game network: 
-      # open_network
-    Now other teams and checksystem are able to access the vm.
-    Also now, you should be able to access other teams and checksystem 
-  Step 7:
     Have a nice game!
 
   If something goes wrong, use these commands:
     # reboot_vm <vm>
     # list_snapshots <vm> -> restore_vm_from_snapshot <vm> <name>
   If something goes terribly wrong, use this command:
-    # isolate_network
+    # isolate_vm <vm>
   The access to vuln images should remain from your network only.
-  To open the network again, execute:
-    # open_network""".lstrip("\n")
+  To open the network for vm again, execute:
+    # open_vm <vm>""".lstrip("\n")
 
     return "200 Ok", {"result": "ok", "msg": man_msg, "team": team}
 
@@ -512,8 +496,6 @@ def application(environ, start_response):
         "get_vm_info": (cmd_get_vm_info, 1, True, False),
         "open_vm": (cmd_open_vm, 0, True, True),
         "isolate_vm": (cmd_isolate_vm, 0, True, True),
-        "open_network": (cmd_open_network, 0, False, True),
-        "isolate_network": (cmd_isolate_network, 0, False, True),
         "take_snapshot": (cmd_take_snapshot, 2, True, True),
         "list_snapshots": (cmd_list_snapshots, 1, True, True),
         "restore_vm_from_snapshot": (cmd_restore_vm_from_snapshot, 2, True, True),
