@@ -86,7 +86,7 @@ services: |
   {name => 'chess',       tcp_port => 3255,  timeout => 30, ip_suffix => '6',  path => 'checkers/chess/checker.py'},
   {name => 'mp',          tcp_port => 80,    timeout => 30, ip_suffix => '7',  path => 'checkers/mp/checker.sh'},
   {name => 'forvolution', tcp_port => 12345, timeout => 30, ip_suffix => '8',  path => 'checkers/forvolution/checker.py'},
-  {name => 'fs',          tcp_port => 7777,  timeout => 30, ip_suffix => '9',  path => ''},
+  {name => 'fs',          tcp_port => 7777,  timeout => 30, ip_suffix => '9',  path => 'checkers/fs/checker.sh'},
   {name => 'genealogy',   tcp_port => 8888,  timeout => 30, ip_suffix => '10', path => 'checkers/genealogy/genealogy.checker.py'},
   {name => 'authme',      tcp_port => 3256,  timeout => 30, ip_suffix => '11', path => 'checkers/authme/checker.py'},
   {name => 'hsm',         tcp_port => 9000,  timeout => 30, ip_suffix => '12', path => 'checkers/hsm/checker.py'},
