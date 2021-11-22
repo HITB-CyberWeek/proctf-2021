@@ -1,4 +1,5 @@
-import os,json,glob,subprocess,string,re
+#!/usr/bin/env python3
+import os,json,glob,subprocess,string,re,random
 import CellsGenerate
 from flask import Flask
 from flask import make_response,jsonify
@@ -8,13 +9,22 @@ from flask import request
 from flask import session
 from flask import send_from_directory
 
+def id_gen(size=6, chars=string.ascii_uppercase+string.ascii_lowercase+ string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
 app = Flask(__name__)
-app.secret_key = "qweqwe"
+if os.path.isfile("sessionid.txt"):
+    app.secret_key = open("sessionid.txt","r").read()
+else:
+    app.secret_key = id_gen()
+    open("sessionid.txt","w+").write(app.secret_key)
 
 def fs(s):
-    return re.sub(re.compile(r'[^%s%s%s=\._-]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
+    result = re.sub(re.compile(r'[^%s%s%s=\._-]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
+    result=re.sub(r'\.\.','',result)
+    return result
     
-def check_creadentials(login, password):
+def check_credentials(login, password):
     if not os.path.isdir("data"):
         os.mkdir("data")
     user_dir = os.path.join("data",login)
@@ -65,7 +75,7 @@ def login():
     login, password = request.values['login'], request.values['password']
     login=fs(login)
     password=fs(password)
-    if check_creadentials(login, password):
+    if check_credentials(login, password):
         session['login'] = login
         return redirect('/?m=Successfully logged in')
     else:
@@ -84,7 +94,7 @@ def register():
     password=fs(password)
     if len(login)<5 or len(password)<5:
         return redirect('/?m=Too short login or password')
-    if check_creadentials(login,password):
+    if check_credentials(login,password):
         return redirect('/?m=User already exists')
     user_dir = os.path.join("data",login)
     os.mkdir(user_dir)
@@ -148,6 +158,7 @@ def search():
             users[-1]['cells'].append(info['name']+'.pk.cell')
     res['users']=users
     return render_template('index.html',search_result=res)
-    
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
