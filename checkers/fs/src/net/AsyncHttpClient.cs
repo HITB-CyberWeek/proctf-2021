@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +20,71 @@ namespace checker.net
 			this.baseUri = baseUri;
 			this.randomDefaultHeaders = randomDefaultHeaders;
 			Cookies = cookies ? new CookieContainer(4, 4, 4096) : null;
+		}
+
+		public async Task<HttpResult> UploadFileAsync(string relative, string filePath, byte[] data = null, int timeout = 10000, int maxBodySize = 64 * 1024)
+		{
+			HttpResult result;
+			var stopwatch = new Stopwatch();
+			try
+			{
+				using var client = CreateHttpClient(TimeSpan.FromMilliseconds(timeout), maxBodySize);
+
+				if (randomDefaultHeaders != null)
+				{
+					foreach (var pair in randomDefaultHeaders)
+						client.DefaultRequestHeaders.Add(pair.Key, pair.Value);
+				}
+
+				await Console.Error.WriteLineAsync($"fileupload {relative}, send {data?.Length ?? 0} bytes").ConfigureAwait(false);
+
+				stopwatch.Start();
+
+				using var source = new CancellationTokenSource(timeout);
+				try
+				{
+					result = await UploadFileAsync(client, relative, filePath, data, maxBodySize, source.Token).ConfigureAwait(false);
+				}
+				catch (HttpRequestException) { result = HttpResult.Timeout; }
+				catch (TaskCanceledException) { result = HttpResult.Timeout; }
+			}
+			catch (Exception e)
+			{
+				result = HttpResult.Unknown;
+				result.Exception = e;
+			}
+
+			stopwatch.Stop();
+			result.Elapsed = stopwatch.Elapsed;
+
+			await Console.Error.WriteLineAsync($"http {(int)result.StatusCode} {result.StatusDescription ?? "Unknown"}, recv {result.Body?.Length ?? 0} bytes, {stopwatch.ElapsedMilliseconds} ms").ConfigureAwait(false);
+
+			return result;
+		}
+
+		private async Task<HttpResult> UploadFileAsync(HttpClient client, string relative, string filePath, byte[] data, int maxBodySize, CancellationToken token)
+		{
+			using var content =  new MultipartFormDataContent("Upload----" + DateTime.Now.ToString(CultureInfo.InvariantCulture));
+			content.Add(new StreamContent(new MemoryStream(data)), "file", filePath);
+
+			using var response = await client.PostAsync(relative, content, token).ConfigureAwait(false);
+			if (response == null)
+				return HttpResult.Unknown;
+
+			var result = new HttpResult { StatusCode = response.StatusCode, StatusDescription = response.ReasonPhrase, Headers = response.Headers };
+			await using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+
+			var ms = new MemoryStream(new byte[maxBodySize], 0, maxBodySize, true, true);
+			ms.SetLength(0);
+
+			await stream.CopyToAsync(ms, token).ConfigureAwait(false);
+
+			ms.Seek(0, SeekOrigin.Begin);
+			result.Body = ms;
+
+			await stream.CopyToAsync(Stream.Null, token);
+
+			return result;
 		}
 
 		public async Task<HttpResult> DoRequestAsync(HttpMethod method, string relative, Dictionary<string, string> headers = null, byte[] data = null, int timeout = 10000, int maxBodySize = 64 * 1024)

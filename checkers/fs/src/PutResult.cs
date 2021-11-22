@@ -15,8 +15,7 @@ namespace checker
         [JsonPropertyName("pass2")] public string Password2 { get; set; }
         [JsonPropertyName("cookie2")] public string Cookie2 { get; set; }
 
-        [JsonPropertyName("productId")] public string ProductId { get; set; }
-        [JsonPropertyName("orderId")] public string OrderId { get; set; }
-        
+        [JsonPropertyName("filePath")] public string FilePath { get; set; }
+
     }
 }

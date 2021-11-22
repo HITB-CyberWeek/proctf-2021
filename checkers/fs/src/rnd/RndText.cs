@@ -359,10 +359,7 @@ namespace checker.rnd
 			{'o', '0'},
 			{'l', '1'},
 			{'e', '3'},
-			{'t', '7'},
-			{'k', '|'},
-			{'K', '{'},
-			{'D', '}'},
+			{'t', '7'}
 		};
 
 		private static readonly Dictionary<char, char> Umlauts = new()
