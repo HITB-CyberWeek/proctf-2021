@@ -1,0 +1,6 @@
+version: '2.0'
+services:
+  hsm:
+    build: .
+    network_mode: host
+    restart: unless-stopped
