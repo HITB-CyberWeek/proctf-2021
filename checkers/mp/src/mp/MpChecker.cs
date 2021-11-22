@@ -244,7 +244,7 @@ namespace checker.mp
             text += flag != null ? " " + flag : null;
             if (RndUtil.GetInt(0, 3) == 0) text += ", " + RndText.RandomText(32).RandomUpperCase();
             text += randomGuid != null ? $" v{randomGuid}" : null;
-            text += $" (it's for {RndUtil.Choice("my mom", "my dad", "me", "my brother", "my sister")})";
+            text += flag != null ? $" (it's for {RndUtil.Choice("my mom", "my dad", "me", "my brother", "my sister")})" : null;
             return text;
         }
 
