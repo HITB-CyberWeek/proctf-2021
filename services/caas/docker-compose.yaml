@@ -74,4 +74,4 @@ networks:
   app:
     ipam:
       config:
-        - subnet: 10.0.0.0/8
+        - subnet: 10.0.0.0/16
