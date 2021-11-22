@@ -14,7 +14,7 @@ TreesDatabase::TreesDatabase(std::shared_ptr<tao::pq::transaction> tx) : Databas
         "create_tree", "INSERT INTO genealogy_trees (user_id, person_id, title, description) VALUES ($1, $2, $3, $4) RETURNING id"
     );
     this->_tx->connection()->prepare(
-        "update_tree", "UPDATE genealogy_trees SET person_id = $2, title = $3, description = $4 WHERE id = $1"
+        "update_tree", "UPDATE genealogy_trees SET person_id = $2, description = $3 WHERE id = $1"
     );    
     this->_tx->connection()->prepare(
         "get_tree_by_id", "SELECT * FROM genealogy_trees WHERE id = $1"
@@ -71,9 +71,9 @@ Tree TreesDatabase::create_tree(
 
 Tree TreesDatabase::update_tree(
     unsigned long long tree_id,
-    const std::string & title, const std::string & description, std::optional<unsigned long long> person_id
+    const std::string & description, std::optional<unsigned long long> person_id
 ) {
-    this->_tx->execute("update_tree", tree_id, person_id, title, description);
+    this->_tx->execute("update_tree", tree_id, person_id, description);
 
     return this->find_tree(tree_id).value();
 }

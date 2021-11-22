@@ -46,20 +46,6 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
         self.exit(checklib.StatusCode.OK)
 
-    def generate_random_person(self, first_parent_id: Optional[int], second_parent_id: Optional[int]):
-        title = random.choice(["Mr", "Mrs"])
-        first_name = checklib.random.firstname()
-        middle_name = checklib.random.firstname()
-        last_name = checklib.random.lastname()
-        photo_url = f"https://gravatar.com/{first_name}_{last_name}"
-        birth_date = random.randint(974801564, 1290334364)
-        death_date = birth_date + random.randint(30, 100) * 365 * 24 * 60 * 60
-        person_id = self.create_person(
-            title, first_name, middle_name, last_name, photo_url, birth_date, death_date,
-            first_parent_id, second_parent_id
-        )
-        return person_id
-
     def put(self, address, flag_id, flag, vuln):
         login = checklib.random.firstname().lower() + "_" + checklib.random.lastname().lower()
         password = checklib.random.string(string.ascii_letters + string.digits, random.randint(8, 12))
@@ -140,6 +126,22 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
         self.exit(checklib.StatusCode.OK)
 
+    # Internal methods below
+
+    def generate_random_person(self, first_parent_id: Optional[int], second_parent_id: Optional[int]):
+        title = random.choice(["Mr", "Mrs"])
+        first_name = checklib.random.firstname()
+        middle_name = checklib.random.firstname()
+        last_name = checklib.random.lastname()
+        photo_url = f"https://gravatar.com/{first_name}_{last_name}"
+        birth_date = random.randint(974801564, 1290334364)
+        death_date = birth_date + random.randint(30, 100) * 365 * 24 * 60 * 60
+        person_id = self.create_person(
+            title, first_name, middle_name, last_name, photo_url, birth_date, death_date,
+            first_parent_id, second_parent_id
+        )
+        return person_id
+
     def create_user(self, login: str, password: str) -> int:
         logging.info(f"Creating user {login} with password {password}")
         r = self.try_http_post("/users", json={"login": login, "password": password})
@@ -159,9 +161,9 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
         self.mumble_if_false("tree" in r and "id" in r["tree"], "Invalid format of response on POST /tree")
         return r["tree"]["id"]
 
-    def update_tree(self, title: str, description: str, person_id: int):
-        logging.info(f"Updating tree: set title {title!r} and description {description!r}")
-        self.try_http_put("/tree", json={"title": title, "description": description, "person": person_id})
+    def update_tree(self, description: str, person_id: int):
+        logging.info(f"Updating tree: set description {description!r} and person {person_id}")
+        self.try_http_put("/tree", json={"description": description, "person": person_id})
 
     def get_tree(self) -> dict:
         r = self.try_http_get("/tree")

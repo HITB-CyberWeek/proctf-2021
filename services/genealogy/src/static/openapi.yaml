@@ -8,6 +8,10 @@ info:
     has been lost :( 
       
     See the full list of available endpoints below.
+
+    Unfortunately, cookie authentication doesn't work in Swagger UI
+    (see [this issue](https://github.com/swagger-api/swagger-js/issues/1163)). So you need to set cookies
+    in your browser manually to use "Try it out" feature for endpoints protected by the authentication.
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -138,6 +142,9 @@ paths:
       summary: Get me
       description: Get information about current user
       operationId: getMe
+      security:
+        - userId
+        - userHash
       responses:
         200:
           description: Successful operation
@@ -176,6 +183,9 @@ paths:
       summary: Create a new genealogy tree
       description: Every user may have only one genealogy tree
       operationId: createTree
+      security:
+        - userId
+        - userHash
       requestBody:
         description: A JSON object containing tree's information
         content:
@@ -258,6 +268,9 @@ paths:
       - tree
       summary: Get my genealogy tree
       operationId: getTree
+      security:
+        - userId
+        - userHash      
       responses:
         200:
           description: Success
@@ -330,14 +343,16 @@ paths:
       - tree
       summary: Update my genealogy tree
       operationId: updateTree
+      security:
+        - userId
+        - userHash      
       requestBody:
         description: Tree object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTreeRequest'
+              $ref: '#/components/schemas/UpdateTreeRequest'
             example:
-              title: "My genealogy tree"
               description: "The genealogy tree of @andgein"
               person: 1
         required: true
@@ -413,6 +428,9 @@ paths:
       - tree
       summary: Update tree's owners. Not used now, but implemented for the amazing future.
       operationId: updateTreeOwners
+      security:
+        - userId
+        - userHash      
       requestBody:
         description: A JSON array containing owners' ids
         content:
@@ -497,6 +515,9 @@ paths:
       - archive
       summary: Download signed tree archive
       operationId: getTreeArchive
+      security:
+        - userId
+        - userHash      
       responses:
         200:
           description: Success
@@ -576,12 +597,15 @@ paths:
       summary: Create a new person
       description: Creates a new person which can be added to the genealogy tree
       operationId: createPeron
+      security:
+        - userId
+        - userHash      
       requestBody:
         description: Person object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePersonRequest'
+              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
             example:
               title: "Mr"
               first_name: "Andrew"
@@ -661,6 +685,9 @@ paths:
       summary: Update the person's information
       description: Updates information about the person
       operationId: updatePerson
+      security:
+        - userId
+        - userHash      
       parameters:
         - in: path
           name: personId
@@ -673,7 +700,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePersonRequest'
+              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
             example:
               title: "Mr"
               first_name: "Andrew"
@@ -766,6 +793,9 @@ paths:
       summary: Delete the person
       description: Deletes information about the person
       operationId: deletePerson
+      security:
+        - userId
+        - userHash      
       parameters:
         - in: path
           name: personId
@@ -817,6 +847,15 @@ paths:
                 status: "error"
                 message: "Person 10 not found or is owned not by you"
 components:
+  securitySchemes:
+    userId:
+      type: apiKey
+      in: cookie
+      name: user_id
+    userHash:
+      type: apiKey
+      in: cookie
+      name: user_hash
   schemas:
     User:
       type: object
@@ -888,7 +927,15 @@ components:
         person:
           type: integer
           format: int64
-    CreatePersonRequest:
+    UpdateTreeRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        person:
+          type: integer
+          format: int64
+    CreateOrUpdatePersonRequest:
       type: object
       properties:
         title:

