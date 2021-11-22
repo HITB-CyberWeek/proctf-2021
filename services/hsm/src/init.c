@@ -75,12 +75,12 @@
 typedef struct {
   int idx;                              //   4
   char meta[META_SIZE];                 //  33
-  char buf[PLAINTEXT_SIZE + 1];         // 133
-  br_rsa_private_key sk;
-  unsigned char privkey[PRIVKEY_SIZE];  // 240
-  br_rsa_public_key pk;
-  unsigned char pubkey[PUBKEY_SIZE];    // 100
-} Slot;                                 // TOTAL = 392 bytes
+  char buf[PLAINTEXT_SIZE + 1];         //  65
+  br_rsa_private_key sk;                //  44
+  unsigned char privkey[PRIVKEY_SIZE];  // 160
+  br_rsa_public_key pk;                 //  16
+  unsigned char pubkey[PUBKEY_SIZE];    //  68
+} Slot;                                 // TOTAL = 390 bytes (392 with padding)
 
 typedef struct {
   char command[MAX_CMD_LEN + 1];
@@ -538,16 +538,18 @@ rtems_task Init(rtems_task_argument ignored) {
   bool command_result;
 #ifdef DEBUG
   printf("ATTENTION! DEBUG BUILD!\n\n");
-  printf("BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS) = %d\n", BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS));
+  printf("BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS) = %d\n",  BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS));
   printf("BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS) = %d\n", BR_RSA_KBUF_PRIV_SIZE(RSA_KEY_SIZE_BITS));
-  printf("MAX_ARG1_LEN = %d\n", MAX_ARG1_LEN);
-  printf("CIPHERTEXT_SIZE = %d\n", CIPHERTEXT_SIZE);
-  printf("sizeof(Slot) = %d\n", sizeof(Slot));
-  printf("Slot %4d = %p\n", 0, &slots[0]);
-  printf("Slot %4d = %p\n", 1, &slots[1]);
-  printf("Slot %4d = %p\n", 2, &slots[2]);
-  printf("Slot %4d = %p\n", MAX_SLOTS-1, &slots[MAX_SLOTS-1]);
-  printf("Input     = %p\n", &input);
+  printf("MAX_ARG1_LEN = %d\n",               MAX_ARG1_LEN);
+  printf("CIPHERTEXT_SIZE = %d\n",            CIPHERTEXT_SIZE);
+  printf("sizeof(br_rsa_private_key) = %d\n", sizeof(br_rsa_private_key));
+  printf("sizeof(br_rsa_public_key) = %d\n",  sizeof(br_rsa_public_key));
+  printf("sizeof(Slot) = %d\n",               sizeof(Slot));
+  printf("Slot %4d = %p\n",                   0, &slots[0]);
+  printf("Slot %4d = %p\n",                   1, &slots[1]);
+  printf("Slot %4d = %p\n",                   2, &slots[2]);
+  printf("Slot %4d = %p\n",                   MAX_SLOTS-1, &slots[MAX_SLOTS-1]);
+  printf("Input     = %p\n",                  &input);
 #endif
 
   rand_init("DEFAULT SEED");

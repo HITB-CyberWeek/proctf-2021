@@ -111,10 +111,16 @@ try:
             print("No flag in check\n")
             sys.stderr.write(str(resp.json))
             exit(102)
-        print(",".join([login,password,password_message,flag_id]))
+        #print(",".join([login,password,password_message,flag_id]))
+        print(json.dumps(dict(public_flag_id=flag_id,login=login,password=password,password_message=password_message)))
         exit(101)
     elif cmd == "get":
-        (login,password,password_message,flag_id) = sys.argv[3].split(",")
+        #(login,password,password_message,flag_id) = sys.argv[3].split(",")
+        fid = json.loads(sys.argv[3])
+        login = fid['login']
+        password = fid['password']
+        password_message = fid['password_message']
+        flag_id = fid['public_flag_id']
         sess = requests.Session()
         r=sess.get(url)
         resp = sess.post(url+"login",data=dict(login=login,password=password))

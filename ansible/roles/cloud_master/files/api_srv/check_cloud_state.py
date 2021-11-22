@@ -302,6 +302,10 @@ def main():
 
         if team_states[team] == "CLOUD" and image_states[team] == "NOT_STARTED":
             log_team(team, "team state is CLOUD, but image state is NOT_STARTED")
+
+    for cloud in set(team2cloud_name.values()):
+        token = DO_TOKENS[cloud]
+        print("Ratelimit %s %s" % (cloud, do_api.get_rate_limit(token)))
             
     return 0
     

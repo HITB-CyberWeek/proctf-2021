@@ -49,6 +49,15 @@
       chdir: "{{ cs_dir }}/checkers/timecapsule/src"
     become: yes
     become_user: "{{ cs_user }}"
+    ignore_errors: yes
+
+  - name: clean mp checker
+    shell:
+    args:
+      cmd: rm -rf "{{ cs_dir }}/checkers/mp/src/mp/IO.Swagger"
+    become: yes
+    become_user: "{{ cs_user }}"
+    ignore_errors: yes
 
   - name: build mp checker
     shell:
@@ -57,6 +66,16 @@
       chdir: "{{ cs_dir }}/checkers/mp/src"
     become: yes
     become_user: "{{ cs_user }}"
+    ignore_errors: yes
+
+  - name: build fs checker
+    shell:
+    args:
+      cmd: dotnet publish -c Release
+      chdir: "{{ cs_dir }}/checkers/fs/src"
+    become: yes
+    become_user: "{{ cs_user }}"
+    ignore_errors: yes
 
   - name: build cells checker
     shell:
@@ -75,3 +94,4 @@
       - forvolution
       - p0ck37
       - caas
+      - s3rvic3
