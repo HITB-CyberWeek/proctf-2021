@@ -2,5 +2,5 @@
 
 import fs
 
-fs.load_rsa_key()
-fs.load_secret_key()
+fs.load_or_gen_rsa_key()
+fs.load_or_gen_secret_key()
