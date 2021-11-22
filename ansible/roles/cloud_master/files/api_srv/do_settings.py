@@ -13,11 +13,14 @@ CLOUDS = {
     "hitb": {
         "region": "ams3",
         "router_image": 96197446,
-        "router_size": "s-1vcpu-2gb",
         "router_ssh_keys": [27173548, 32353017],
         "vulnimages": vulnimages,
-        "vulnimage_size": "s-1vcpu-2gb",
-        "vulnimage_ssh_keys": [27173548]
+        "vulnimage_ssh_keys": [27173548],
+        "sizes": {
+            "default": "s-1vcpu-2gb",
+            "router": "s-1vcpu-2gb",
+            "empty": "s-2vcpu-4gb"
+        }
     },
     "bay": {
         "router_image": 0,
