@@ -4,15 +4,16 @@ from stat import S_ISREG, ST_CTIME, ST_MODE
 import datetime
 
 def CleanOld(dirpath,last_time):
-    for fn in os.listdir(dirpath):
-        pth = os.path.join(dirpath,fn)
-        stat = os.stat(pth)
-        curtime = datetime.datetime.now()
-        if os.path.isdir(pth):
-            ct = datetime.datetime.fromtimestamp(stat[ST_CTIME])
-            if curtime - ct > last_time:
-                print("Removing",pth)
-                shutil.rmtree(pth)
+    if os.path.isdir("dirpath"):
+        for fn in os.listdir(dirpath):
+            pth = os.path.join(dirpath,fn)
+            stat = os.stat(pth)
+            curtime = datetime.datetime.now()
+            if os.path.isdir(pth):
+                ct = datetime.datetime.fromtimestamp(stat[ST_CTIME])
+                if curtime - ct > last_time:
+                    print("Removing",pth)
+                    shutil.rmtree(pth)
     return
 
 while 1:
