@@ -71,12 +71,15 @@ def validated(form: sanic.request.RequestParameters, name: str, maxlen: int):
     if len(value) > maxlen:
         raise sanic.exceptions.PayloadTooLarge("Too big value: {!r}.".format(name))
     if not value.isalnum():
-        raise sanic.exceptions.InvalidUsage("Value is not alphanumeric: {!r}.".format(name))
+        raise sanic.exceptions.InvalidUsage("Value is not alphanumeric: {!r} [{}].".format(name, value))
     return value
 
 
 def get_user_from_cookie(request: sanic.Request) -> User:
-    return cookies.get(request.cookies.get(AUTH_COOKIE))
+    cookie_value = request.cookies.get(AUTH_COOKIE)
+    user = cookies.get(cookie_value)
+    logger.info("Cookie: %r, user: %r.", cookie_value, user.username if user is not None else None)
+    return user
 
 
 def random_string(length):
@@ -149,12 +152,13 @@ async def register_post(request: sanic.Request):
     try:
         user = await users_db.add(username, password)
     except ValueError:
-        raise sanic.exceptions.InvalidUsage("Validation has failed")
+        return text("Validation has failed", 400)
     except UserAlreadyExists:
-        raise sanic.exceptions.Forbidden("User already exists")
+        return text("User already exists", 403)
 
     cookie = random_string(64)
     cookies[cookie] = user
+    logger.info("Register succeeded, set cookie '%s...' for user %r.", cookie[:16], user.username)
     response = redirect("/")
     response.cookies[AUTH_COOKIE] = cookie
     response.cookies[AUTH_COOKIE]["max-age"] = USER_TTL_SECONDS
@@ -167,7 +171,7 @@ async def generate(request: sanic.Request):
     if not user or user.is_expired():
         return redirect("/")
     if user.slot is not None:
-        raise sanic.exceptions.Forbidden("Already generated keypair.")
+        return text("Already generated keypair", 403)
     async with last_slot_storage.lock:
         response = await fw_communicate("GENERATE")
         slot, pubkey = response.split(" = ")
@@ -200,7 +204,7 @@ async def setmeta_get(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    return html(html_form(action="setmeta", width_px=400, inputs=[("value", 33)]))
+    return html(html_form(action="setmeta", width_px=400, inputs=[("meta", 33)]))
 
 
 @app.route("/setmeta", methods=["POST"])
@@ -208,9 +212,9 @@ async def setmeta_post(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    value = validated(request.form, "value", maxlen=33)
-    response = await fw_communicate("SETMETA {} {}".format(user.slot, value))
-    return html(response)
+    meta = validated(request.form, "meta", maxlen=33)
+    response = await fw_communicate("SETMETA {} {}".format(user.slot, meta))
+    return text(response)
 
 
 @app.route("/decrypt", methods=["GET"])
@@ -218,7 +222,7 @@ async def decrypt_get(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    return html(html_form(action="decrypt", width_px=800, inputs=[("value", 200)]))
+    return html(html_form(action="decrypt", width_px=800, inputs=[("ciphertext", 200)]))
 
 
 @app.route("/decrypt", methods=["POST"])
@@ -226,8 +230,8 @@ async def decrypt_post(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    value = validated(request.form, "value", maxlen=200)
-    response = await fw_communicate("DECRYPT {} {}".format(user.slot, value))
+    ciphertext = validated(request.form, "ciphertext", maxlen=200)
+    response = await fw_communicate("DECRYPT {} {}".format(user.slot, ciphertext))
     return text(response)
 
 
@@ -246,10 +250,11 @@ async def login_post(request: sanic.Request):
     try:
         user = users_db.authenticate(username, password)
     except AuthenticationError as e:
-        raise sanic.exceptions.Forbidden(str(e))
+        return text(str(e), 403)
 
     cookie = random_string(64)
     cookies[cookie] = user
+    logger.info("Login succeeded, set cookie '%s...' for user %r.", cookie[:16], user.username)
     response = redirect("/")
     response.cookies[AUTH_COOKIE] = cookie
     response.cookies[AUTH_COOKIE]["max-age"] = USER_TTL_SECONDS

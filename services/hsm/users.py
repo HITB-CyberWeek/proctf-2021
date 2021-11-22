@@ -53,7 +53,7 @@ class User:
         return user
 
     def __repr__(self):
-        return "{}:{}:{}:{}\n".format(self.username, self.hash, self.timestamp, self.slot)
+        return "{}:{}:{}:{}".format(self.username, self.hash, self.timestamp, self.slot)
 
 
 class UsersDB:
@@ -82,6 +82,7 @@ class UsersDB:
             user = User(username, password)
             self._data[username] = user
             await self._write(user)
+        return user
 
     async def update(self, user: User):
         await self._write(user)
@@ -104,7 +105,7 @@ class UsersDB:
         os.makedirs(dirname, exist_ok=True)
         filename = os.path.join(dirname, user.username)
         async with async_open(filename, "w") as f:
-            await f.write(repr(user))
+            await f.write(repr(user) + "\n")
 
     async def _read(self, filename: str) -> User:
         async with async_open(filename, "r") as f:
