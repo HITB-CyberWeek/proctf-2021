@@ -506,3 +506,20 @@ def create_vpc(token, name, ip_range, region="ams3", attempts=10, timeout=20):
             log("create_vpc trying again %s" % (e,))
         time.sleep(timeout)
     return None
+
+
+def get_rate_limit(token):
+    url = "https://api.digitalocean.com/v2/account"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer %s" % token,
+    }
+
+    resp = requests.get(url, headers=headers)
+    if not str(resp.status_code).startswith("2"):
+        log(resp.status_code, resp.headers, resp.text)
+        raise Exception("bad status code %d" % resp.status_code)
+
+    return resp.headers.get("Ratelimit-Remaining"), resp.headers.get("Ratelimit-Reset", -1)
+    
