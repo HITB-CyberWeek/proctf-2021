@@ -89,12 +89,11 @@ HttpResponse TreesController::update_tree(const HttpRequest & request) {
     }
 
     const auto json = request.get_json();
-    const auto title = json.at("title").get_string();
     const auto description = json.at("description").get_string();
     const auto person_id = json.at("person").optional<unsigned long long>();
 
     const auto updated_tree = this->_trees_database->update_tree(
-        tree->id, title, description, person_id
+        tree->id, description, person_id
     );
 
     const auto response = this->_return_tree_json(updated_tree);

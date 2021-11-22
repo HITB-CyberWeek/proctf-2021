@@ -29,7 +29,7 @@ public:
         std::optional<unsigned long long> person_id
     );
     Tree update_tree(
-        unsigned long long user_id, const std::string & title, const std::string & description,
+        unsigned long long user_id, const std::string & description,
         std::optional<unsigned long long> person_id
     );
 

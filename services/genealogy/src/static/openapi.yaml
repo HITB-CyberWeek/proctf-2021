@@ -351,9 +351,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTreeRequest'
+              $ref: '#/components/schemas/UpdateTreeRequest'
             example:
-              title: "My genealogy tree"
               description: "The genealogy tree of @andgein"
               person: 1
         required: true
@@ -606,7 +605,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePersonRequest'
+              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
             example:
               title: "Mr"
               first_name: "Andrew"
@@ -701,7 +700,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePersonRequest'
+              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
             example:
               title: "Mr"
               first_name: "Andrew"
@@ -928,7 +927,15 @@ components:
         person:
           type: integer
           format: int64
-    CreatePersonRequest:
+    UpdateTreeRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        person:
+          type: integer
+          format: int64
+    CreateOrUpdatePersonRequest:
       type: object
       properties:
         title:

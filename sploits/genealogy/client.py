@@ -30,8 +30,8 @@ class GenealogyClient:
         r.raise_for_status()
         return r.json()["tree"]["id"]
 
-    def update_tree(self, title: str, description: str, person_id: int):
-        r = self.client.put("/tree", json={"title": title, "description": description, "person": person_id})
+    def update_tree(self, description: str, person_id: int):
+        r = self.client.put("/tree", json={"description": description, "person": person_id})
         r.raise_for_status()
 
     def get_tree(self) -> dict:
