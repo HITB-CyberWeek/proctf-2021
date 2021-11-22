@@ -28,7 +28,7 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           add: ansible/roles/cloud_master/files/api_srv/do_vulnimages.json
-          message: "${{ github.event.inputs.service_name }}] New image built on ${{ github.sha }}"
+          message: "[${{ github.event.inputs.service_name }}] New image built on ${{ github.sha }}"
           committer_name: GitHub Actions
           committer_email: actions@github.com
   deploy-image:

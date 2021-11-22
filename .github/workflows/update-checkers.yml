@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - checkers/
+      - "checkers/**"
 jobs:
   update-checkers:
     runs-on: self-hosted
