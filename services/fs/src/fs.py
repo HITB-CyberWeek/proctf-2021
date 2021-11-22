@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from flask import Flask, Response, request, abort, redirect, url_for, send_file
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user
 import ujson as json
