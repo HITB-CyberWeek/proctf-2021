@@ -14,7 +14,7 @@ process.on('SIGINT', () => {
 	const reader = new RfcReader('/var/rfcs/');
 	await reader.init();
 
-	const cache = new FlagCache(5);
+	const cache = new FlagCache(1000);
 
 	const server = new HttpServer(reader, cache, APIKEY);
 	await server.start(PORT);

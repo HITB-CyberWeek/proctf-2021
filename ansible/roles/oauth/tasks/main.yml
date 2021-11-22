@@ -15,11 +15,13 @@
 - name: Copy docker-compose.yml
   copy:
     src: '../jury_services/oauth/docker-compose.yml'
-    dest: '/root'
+    dest: '/root/docker-compose.oauth.yml'
 
 - name: Create and start services
   community.docker.docker_compose:
-    project_src: /root
+    project_src: /root/
+    files:
+      - docker-compose.oauth.yml
   register: output
 
 - ansible.builtin.debug:
