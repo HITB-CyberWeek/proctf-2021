@@ -7,6 +7,10 @@ RUN for n in RFCs4001-4500.zip RFCs4501-5000.zip RFCs5001-5500.zip RFCs5501-6000
     rm /var/rfcs/*.pdf
 
 WORKDIR /var/www
+
+COPY ./package.json ./
+RUN npm install
+
 COPY ./*.js ./
 COPY ./favicon.ico ./
 

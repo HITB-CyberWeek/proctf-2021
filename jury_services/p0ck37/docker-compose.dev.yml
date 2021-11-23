@@ -1,5 +1,10 @@
 version: '3'
 services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: unless-stopped
+
   web:
     image: 'jury/p0ck37'
     build: web
@@ -7,3 +12,5 @@ services:
     restart: unless-stopped
     ports:
       - 8080:8080
+    links:
+      - mongodb

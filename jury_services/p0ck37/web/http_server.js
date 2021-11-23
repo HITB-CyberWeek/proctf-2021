@@ -5,13 +5,13 @@ const fs = require('fs');
 
 class HttpServer {
 	#rfcReader;
-	#cache;
+	#repository;
 	#apiKey;
 	#favicon;
 
-	constructor(rfcReader, cache, apiKey) {
+	constructor(rfcReader, repository, apiKey) {
 		this.#rfcReader = rfcReader;
-		this.#cache = cache;
+		this.#repository = repository;
 		this.#apiKey = apiKey;
 
 		this.#favicon = path.join(__dirname, 'favicon.ico');
@@ -54,12 +54,12 @@ class HttpServer {
 
 			const id = crypto.randomBytes(16).toString("hex");
 			const rfc = await this.#rfcReader.readRandomRfc(flag);
-			this.#cache.set(id, rfc);
+			this.#repository.add(id, rfc);
 
 			response.writeHead(200, { 'Content-Type': 'application/json' });
 			response.end(JSON.stringify({ id: id }));
 		} else if (request.method === 'GET' && request.url.length === 33) {
-			const rfc = this.#cache.get(request.url.substring(1));
+			const rfc = this.#repository.get(request.url.substring(1));
 			if (!rfc) {
 				response.writeHeader(404);
 				response.end("Not found");
