@@ -77,8 +77,9 @@ class Client:
     def post(self, url_suffix: str, **kwargs):
         url = self.url(url_suffix)
         logging.info("Sending POST %r: %r ...", url, kwargs)
+        override_verdict_on_http_error = kwargs.pop("verdict_on_http_error", None)
         response = self.session.post(url, timeout=HTTP_TIMEOUT, data=kwargs)
-        text = assert_no_http_error(response, self.verdict_on_http_error, url).text
+        text = assert_no_http_error(response, override_verdict_on_http_error or self.verdict_on_http_error, url).text
         logging.info("Success, response: %r.", text)
         return text
 
@@ -86,7 +87,7 @@ class Client:
         return self.post("/register", username=username, password=password, token=token)
 
     def login(self, username, password):
-        return self.post("/login", username=username, password=password)
+        return self.post("/login", username=username, password=password, verdict_on_http_error=CORRUPT)
 
     def generate(self):
         resp = self.get("/generate")
