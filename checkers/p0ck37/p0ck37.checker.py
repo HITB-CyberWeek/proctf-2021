@@ -15,7 +15,7 @@ from checker_helper import *
 PORT = 3000
 TIMEOUT = 20
 OAUTH_TOKEN = 'd7ae69cd-7e91-44de-8729-12cded47b3f2'
-OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org:5000/'
+OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org/'
 FLAGS_API_KEY = '25807689-9ae1-4894-a6f8-940abd1c3a4a'
 FLAGS_ENDPOINT = 'http://jury-p0ck37.ctf.hitb.org:8080/'
 
