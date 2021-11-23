@@ -134,7 +134,7 @@ app.get('/add', ensureCanDownload, async (req, res) => {
         }
 
         let options = new Options();
-        options.addArguments('--no-sandbox', '--disable-setuid-sandbox', '--kiosk-printing');
+        options.addArguments('--no-sandbox', '--disable-setuid-sandbox', '--kiosk-printing', '--disable-dev-shm-usage');
         options.setUserPreferences({"savefile.default_directory": userDir});
 
         const driver = await new Builder().forBrowser('chrome').usingServer(webdriverServer).setChromeOptions(options).build();

@@ -35,27 +35,27 @@ class User(UserMixin):
     def is_active(self):
         return True
 
+
 class UsersRepository:
-    def append_acl(self, username, path):        
+    def append_acl(self, username, path):
         acl_path = f"users/{username}/.acl"
 
-        with open(acl_path, "a", encoding="ascii") as f:        
+        with open(acl_path, "a", encoding="ascii") as f:
             f.write(f"{path}\n")
 
-    def is_phys_subpath(self, basedir, path):        
-        abs_basedir = os.path.abspath(basedir)    
-        abs_path = os.path.abspath(path)        
+    def is_phys_subpath(self, basedir, path):
+        abs_basedir = os.path.abspath(basedir)
+        abs_path = os.path.abspath(path)
         return abs_basedir == os.path.commonpath([abs_basedir, abs_path])
 
     def validate_access(self, username, path):
         acl_path = f"users/{username}/.acl"
-        with open(acl_path) as f:
+        with open(acl_path, encoding="ascii") as f:
             acl = itertools.islice([x.rstrip("\n") for x in f if x.strip()], 0, 256)
         for allowed_path in acl:
             if self.is_phys_subpath(f"data/{allowed_path}", path):
                 return True
         return False
-
 
     def get_user(self, username):
         return User(username)
@@ -68,7 +68,7 @@ class UsersRepository:
         os.makedirs(os.path.dirname(user_dir), exist_ok=True)
 
         password_hash_path = user_dir / ".pass_hash"
-        
+
         if not user_dir.exists():
             user_dir.mkdir()
 
@@ -107,9 +107,9 @@ def load_or_gen_secret_key():
     except FileNotFoundError:
         key = secrets.token_hex()
         try:
-            with open(key_path,"w") as key_file:
+            with open(key_path, "w") as key_file:
                 key_file.write(key)
-        except Exception as e:            
+        except Exception as e:
             key = key_path.read_text()
     return key
 
@@ -129,6 +129,7 @@ users_repository = UsersRepository()
 @app.route('/publickey', methods=['GET'])
 def publickey():
     return app.config["signing_key"].publickey().exportKey('PEM'), {"Content-Type": "application/x-pem-file"}
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -151,6 +152,7 @@ def login():
             </form>
         ''')
 
+
 @app.route("/share", methods=["POST"])
 @login_required
 def share():
@@ -167,7 +169,7 @@ def share():
     signature = pkcs1_15.new(key).sign(h)
     result = url_for("access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
 
-    return f'\n<a href="{result}">click here to get access</a>\n';
+    return f'\n<a href="{result}">click here to get access</a>\n'
 
 
 @app.route("/access")
@@ -191,6 +193,7 @@ def access():
 
     return f"Access to {share_request.location} granted with message: '{share_request.message}'"
 
+
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
@@ -202,7 +205,7 @@ def upload():
         if file.filename == "":
             print("No selected file")
             return redirect(request.url)
-        if file:            
+        if file:
             filepath = f"{current_user.username}/{file.filename}"
             real_path = f"data/{filepath}"
             if not users_repository.is_phys_subpath(f"data/{current_user.username}", real_path):
@@ -220,20 +223,30 @@ def upload():
     </form>
     '''
 
+
 @app.route("/download")
 @login_required
 def download_file():
     file = request.args["file"]
     filepath = f"data/{file}"
     if not users_repository.validate_access(current_user.username, filepath):
-        return f"Access denied", 403    
-    return send_file(filepath)
+        return f"Access denied", 403
+
+    if os.path.isfile(filepath):
+        return send_file(filepath)
+    elif os.path.isdir(filepath):
+        return dumps(os.listdir(filepath))
+    else:
+        return "File not found", 404
+
 
 @app.errorhandler(401)
 def unauthorized(e):
     return Response("<p>Login failed</p>")
 
-# callback to reload the user object        
+# callback to reload the user object
+
+
 @login_manager.user_loader
 def load_user(userid):
     return users_repository.get_user(userid)
@@ -242,6 +255,7 @@ def load_user(userid):
 @app.route("/")
 def index():
     return f"<h2>This is a next-gen file upload and sharing service</h2><a href='/login'>Login</a> here"
+
 
 @app.route("/whoami")
 @login_required
@@ -252,14 +266,18 @@ def whoami():
 def bytes_to_str(b: bytes) -> str:
     return b.decode("iso-8859-1")
 
+
 def str_to_bytes(s: str) -> bytes:
     return s.encode("iso-8859-1")
+
 
 def loads(b: bytes):
     return json.loads(bytes_to_str(b))
 
+
 def dumps(o):
     return str_to_bytes(json.dumps(o, ensure_ascii=False))
 
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=7777, debug = True)
+    app.run(host="127.0.0.1", port=7777)

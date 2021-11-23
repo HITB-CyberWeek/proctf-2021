@@ -15,7 +15,7 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
 
     def info(self):
         print("vulns: 1")
-        print("public_flag_description: Flag id is just a user id, flag is genealogy tree's title")
+        print("public_flag_description: Flag ID is just a user's ID, flag is a genealogy tree's title")
 
     def check(self, address):
         login = checklib.random.firstname().lower() + "_" + checklib.random.lastname().lower()

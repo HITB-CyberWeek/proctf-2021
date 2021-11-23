@@ -14,7 +14,7 @@ namespace checker.timecapsule
 {
 	internal class TimeCapsuleChecker : IChecker
 	{
-		public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: time capsule id\n");
+		public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: Flag ID is capsule ID, flag is inside capsule text\n");
 
 		public async Task Check(string host)
 		{

@@ -93,7 +93,7 @@ def verdict(exit_code, public="", private=""):
 
 
 def info():
-    verdict(OK, "vulns: 1:1:2")
+    verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is user name, flag is password\n")
 
 
 def login(s, login, password):
@@ -188,11 +188,17 @@ def put(host, flag_id, flag, vuln):
     if not login(s, flag_id, flag):
         verdict(MUMBLE, "Failed to login", "Failed to login: %s %s" % (flag_id, flag))
 
-    verdict(OK, flag_id)
+    verdict(OK, json.dumps({"public_flag_id": flag_id}))
 
 
 def get(host, flag_id, flag, vuln):
     ATTEPMTS = 4
+
+    try:
+        info = json.loads(flag_id)
+        flag_id = info["public_flag_id"]
+    except Exception:
+        verdict(CHECKER_ERROR, "Bad flag id", "Bad flag_id: %s" % traceback.format_exc())
 
     flags = [flag]
 

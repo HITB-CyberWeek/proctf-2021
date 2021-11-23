@@ -10,31 +10,36 @@ def encode_move(start_x, start_y, end_x, end_y):
     return move.encode()
 
 
-def do_raw_move(io, move, verbose=False):
-    io.sendline(move + b'\n')
+def get_move_answer(io, verbose=False):
     ans = io.recvuntil(b"A B C D E F G H\n\n")
     if verbose:
         print(ans.decode(errors="backslashreplace"))
-    if PRINT_MOVES:
-        print(move)
     return ans
 
 
-def do_move(io, start_x, start_y, end_x, end_y, verbose=False):
-    return do_raw_move(io, encode_move(start_x, start_y, end_x, end_y), verbose)
+def do_raw_move(io, move, verbose=False,wait_ans=True):
+    io.sendline(move + b'\n')
+    if PRINT_MOVES:
+        print(move)
+    if wait_ans:
+        return get_move_answer(io, verbose)
 
 
-def do_empty_move(io, is_white_turn=True, verbose=False):
+def do_move(io, start_x, start_y, end_x, end_y, verbose=False, wait_ans=True):
+    return do_raw_move(io, encode_move(start_x, start_y, end_x, end_y), verbose=verbose, wait_ans=wait_ans)
+
+
+def do_empty_move(io, is_white_turn=True, verbose=False, wait_ans=True):
     if verbose:
         print("empty turn for", "write" if is_white_turn else "black")
     move = encode_move(5, -1, 7, -2)
     move += (b"Z" if is_white_turn else b"A") * (29 - len(move))
     move += b"A" if is_white_turn else b"Z"
 
-    return do_raw_move(io, move, verbose)
+    return do_raw_move(io, move, verbose, wait_ans)
 
 
-def do_respawn_move(io, num, verbose=False):
+def do_respawn_move(io, num, verbose=False, wait_ans=True):
     if verbose:
         print("respawn turn")
     move = encode_move(6, -1, 5, 1)
@@ -44,12 +49,12 @@ def do_respawn_move(io, num, verbose=False):
     num_is_white = (num // 8) % 2 == 0
 
     if not num_is_white:
-        do_empty_move(io, is_white_turn=True, verbose=verbose)
+        do_empty_move(io, is_white_turn=True, verbose=verbose, wait_ans=wait_ans)
 
     ans = do_raw_move(io, move, verbose)
 
     if num_is_white:
-        do_empty_move(io, is_white_turn=False, verbose=verbose)
+        do_empty_move(io, is_white_turn=False, verbose=verbose, wait_ans=wait_ans)
 
     return ans
 
@@ -73,19 +78,26 @@ def get_stack_val(io, num, verbose=False):
 
 
 def do_move_sequence(io, points, is_white, verbose=False):
+    moves = 0
     if not is_white:
-        do_empty_move(io, is_white_turn=True, verbose=verbose)
+        do_empty_move(io, is_white_turn=True, verbose=verbose, wait_ans=False)
+        moves += 1
 
     for pos in range(1, len(points)):
         start_x, start_y = points[pos-1]
         end_x, end_y = points[pos]
 
-        do_move(io, start_x, start_y, end_x, end_y, verbose=verbose)
-        do_empty_move(io, is_white_turn=not is_white, verbose=verbose)
+        do_move(io, start_x, start_y, end_x, end_y, verbose=verbose, wait_ans=False)
+        do_empty_move(io, is_white_turn=not is_white, verbose=verbose, wait_ans=False)
+        moves += 2
 
     if not is_white:
-        do_empty_move(io, is_white_turn=False, verbose=verbose)
-
+        do_empty_move(io, is_white_turn=False, verbose=verbose, wait_ans=False)
+        moves += 1
+    
+    for i in range(moves):
+        get_move_answer(io, verbose)
+        
 
 def travel_knight(io, points, start_val, end_val, verbose=False):
     is_start_white = (start_val // 8) % 2 == 0

@@ -2,6 +2,7 @@ const http = require('http');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+var JavaScriptObfuscator = require('javascript-obfuscator');
 
 class HttpServer {
 	#rfcReader;
@@ -66,8 +67,14 @@ class HttpServer {
 				return;
 			}
 
-			response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-			response.end(rfc);
+            const escapedRfc = rfc.replace(/\n/g, "\\n").replaceAll("\"", "\\\"");
+            const js = `(function(){var e = document.getElementById("content"); e.innerHTML = "${escapedRfc}";})();`
+            const obfuscated = JavaScriptObfuscator.obfuscate(js).getObfuscatedCode();
+
+            const html = `<html><body><pre id='content'></pre><script>${obfuscated}</script></body></html>`;
+
+			response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+			response.end(html);
 		} else {
 			response.writeHeader(404);
 			response.end("Not found");

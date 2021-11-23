@@ -15,12 +15,12 @@ from checker_helper import *
 PORT = 3000
 TIMEOUT = 20
 OAUTH_TOKEN = 'd7ae69cd-7e91-44de-8729-12cded47b3f2'
-OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org:5000/'
+OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org/'
 FLAGS_API_KEY = '25807689-9ae1-4894-a6f8-940abd1c3a4a'
 FLAGS_ENDPOINT = 'http://jury-p0ck37.ctf.hitb.org:8080/'
 
 def info():
-    verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is the ID of a user who has a flag")
+    verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is the ID of a user with a flag, the flag is in the user's pdf documents")
 
 def check(args):
     if len(args) != 1:
@@ -45,13 +45,14 @@ def login(host, user_name):
     query = parse_qs(urlparse(r.url).query)
 
     if "ReturnUrl" not in query:
-        verdict(MUMBLE, "Bad login parameters", "Can't find 'ReturnUrl' parameter in '%s'" % r.url)
+        verdict(MUMBLE, "Bad login parameters", "Can't find ReturnUrl parameter in '%s'" % r.url)
 
     if len(query["ReturnUrl"]) != 1:
-        verdict(MUMBLE, "Bad login parameters", "Multiple 'ReturnUrl' in '%s'" % r.url)
+        verdict(MUMBLE, "Bad login parameters", "Multiple ReturnUrl in '%s'" % r.url)
 
     return_url = query["ReturnUrl"][0]
-    # TODO check redirect_uri in return_url
+    if not return_url.startswith("/connect/authorize"):
+        verdict(MUMBLE, "Bad login parameters", "ReturnUrl does not start with '/connect/authorize' in '%s'" % r.url)
 
     login_data = {"ReturnUrl": return_url, "Username": user_name, "Token": OAUTH_TOKEN}
     session = requests.Session()
@@ -70,7 +71,6 @@ def add_link(host, link, session):
 
     if r.status_code != 200:
         verdict(MUMBLE, "Can't add new link", "Can't add new link: '%s'" % r.text)
-    #print(r.text)
 
 def register_flag(flag):
     headers = {"x-api-key": FLAGS_API_KEY}
@@ -99,7 +99,6 @@ def put(args):
     add_link(host, secret_flag_url, session)
 
     p0ck37_user_id = hashlib.md5(f"{user_name}{OAUTH_TOKEN}".encode()).hexdigest()
-    # TODO add additional fields for saving
     flag_id = json.dumps({"public_flag_id": p0ck37_user_id, "user_name": user_name, "secret_flag_id": secret_flag_id})
     verdict(OK, flag_id)
 
@@ -114,9 +113,21 @@ def get(args):
     session = login(host, info["user_name"])
 
     p0ck37_url = f"http://{host}:{PORT}/"
-    # TODO check if page contains link to flag
+    p0ck37_download_url_path = f"/download/{info['secret_flag_id']}.pdf"
+    p0ck37_download_url = urljoin(p0ck37_url, p0ck37_download_url_path)
 
-    p0ck37_download_url = urljoin(p0ck37_url, f"/download/{info['secret_flag_id']}.pdf")
+    try:
+        r = session.get(p0ck37_url, timeout=TIMEOUT)
+    except requests.exceptions.ConnectionError as e:
+        verdict(DOWN, "Connection error", "Connection error during getting /: %s" % e)
+    except requests.exceptions.Timeout as e:
+        verdict(DOWN, "Timeout", "Timeout during getting /: %s" % e)
+
+    if r.status_code != 200:
+        verdict(MUMBLE, "Can't get /", "Can't get /: '%s'" % r.text)
+
+    if not p0ck37_download_url_path in str(r.content):
+        verdict(CORRUPT, "Can't find flag", "Can't find '%s' in '%s'" % (p0ck37_download_url_path, str(r.content)))
 
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
@@ -126,7 +137,7 @@ def get(args):
         verdict(DOWN, "Timeout", "Timeout during link publishing: %s" % e)
 
     if r.status_code != 200:
-        verdict(MUMBLE, "Can't download file", "Can't download file: '%s'" % r.text)
+        verdict(CORRUPT, "Can't download file", "Can't download file: '%s'" % r.text)
 
     with pdfplumber.open(io.BytesIO(r.content)) as pdf:
         page = pdf.pages[0]
