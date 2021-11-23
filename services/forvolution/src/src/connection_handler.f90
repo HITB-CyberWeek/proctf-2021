@@ -111,8 +111,7 @@ contains
 
     select case (self%connection_state)
       case(connection_read)
-        new_processed = tcp_read(self%socket, self%needed_bytes - self%processed, &
-          self%buffer(self%processed + 1 : self%needed_bytes))
+        new_processed = tcp_read(self%socket, self%buffer(self%processed + 1 : self%needed_bytes))
         if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
@@ -137,8 +136,7 @@ contains
           call self%handle_request()
         end if
       case(connection_write)
-        new_processed = tcp_write(self%socket, self%needed_bytes - self%processed, &
-          self%buffer(self%processed + 1 : self%needed_bytes))
+        new_processed = tcp_write(self%socket, self%buffer(self%processed + 1 : self%needed_bytes))
         if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
@@ -548,7 +546,7 @@ contains
     integer :: readed
 
     do
-      readed = tcp_read(socket, size(buffer), buffer)
+      readed = tcp_read(socket, buffer)
       if (readed.le.0) then
         return
       end if

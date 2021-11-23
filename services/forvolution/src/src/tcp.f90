@@ -60,22 +60,20 @@ contains
     client = c_accept(socket)
   end function tcp_accept
 
-  function tcp_read(socket, cnt, buffer) result(readed)
+  function tcp_read(socket, buffer) result(readed)
     integer, intent(in) :: socket
-    integer, intent(in) :: cnt
-    character(kind=c_char), dimension(1:cnt), intent(in), target :: buffer
+    character(kind=c_char), dimension(:), intent(in), target :: buffer
     integer :: readed
 
-    readed = c_read(socket, c_loc(buffer), cnt)
+    readed = c_read(socket, c_loc(buffer), size(buffer))
   end function tcp_read
 
-  function tcp_write(socket, cnt, buffer) result(writed)
+  function tcp_write(socket, buffer) result(writed)
     integer, intent(in) :: socket
-    integer, intent(in) :: cnt
-    character(kind=c_char), dimension(1:cnt), intent(in), target:: buffer
+    character(kind=c_char), dimension(:), intent(in), target:: buffer
     integer :: writed
 
-    writed = c_write(socket, c_loc(buffer), cnt)
+    writed = c_write(socket, c_loc(buffer), size(buffer))
   end function tcp_write
 
   function tcp_try_close(socket) result(err)
