@@ -14,12 +14,14 @@ BaseController::BaseController() {
     this->_hasher = std::make_unique<Hasher>();
     this->_keys = std::make_unique<KeyStorage>();
 
+    // Get connection string from $DATABASE or use following line as a default
     std::string connection_string = "host=database port=6432 dbname=genealogy user=genealogy password=genealogy";
     const char* db_env = std::getenv("DATABASE");
     if (db_env) {
         connection_string = db_env;
     }
 
+    // Create PostgreSQL connection and start a new transaction
     const auto connection = tao::pq::connection::create(connection_string);
     this->_tx = connection->transaction();
 }
@@ -31,6 +33,7 @@ std::optional<unsigned long long> BaseController::_current_user_id(const HttpReq
         return {};
     }
 
+    // User id is stored in the cookie named "user_id"
     int user_id = -1;
     try {
         user_id = std::stoi(user_id_iterator->second);
@@ -39,6 +42,7 @@ std::optional<unsigned long long> BaseController::_current_user_id(const HttpReq
         return {};
     }
 
+    // User also needs correct user_hash cookie
     if (user_hash_iterator->second != this->_get_user_cookie_hash(user_id) || user_id < 0) {
         printf("Invalid cookie for user %d: %s\n", user_id, user_hash_iterator->second.c_str());
         return {};

@@ -34,6 +34,11 @@ for t in range(1, N+1):
     shutil.copyfile("server_outside_prod/%d.conf" % t,
                     DB_DIR + "/team%d/server_outside.conf" % t)
 
+    shutil.copyfile("client_wg_prod/%d.conf" % t,
+                    DB_DIR + "/team%d/client_wg.conf" % t)
+    shutil.copyfile("server_wg_prod/%d.conf" % t,
+                    DB_DIR + "/team%d/server_wg.conf" % t)
+
     shutil.copyfile("openvpn_team_main_net_client_prod/%d.conf" % t,
                     DB_DIR + "/team%d/game_network.conf" % t)
 

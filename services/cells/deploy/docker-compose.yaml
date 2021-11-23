@@ -1,12 +1,12 @@
 version: '2.1'
 services:
-  ctf:
+  cells:
     build: .
     restart: unless-stopped
     pids_limit: 500
     image: cells
     volumes:
-      - ./srv:/home/service
+      - ./srv:/home/cells
     ports:
       - 5000:5000
     ulimits:

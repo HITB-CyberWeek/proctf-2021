@@ -1,0 +1,37 @@
+---
+
+- name: Copy docker image
+  copy:
+    src: '../jury_services/p0ck37/p0ck37.tar'
+    dest: '/root'
+  register: archive
+
+- name: Load docker image
+  community.docker.docker_image:
+    name: jury/p0ck37
+    tag: latest
+    load_path: /root/p0ck37.tar
+    source: load
+    force_source: yes
+  when: archive.changed
+
+- name: Copy docker-compose.yml
+  copy:
+    src: '../jury_services/p0ck37/docker-compose.yml'
+    dest: '/root'
+
+- name: Create and start services
+  community.docker.docker_compose:
+    project_src: /root
+  register: output
+
+- ansible.builtin.debug:
+    var: output
+
+- name: Cleanup docker
+  community.docker.docker_prune:
+    containers: yes
+    images: yes
+    networks: yes
+    volumes: yes
+    builder_cache: yes

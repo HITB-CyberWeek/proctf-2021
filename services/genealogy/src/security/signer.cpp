@@ -1,5 +1,6 @@
 #include "signer.hpp"
 
+#include <cassert>
 #include <cstring>
 #include <memory>
 
@@ -46,6 +47,8 @@ bool Signer::check_sign(const std::string & data) const {
 void Signer::_append_length(Data & data) const {
     size_t data_length = data.size();
 
+    assert(data_length <= 65535);
+
     data.resize(data_length + 2);
 
     data[data_length] = data_length / 256;
@@ -53,6 +56,7 @@ void Signer::_append_length(Data & data) const {
 }
 
 void Signer::_append_padding(Data & data, unsigned long long block_size) const {
+    // Add padding to the data
     const size_t data_length = data.size();
     const size_t padded_length = ((data_length + block_size) / block_size) * block_size;
     data.resize(padded_length);
@@ -63,6 +67,7 @@ void Signer::_append_padding(Data & data, unsigned long long block_size) const {
 }
 
 Signer::Data Signer::_encrypt(const Data & data) const {
+    // Call openssl's AES_cbc_encrypt()
     std::shared_ptr<unsigned char[]> output(new unsigned char[data.size()]);
 
     AES_KEY enc_key;

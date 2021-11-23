@@ -32,6 +32,7 @@ public:
 
     HttpServer(unsigned short port);
     void add_route(RouteKey key, RouteHandler handler);
+    void add_static_routes(const std::filesystem::path & path);
 
 protected:
     void _handle_client(int client_socket) override;

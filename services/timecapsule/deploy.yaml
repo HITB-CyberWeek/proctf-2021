@@ -11,7 +11,7 @@ files:
       - src/wwwroot
     destination: /home/$USERNAME/src
   - source: src/settings/server.pfx
-    destination: /home/$USERNAME/src/settings
+    destination: /home/$USERNAME/settings
   - sources:
       - docker-compose.yml
       - Dockerfile

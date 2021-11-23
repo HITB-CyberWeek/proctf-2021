@@ -97,7 +97,7 @@ def main():
             droplet_id = do_api.create_vm(token,
                 ROUTER_VM_NAME, image=do_cloud_params["router_image"],
                 ssh_keys=do_cloud_params["router_ssh_keys"],
-                size=do_cloud_params.get("router_size"),
+                size=do_cloud_params["sizes"].get("router", do_cloud_params["sizes"]["default"]),
                 region=do_cloud_params.get("region"),
                 vpc_uuid=vpc_id, tag="team-router")
             if droplet_id is None:
@@ -165,6 +165,16 @@ def main():
             log_stderr("scp to DO failed")
             return 1
 
+        log_progress("56%")
+
+        file_from = "db/team%d/server_wg.conf" % TEAM
+        file_to = "%s:/etc/wireguard/team%d.conf" % (ip, TEAM)
+        ret = call_unitl_zero_exit(["scp"] + SSH_DO_OPTS +
+                                   [file_from, file_to])
+        if not ret:
+            log_stderr("scp wg to DO failed")
+            return 1
+
         log_progress("57%")
 
         file_from = "db/team%d/game_network.conf" % TEAM
@@ -175,12 +185,21 @@ def main():
             log_stderr("scp to DO failed")
             return 1
 
-        log_progress("60%")
+        log_progress("58%")
 
         cmd = ["systemctl start openvpn@server_outside_team%d" % TEAM]
         ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
         if not ret:
             log_stderr("start internal tun")
+            return 1
+
+
+        log_progress("59%")
+
+        cmd = ["systemctl start wg-quick@team%d" % TEAM]
+        ret = call_unitl_zero_exit(["ssh"] + SSH_DO_OPTS + [ip] + cmd)
+        if not ret:
+            log_stderr("start internal wg tun")
             return 1
 
         # UNCOMMENT BEFORE THE GAME
@@ -251,7 +270,7 @@ def main():
                 vulnimage_droplet_id = do_api.create_vm(token,
                     get_image_name(TEAM, VMNUM), image=do_cloud_params["vulnimages"][service_name],
                     ssh_keys=do_cloud_params["vulnimage_ssh_keys"],
-                    size=do_cloud_params.get("vulnimage_size"),
+                    size=do_cloud_params["sizes"].get(service_name, do_cloud_params["sizes"]["default"]),
                     region=do_cloud_params.get("region"),
                     user_data=userdata, vpc_uuid=vpc_id, tag="team-image-closed")
                 if vulnimage_droplet_id is None:

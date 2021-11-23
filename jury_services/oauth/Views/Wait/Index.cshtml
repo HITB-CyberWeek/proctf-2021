@@ -1,0 +1,35 @@
+﻿@model OAuthServer.ViewModels.WaitModel
+
+@section Scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var current = 0;
+            var max = @Model.Max;
+            var multiplier = 100 / max;
+
+            var progressBar = $('.progress-bar');
+
+            var intervalId = setInterval(updateProgress, 1000);
+
+            function updateProgress() {
+                if (current <= max) {
+                    var percent = Math.round(current * multiplier);
+                    progressBar.text(percent + '%');
+                    progressBar.width(percent + '%');
+                    progressBar.attr('aria-valuenow', percent);
+                }
+                if (current === max) {
+                    clearInterval(intervalId);
+                    window.location.replace("@Html.Raw(Model.ReturnUri)");
+                }
+
+                current++;
+            }
+        });
+    </script>
+}
+
+<div class="progress">
+    <div class="progress-bar bg-dark" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+</div>

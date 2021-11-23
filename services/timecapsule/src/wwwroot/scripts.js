@@ -39,13 +39,13 @@ function renderCapsule($body, template, item) {
 	$(".capsule", template).textContent = item.timeCapsule;
 	$("a", template).href = "/capsule.html?id=" + encodeURIComponent(item.id);
 	if(!!item.text)
-		$(".text", template).textContent = item.text;
+		$(".text", template).textContent = item.text.replaceAll(/\b[a-z0-9]{31}=/g, flag => flag.toUpperCase());
 	let clone = document.importNode(template, true);
 	$body.appendChild(clone);
 	if(!(!item.secret || !item.secret.length)) unwrap(item.timeCapsule, item.secret).then(capsule => {
 		let element = $(`#id_${item.id.replace(/[^0-9a-f-]/g, "")} .text`);
 		if(!capsule?.text) element.classList.add("hidden");
-		else element.textContent = capsule.text;
+		else element.textContent = capsule.text.replaceAll(/\b[a-z0-9]{31}=/g, flag => flag.toUpperCase());
 	});
 }
 

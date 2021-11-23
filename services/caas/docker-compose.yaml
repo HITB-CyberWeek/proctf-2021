@@ -1,0 +1,77 @@
+version: "2.4"
+
+services:
+  app:
+    build: "./src"
+    restart: "unless-stopped"
+    mem_limit: 1g
+    memswap_limit: 1g
+    depends_on:
+      - db
+      - s3
+    ports:
+      - 0.0.0.0:50051:50051
+    entrypoint: ["/app/app.py"]
+    networks:
+      - app
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER
+      - POSTGRES_DB
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+  worker:
+    build: "./src"
+    restart: "unless-stopped"
+    mem_limit: 128m
+    memswap_limit: 128m
+    depends_on:
+      - app
+      - db
+      - s3
+    scale: 4
+    entrypoint: ["/app/worker.py"]
+    networks:
+      - app
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER
+      - POSTGRES_DB
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+  db:
+    build: "./db"
+    restart: "unless-stopped"
+    mem_limit: 1g
+    memswap_limit: 1g
+    volumes:
+      - "./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+      - "./data/db:/var/lib/postgresql/data"
+    command: ["postgres", "-c", "config_file=/opt/postgresql.conf"]
+    networks:
+      - app
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER
+      - POSTGRES_DB
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+  s3:
+    image: minio/minio:RELEASE.2021-11-05T09-16-26Z
+    restart: "unless-stopped"
+    mem_limit: 256m
+    memswap_limit: 256m
+    volumes:
+      - "./data/s3:/data"
+    command: ["server", "/data"]
+    networks:
+      - app
+    environment:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: 10.0.0.0/16

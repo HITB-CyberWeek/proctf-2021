@@ -53,7 +53,7 @@ ua = random.choice(USER_AGENTS)
 
 cmd = sys.argv[1]
 if cmd == "info":
-    print("vulns: 1:1")
+    print("vulns: 1")
     exit(101)
 ip=sys.argv[2]
 url = "http://"+ip+":5000/"
@@ -62,7 +62,7 @@ try:
         r1 = requests.get(url)
         if not "CellMachine" in r1.text:
             print("Invalid start page")
-            print(r1.text)
+            sys.stderr.write(str(r1.text))
             exit(102)
         exit(101)
     elif cmd == "put":
@@ -86,47 +86,52 @@ try:
         
         resp = sess.post(url+"register",data=dict(login=login,password=password))
         if not "alert(\"Successfully registered\");" in resp.text:
-            sys.stderr.write("Cannot register on site\n")
-            print(resp.text)
+            print("Cannot register on site\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         resp = sess.post(url+"login",data=dict(login=login,password=password))
         if not "alert(\"Successfully logged in\");" in resp.text:
-            sys.stderr.write("Cannot login site\n")
-            print(resp.text)
+            print("Cannot login site\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         
         resp = sess.post(url+"code",data=dict(name=flag_id,password=password_message,content=flag))
         
         if not "alert(\"Generated new cells\");" in resp.text:
-            sys.stderr.write("Cannot submit flag\n")
-            print(resp.text)
+            print("Cannot submit flag\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         resp = sess.get(url+"/")
         if not flag_id in resp.text:
-            sys.stderr.write("No flagid in page\n")
-            print(resp.text)
+            print("No flagid in page\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         resp = sess.get(url+"check/%s/%s" %(login,flag_id+".pk.cell"),params=dict(key=password_message))
         if not flag in resp.json()['status']:
-            sys.stderr.write("No flag in check\n")
-            print(resp.json)
+            print("No flag in check\n")
+            sys.stderr.write(str(resp.json))
             exit(102)
-        
-        print(",".join([login,password,password_message,flag_id]))
+        #print(",".join([login,password,password_message,flag_id]))
+        print(json.dumps(dict(public_flag_id=flag_id,login=login,password=password,password_message=password_message)))
         exit(101)
     elif cmd == "get":
-        (login,password,password_message,flag_id) = sys.argv[3].split(",")
+        #(login,password,password_message,flag_id) = sys.argv[3].split(",")
+        fid = json.loads(sys.argv[3])
+        login = fid['login']
+        password = fid['password']
+        password_message = fid['password_message']
+        flag_id = fid['public_flag_id']
         sess = requests.Session()
         r=sess.get(url)
         resp = sess.post(url+"login",data=dict(login=login,password=password))
         if not "alert(\"Successfully logged in\");" in resp.text:
-            sys.stderr.write("Cannot login site\n")
-            print(resp.text)
+            print("Cannot login site\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         resp = sess.get(url+"/")
         if not flag_id in resp.text:
-            sys.stderr.write("No flagid in page\n")
-            print(resp.text)
+            print("No flagid in page\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         
         local_filename = os.path.join(tmp_dir,flag_id)
@@ -143,32 +148,31 @@ try:
         res = sp.Popen(dockercmd,stdout=sp.PIPE)
         
         out = res.communicate()
-        
         toks = out[0].split(b",")
         if len(toks)!=2:
             os.unlink(local_filename)
-            sys.stderr.write("Invalid password\n")
-            print(out[0])
+            print("Invalid password\n")
+            sys.stderr.write(str(out[0]))
             exit(102)
         sm = csum_b(toks[0])
         if hex(sm)[2:].encode() != toks[1]:
-            sys.stderr.write("Invalid password 2\n")
+            print("Invalid password 2\n")
             os.unlink(local_filename)
-            print(out[0])
+            sys.stderr.write(str(out[0]))
             exit(102)
             
         sess2 = requests.Session()
         resp = sess2.get(url+"search",params=dict(template=login[:2]))
         if not login in resp.text:
             os.unlink(local_filename)
-            sys.stderr.write("No login in search resp\n")
-            print(resp.text)
+            print("No login in search resp\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         ref = '<a href="/data/%s/%s.pk.cell">' % (login,flag_id)
         if not ref in resp.text:
             os.unlink(local_filename)
-            sys.stderr.write("No flagid in search resp\n")
-            print(resp.text)
+            print("No flagid in search resp\n")
+            sys.stderr.write(str(resp.text))
             exit(102)
         local_filename2 = local_filename+"2"
         with requests.get(url+"data/"+login+"/"+flag_id+".pk.cell", stream=True) as r:
@@ -179,7 +183,7 @@ try:
         a2=open(local_filename2,"rb").read()
         for i in range(len(a1)):
             if a1[i] != a2[i]:
-                sys.stderr.write("File in search page is different\n")
+                print("File in search page is different\n")
                 exit(102)
         os.unlink(local_filename2)
         os.unlink(local_filename)
@@ -187,5 +191,6 @@ try:
     else:
         print("No command")
 except Exception:
-    print(traceback.format_exc())
+    sys.stderr.write(str(traceback.format_exc()))
+    print("Checker error")
     exit(104)

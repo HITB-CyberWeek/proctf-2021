@@ -1,0 +1,39 @@
+name: Deploy Service Image
+on:
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: "Name of the service"
+        required: true
+jobs:
+  deploy-image:
+    runs-on: self-hosted
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Save private key
+        run: 'echo "$SSH_KEY" > ~/cloud_ssh_private_key; chmod 600 ~/cloud_ssh_private_key'
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
+      - name: Copy a-la-secret files
+        run: |-
+          cp ~/oblaka.mp3 "${{ github.workspace }}/ansible/roles/cloud_master/files/wsgi/oblaka.mp3";
+          cp ~/hitb2021_do_deploy "${{ github.workspace }}/ansible/roles/cloud_master/files/api_srv/hitb2021_do_deploy";
+          cp ~/do_tokens.py "${{ github.workspace }}/ansible/roles/cloud_master/files/api_srv/do_tokens.py";
+      - name: Deploy new image to the cloud
+        run: ansible-playbook -vv --private-key=~/cloud_ssh_private_key cloud_master.yaml
+        working-directory: "${{ github.workspace }}/ansible/"
+  recreate-team-vms:
+    runs-on: self-hosted
+    needs: [deploy-image]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Save private key
+        run: 'echo "$SSH_KEY" > ~/cloud_ssh_private_key; chmod 600 ~/cloud_ssh_private_key'
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
+      - name: Recreate team VMs
+        run: ssh -i ~/cloud_ssh_private_key root@167.71.2.106 './recreate_team_vms.sh ${{ github.event.inputs.service_name }}'

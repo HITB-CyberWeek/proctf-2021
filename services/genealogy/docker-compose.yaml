@@ -2,6 +2,7 @@ version: '3.4'
 
 volumes:
   postgres-data:
+  keys:
 
 
 services:
@@ -24,14 +25,25 @@ services:
     env_file:
       - env/pgbouncer.env
 
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - genealogy
+    volumes:
+      - ./data/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./src/static:/static:ro
+    ports:
+      - "8888:8888"
+
   genealogy:
     build: .
     depends_on:
       - database
     restart: unless-stopped
+    read_only: true
+    user: "1000:1000"
     volumes:
-      - ./.keys:/app/keys
+      - keys:/app/keys
     environment:
       DATABASE: "host=database port=6432 dbname=genealogy user=genealogy password=genealogy"
-    ports:
-      - "8888:8888"
+

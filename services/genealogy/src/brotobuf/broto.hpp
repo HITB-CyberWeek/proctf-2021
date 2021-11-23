@@ -61,6 +61,7 @@ protected:
 
     variable.deserialize(temp_stream);
   }
+  bool _debug_memory_logs_enabled() const;
 };
 
 } // namespace brotobuf

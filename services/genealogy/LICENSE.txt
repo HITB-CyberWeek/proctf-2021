@@ -5,3 +5,7 @@ Used software under MIT license:
 
 Under Boost Software license:
 * https://github.com/taocpp/taopq
+
+Under Apache License:
+* https://swagger.io/license/
+

@@ -14,9 +14,12 @@ namespace mp.Controllers
     public class ProductsController : SearchController
     {
         [HttpGet("{id}")]
-        public ProductModel Get(string id)
+        public IActionResult Get(string id)
         {
-            return ProductModel.FromDocument(GetInternal(id));
+            var result = GetInternal(id);
+            if (result == null)
+                return BadRequest(NotFound($"Can't find product with id {id}"));
+            return Ok(ProductModel.FromDocument(result));
         }
 
         [HttpGet("search")]

@@ -25,7 +25,6 @@ public:
     HttpResponse check_tree_achive(const HttpRequest & request);
 
 private:
-    const unsigned long long NO_DEATH_DATE = 1;
     HttpResponse _return_tree_json(const Tree & tree);
     brotobuf::Person _build_brotobuf_person(unsigned long long person_id);
     tao::json::value _restore_brotobuf_person(const std::optional<brotobuf::Person> & person);

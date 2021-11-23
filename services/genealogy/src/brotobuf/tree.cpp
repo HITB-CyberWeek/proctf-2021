@@ -22,7 +22,9 @@ void GenealogyTree::serialize(OutputStream &stream) const {
   this->serialize(std::move(stream));
 }
 void GenealogyTree::serialize(OutputStream &&stream) const {
-  printf("== Starting serialization of GenealogyTree at %p\n", this);
+  if (this->_debug_memory_logs_enabled()) {
+    printf("Starting serialization of GenealogyTree at %p\n", this);
+  }
   this->serialize_id(stream);
   this->serialize_title(stream);
   this->serialize_description(stream);
@@ -33,7 +35,9 @@ void GenealogyTree::deserialize(InputStream &stream) {
   this->deserialize(std::move(stream));
 }
 void GenealogyTree::deserialize(InputStream &&stream) {
-  printf("== Starting deserialization of GenealogyTree at %p\n", this);
+  if (this->_debug_memory_logs_enabled()) {
+    printf("== Starting deserialization of GenealogyTree at %p\n", this);
+  }
   this->owners = std::vector<unsigned long long>();
 
   while (stream.has_next()) {
@@ -41,35 +45,43 @@ void GenealogyTree::deserialize(InputStream &&stream) {
     switch (field_index) {
 
     case 0:
-      printf("Writing to %p->id\n", this);
+      if (this->_debug_memory_logs_enabled()) {
+        printf("Deserializing data to id->id\n");
+      }
       this->id = this->_deserialize_varint(stream);
       break;
     case 1:
-      printf("Writing to %p->title\n", this);
+      if (this->_debug_memory_logs_enabled()) {
+        printf("Deserializing data to title->title\n");
+      }
       this->_deserialize_string(this->title, stream);
       break;
     case 2:
-      printf("Writing to %p->description\n", this);
+      if (this->_debug_memory_logs_enabled()) {
+        printf("Deserializing data to description->description\n");
+      }
       this->_deserialize_string(this->description, stream);
       break;
     case 3:
       if (this->owners.empty()) {
-        printf("Allocating %p->owners for 60 elements of %ld bytes = %ld = "
-               "0x%lx\n",
-               this, sizeof(unsigned long long),
-               60 * sizeof(unsigned long long),
-               60 * sizeof(unsigned long long));
         this->owners.resize(60);
-        printf("Allocated %p->owners: %p\n", this, owners.data());
+        if (this->_debug_memory_logs_enabled()) {
+          printf("Allocated %ld bytes for owner->owners at %p\n",
+                 60 * sizeof(unsigned long long), owners.data());
+        }
         this->_owners_iterator = this->owners.begin();
       }
-      printf("Writing to %p->owners[%ld]\n", this,
-             this->_owners_iterator - this->owners.begin());
+      if (this->_debug_memory_logs_enabled()) {
+        printf("Deserializing data to owner->owners[%ld]\n",
+               this->_owners_iterator - this->owners.begin());
+      }
       *(this->_owners_iterator) = this->_deserialize_varint(stream);
       this->_owners_iterator++;
       break;
     case 4:
-      printf("Writing to %p->person\n", this);
+      if (this->_debug_memory_logs_enabled()) {
+        printf("Deserializing data to person->person\n");
+      }
       this->person = Person();
       this->_deserialize_object<Person>(this->person.value(), stream);
       break;
@@ -77,9 +89,10 @@ void GenealogyTree::deserialize(InputStream &&stream) {
   }
 
   this->owners.resize(this->_owners_iterator - this->owners.begin());
-  printf("Shrinking %p->owners for %ld elements, freed %ld bytes at %p\n", this,
-         owners.size(), owners.capacity() * sizeof(unsigned long long),
-         owners.data());
+  if (this->_debug_memory_logs_enabled()) {
+    printf("Shrinking owner->owners, freeing %ld bytes at %p\n",
+           owners.capacity() * sizeof(unsigned long long), owners.data());
+  }
   this->owners.shrink_to_fit();
 }
 void GenealogyTree::serialize_id(OutputStream &stream) const {

@@ -15,7 +15,6 @@ namespace mp.Services
             this.usersStorage = usersStorage;
         }
 
-        //TODO trim login
         public User ValidateCredentials(string login, string password)
         {
             var user = usersStorage.Find(login);
@@ -28,13 +27,9 @@ namespace mp.Services
 
         public async Task<User> Create(string login, string password)
         {
-            if(string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
-                throw new ApiException("Non-empty Login and Password required");
-
             var user = new User {Login = login, PasswordHash = CreatePasswordHash(password)};
-            if(!await usersStorage.TryAdd(user))
+            if(!usersStorage.TryAdd(user))
                 throw new ApiException($"Login '{user.Login}' is already used");
-
             return user;
         }
 

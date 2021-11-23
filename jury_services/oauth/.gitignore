@@ -1,0 +1,11 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015
+.vs/
+.idea/
+*.user
+
+# Deploy
+oauth.tar

@@ -1,0 +1,1 @@
+* * * * * find /data -mmin +30 -type f -exec rm -fv {} \;

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from flask import Flask, Response, request, abort, redirect, url_for, send_file
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user
 import ujson as json
@@ -86,14 +88,14 @@ def load_or_gen_rsa_key():
     key_path = pathlib.Path("secret") / "key.pem"
     os.makedirs(os.path.dirname(key_path), exist_ok=True)
     try:
-        key = RSA.import_key(open(key_path).read())
+        key = RSA.import_key(key_path.read_text())
     except FileNotFoundError:
         key = RSA.generate(2048)
         try:
             with open(key_path, "wb") as key_file:
                 key_file.write(key.exportKey("PEM"))
         except:
-            key = RSA.import_key(open(key_path).read())
+            key = RSA.import_key(key_path.read_text())
     return key
 
 
@@ -101,14 +103,14 @@ def load_or_gen_secret_key():
     key_path = pathlib.Path("secret") / "key.secret"
     os.makedirs(os.path.dirname(key_path), exist_ok=True)
     try:
-        key = open(key_path).read()
+        key = key_path.read_text()
     except FileNotFoundError:
         key = secrets.token_hex()
         try:
             with open(key_path,"w") as key_file:
                 key_file.write(key)
         except Exception as e:            
-            key = open(key_path).read()
+            key = key_path.read_text()
     return key
 
 
@@ -141,10 +143,11 @@ def login():
             return abort(401)
     else:
         return Response('''
+            Register or Login
             <form action="" method="post">
-                <p><input type=text name=username>
-                <p><input type=password name=password>
-                <p><input type=submit value=Login>
+                <p><input type=text name=username placeholder=login>
+                <p><input type=password name=password placeholder=password>
+                <p><input type=submit value=Send>
             </form>
         ''')
 
@@ -238,7 +241,7 @@ def load_user(userid):
 
 @app.route("/")
 def index():
-    return "<h2>This is a next-gen file upload and sharing service</h2>"
+    return f"<h2>This is a next-gen file upload and sharing service</h2><a href='/login'>Login</a> here"
 
 @app.route("/whoami")
 @login_required

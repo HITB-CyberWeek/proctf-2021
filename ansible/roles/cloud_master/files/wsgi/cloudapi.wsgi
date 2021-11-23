@@ -30,10 +30,8 @@ RESP_HEADERS = [
 RATE_LIMITS = {
     "create_vm": 20,
     "take_snapshot": 300,
-    "open_network": 30,
-    "isolate_network": 30,
-    "open_vm": 15,
-    "isolate_vm": 15,
+    "open_vm": 30,
+    "isolate_vm": 30,
     "list_snapshots": 10,
     "restore_vm_from_snapshot": 300,
     "remove_snapshot": 30,
@@ -46,7 +44,7 @@ FAIL_RATE_LIMIT = 10
 def authenticate_request_by_token(token):
     "Returns team number or None"
 
-    m = re.fullmatch(r"([0-9]+)_[0-9a-f]{32}", token)
+    m = re.fullmatch(r"CLOUD_([0-9]+)_[0-9a-f]{32}", token)
     if not m:
         return None
 
@@ -226,13 +224,16 @@ def get_available_and_visible_vms():
 
 
 def cmd_list_vms(team, args):
-    return "200 Ok", {"result": "ok", "msg": "\n".join(get_available_and_visible_vms())}
+    vms = ["%-16s 10.%d.%d.%d" % (vm, 60+team//256, team%256, vm_number)
+                                 for vm, vm_number in get_available_and_visible_vms().items()]
+    return "200 Ok", {"result": "ok", "msg": "\n".join(vms)}
 
 
 def cmd_create_vm(team, args):
     vm = int(args[0])
     return "200 Ok", {"result": "ok", "msg": "VMs are created by orgs"}
     # return create_task(team, "create_vm", "create_team_instance.py", [str(team)], timeout=1200)
+
 
 def cmd_get_team_openvpn_config(team, args):
     if not DEV_MODE:
@@ -242,6 +243,17 @@ def cmd_get_team_openvpn_config(team, args):
                "roles/cloud_master/files/api_srv/db_init_state_dev/team%d/client_entergame.ovpn" % team)
         config = "DEV_MODE=ON\nTake the config here:\n%s" % url
     return "200 Ok", {"result": "ok", "msg": config}
+
+
+def cmd_get_team_wireguard_config(team, args):
+    if not DEV_MODE:
+        config = open("%s/team%d/client_wg.conf" % (DB_PATH, team)).read().strip()
+    else:
+        url = ("https://github.com/HackerDom/ructf-2021/blob/main/ansible/"
+               "roles/cloud_master/files/api_srv/db_init_state_dev/team%d/client_wg.conf" % team)
+        config = "DEV_MODE=ON\nTake the config here:\n%s" % url
+    return "200 Ok", {"result": "ok", "msg": config}
+
 
 def cmd_get_vm_info(team, args):
     vm = int(args[0])
@@ -275,9 +287,9 @@ def cmd_get_vm_info(team, args):
     return "200 Ok", {"result": "ok", "msg": "\n".join(msglines)}
 
 def cmd_login(team, args):
-    COMMANDS_WITHOUT_VM = ["list_vms", "open_network",
-                           "isolate_network", "help", "man",
-                           "get_team_openvpn_config", "oblaka"]
+    COMMANDS_WITHOUT_VM = ["list_vms", "help", "man",
+                           "get_team_openvpn_config", "get_team_wireguard_config",
+                           "oblaka"]
     COMMANDS_WITH_VM = ["create_vm", "get_vm_info", "open_vm", "isolate_vm",
                         "take_snapshot", "list_snapshots",
                         "restore_vm_from_snapshot", "remove_snapshot", "reboot_vm"]
@@ -299,12 +311,6 @@ def cmd_open_vm(team, args):
 def cmd_isolate_vm(team, args):
     vm = int(args[0])
     return create_task(team, "isolate_vm", "isolate_vm.py", [str(team), str(vm)])
-
-def cmd_open_network(team, args):
-    return create_task(team, "open_network", "open_network.py", [str(team)])
-
-def cmd_isolate_network(team, args):
-    return create_task(team, "isolate_network", "isolate_network.py", [str(team)])
 
 def cmd_take_snapshot(team, args):
     vm = int(args[0])
@@ -338,6 +344,7 @@ def cmd_reboot_vm(team, args):
 def cmd_help(team, args):
     help_msg = """
   get_team_openvpn_config               - get openvpn config for your team members
+  get_team_wireguard_config             - get alternative vpn config for your team members
   list_vms                              - list available vms
   create_vm <vm>                        - create vm
   get_vm_info <vm>                      - get info about vm
@@ -348,8 +355,6 @@ def cmd_help(team, args):
   reboot_vm <vm>                        - reboot vm
   open_vm <vm>                          - connect vm to the game network
   isolate_vm <vm>                       - isolate vm from the game network
-  open_network                          - connect to the game network
-  isolate_network                       - disconnect from the game network
   help                                  - help
   man                                   - instructions
 """.strip("\n")
@@ -364,11 +369,14 @@ def cmd_man(team, args):
   Step 2:
     Get the vpn config: 
       # get_team_openvpn_config
-    Save as ctfe.ovpn
+    Save as game.ovpn.
+    Or, if you prefer WireGuard
+      # get_team_wireguard_config
+    Save as game.conf
   Step 3:
     Give the vpn config to every team member and run openvpn:
-      Linux and MacOS: openvpn ctfe.ovpn
-      Windows: right-click on ctfe.ovpn -> Start OpenVPN on this config file
+      Linux and MacOS: openvpn game.ovpn
+      Windows: right-click on game.ovpn -> Start OpenVPN on this config file
     Of course, they have to have OpenVPN installed
   Step 4:
     Get ip and credentials:
@@ -379,21 +387,16 @@ def cmd_man(team, args):
     that saved state later:
     # take_snapshot <vm> <name>
   Step 6:
-    Connect vm network to the game network: 
-      # open_network
-    Now other teams and checksystem are able to access the vm.
-    Also now, you should be able to access other teams and checksystem 
-  Step 7:
     Have a nice game!
 
   If something goes wrong, use these commands:
     # reboot_vm <vm>
     # list_snapshots <vm> -> restore_vm_from_snapshot <vm> <name>
   If something goes terribly wrong, use this command:
-    # isolate_network
+    # isolate_vm <vm>
   The access to vuln images should remain from your network only.
-  To open the network again, execute:
-    # open_network""".lstrip("\n")
+  To open the network for vm again, execute:
+    # open_vm <vm>""".lstrip("\n")
 
     return "200 Ok", {"result": "ok", "msg": man_msg, "team": team}
 
@@ -489,11 +492,10 @@ def application(environ, start_response):
         "list_vms": (cmd_list_vms, 0, False, False),
         "create_vm": (cmd_create_vm, 1, True, False),
         "get_team_openvpn_config": (cmd_get_team_openvpn_config, 0, False, True),
+        "get_team_wireguard_config": (cmd_get_team_wireguard_config, 0, False, True),
         "get_vm_info": (cmd_get_vm_info, 1, True, False),
         "open_vm": (cmd_open_vm, 0, True, True),
         "isolate_vm": (cmd_isolate_vm, 0, True, True),
-        "open_network": (cmd_open_network, 0, False, True),
-        "isolate_network": (cmd_isolate_network, 0, False, True),
         "take_snapshot": (cmd_take_snapshot, 2, True, True),
         "list_snapshots": (cmd_list_snapshots, 1, True, True),
         "restore_vm_from_snapshot": (cmd_restore_vm_from_snapshot, 2, True, True),

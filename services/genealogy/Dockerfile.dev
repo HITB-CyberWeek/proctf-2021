@@ -1,3 +1,4 @@
+# Do not use this Dockerfile at production, it's only for local debugging purposes.
 FROM gcc:11-bullseye
 LABEL maintainer="andgein@hackerdom.ru"
 

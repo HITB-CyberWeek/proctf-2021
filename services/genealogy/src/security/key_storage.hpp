@@ -14,7 +14,7 @@ public:
 
 private:
     std::string _generate_key(std::string::size_type length) const;
-    std::string _get_key(std::filesystem::path path) const;
+    std::string _get_key(const std::filesystem::path & path) const;
 };
 
 #endif

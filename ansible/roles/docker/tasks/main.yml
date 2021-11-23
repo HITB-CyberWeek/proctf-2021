@@ -1,0 +1,28 @@
+---
+
+- name: Add Docker public GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository: repo='deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable' filename='docker' state=present update_cache=yes
+
+- name: Install docker
+  apt: name=docker-ce state=present
+
+- name: Install docker cli
+  apt: name=docker-ce-cli state=present
+
+- name: Install containerd.io
+  apt: name=containerd.io state=present
+
+- name: Install docker-compose
+  apt: name=docker-compose state=present
+
+- name: Install pip
+  apt: name=python3-pip state=present
+
+- name: Install pip docker-compose
+  pip:
+    name: docker-compose==1.29.2

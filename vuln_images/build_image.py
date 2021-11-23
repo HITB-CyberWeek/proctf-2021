@@ -123,12 +123,12 @@ def build_image(config_path: pathlib.Path, config: DeployConfig, save_packer_con
     jinja2_variables = {
         "api_token": settings.DO_API_TOKEN,
         "files_path": pathlib.Path("packer").absolute().as_posix(),
-        "vm_size": "s-1vcpu-2gb",
+        "vm_size": "c-2",
         "region": "ams3",
         "service": config.service,
         "username": config.username,
         "files": files,
-        "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config),
+        "build_inside_vm": substitute_variables(config.scripts.build_inside_vm, config).splitlines(),
         "start_once": substitute_variables(config.scripts.start_once, config),
     }
     template = jinja2.Template((CURRENT_FOLDER / "packer/image.pkr.hcl.jinja2").read_text())

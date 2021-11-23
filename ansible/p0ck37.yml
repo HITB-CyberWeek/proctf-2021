@@ -1,0 +1,4 @@
+- hosts: jury-p0ck37
+  gather_facts: no
+  roles:
+    - p0ck37

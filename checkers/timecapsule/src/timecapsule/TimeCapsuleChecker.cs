@@ -156,8 +156,10 @@ namespace checker.timecapsule
 			var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: false);
 
 			var result = await client.DoRequestAsync(HttpMethod.Get, ApiCapsule + '/' + put.CapsuleId, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+			if(result.StatusCode == HttpStatusCode.NotFound)
+				throw new CheckerException(ExitCode.CORRUPT, $"get {ApiCapsule} failed: {result.StatusCode.ToReadableCode()}");
 			if(result.StatusCode != HttpStatusCode.OK)
-				throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiList} failed: {result.StatusCode.ToReadableCode()}");
+				throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiCapsule} failed: {result.StatusCode.ToReadableCode()}");
 
 			var capsule = DoIt.TryOrDefault(() => JsonSerializer.Deserialize<Container>(result.BodyAsString));
 			if(capsule == null)
@@ -223,9 +225,9 @@ namespace checker.timecapsule
 
 			unwrapped = DoIt.TryOrDefault(() => TimeCapsuleWrapper.Unwrap(container.TimeCapsule, container.Secret.Value));
 			if(unwrapped == null)
-				throw new CheckerException(ExitCode.CORRUPT, $"invalid {ApiCapsule} response: failed to open time capsule");
+				throw new CheckerException(ExitCode.CORRUPT, $"invalid {ApiList} response: failed to open time capsule");
 			if(unwrapped.Text == null || !unwrapped.Text.Contains(flag, StringComparison.OrdinalIgnoreCase))
-				throw new CheckerException(ExitCode.CORRUPT, $"invalid {ApiCapsule} response: flag not found");
+				throw new CheckerException(ExitCode.CORRUPT, $"invalid {ApiList} response: flag not found");
 
 			#endregion
 		}

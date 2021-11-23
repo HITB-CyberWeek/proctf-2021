@@ -1,0 +1,34 @@
+version: '3'
+services:
+  web:
+    image: 'p0ck37/web'
+    build: web
+    container_name: p0ck37-web
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    links:
+      - chromedriver
+    volumes:
+      - data-volume:/data
+    environment:
+      - "OAUTH_ENDPOINT=https://auth.ctf.hitb.org:5000/"
+
+  chromedriver:
+    image: 'p0ck37/chromedriver'
+    build: chromedriver
+    container_name: p0ck37-chromedriver
+    restart: unless-stopped
+    volumes:
+      - data-volume:/data
+
+  cron:
+    image: 'p0ck37/cron'
+    build: cron
+    container_name: p0ck37-cron
+    restart: unless-stopped
+    volumes:
+      - data-volume:/data
+
+volumes:
+  data-volume:

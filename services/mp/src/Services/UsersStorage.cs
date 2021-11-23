@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Threading.Tasks;
 using mp.Entities;
 using Newtonsoft.Json;
 
@@ -17,7 +16,7 @@ namespace mp.Services
         public UsersStorage(string stateDir)
         {
             var filePath = Path.Combine(stateDir, "records");
-            if(File.Exists(filePath))
+            if (File.Exists(filePath))
                 InitFromFile(filePath);
             Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
             usersWriter = File.AppendText(filePath);
@@ -25,16 +24,16 @@ namespace mp.Services
 
         private void InitFromFile(string filePath)
         {
-            foreach(var line in File.ReadLines(filePath))
+            foreach (var line in File.ReadLines(filePath))
             {
                 User user = null;
                 try
                 {
                     user = JsonConvert.DeserializeObject<User>(line);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    Console.Error.WriteLine($"{nameof(UsersStorage)}.{nameof(InitFromFile)}: failed to parse user from '{line}'. Skipping", e);
+                    Console.Error.WriteLine($"{nameof(UsersStorage)}.{nameof(InitFromFile)}: failed to parse user from '{line}'. Skipping: {e}");
                 }
                 TryAddToMemory(user);
             }
@@ -45,26 +44,27 @@ namespace mp.Services
             return login != null && users.TryGetValue(login, out var result) ? result : null;
         }
 
-        public async Task<bool> TryAdd(User user)
+        public bool TryAdd(User user)
         {
-            if(!TryAddToMemory(user))
-                return false;
-
-            return await TryPersistToFile(user);
+            return TryAddToMemory(user) && TryPersistToFile(user);
         }
 
-        private async Task<bool> TryPersistToFile(User user)
+        private bool TryPersistToFile(User user)
         {
-            try
+            lock (usersWriter)
             {
-                await usersWriter.WriteLineAsync(JsonConvert.SerializeObject(user));
-                await usersWriter.FlushAsync();
+                try
+                {
+                    usersWriter.WriteLine(JsonConvert.SerializeObject(user));
+                    usersWriter.Flush();
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"{nameof(UsersStorage)}.{nameof(TryPersistToFile)}: failed to persist user '{user.Login}'. Skipping", e);
+                    return false;
+                }
             }
-            catch(Exception e)
-            {
-                Console.Error.WriteLine($"{nameof(UsersStorage)}.{nameof(TryPersistToFile)}: failed to persist user '{user.Login}'. Skipping", e);
-                return false;
-            }
+
 
             return true;
         }

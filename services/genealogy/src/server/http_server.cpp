@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "http_response.hpp"
 #include "http_status_code.hpp"
 #include "http_method.hpp"
 #include "../utils.hpp"
@@ -53,6 +54,7 @@ HttpServer::HttpServer(unsigned short port) : TcpServer(port) {
 }
 
 void HttpServer::_handle_client(int client_socket) {
+    // Read first line of the request: GET /index.html HTTP/1.1
     auto request_line = this->_read_line(client_socket);
 
     if (request_line.size() > 1000) {
@@ -77,6 +79,7 @@ void HttpServer::_handle_client(int client_socket) {
 
     printf("%s %s\n", method_str.c_str(), path.c_str());
     
+    // Read headers from the request: one per line
     auto headers = HttpRequest::Headers();
     std::string header = this->_read_line(client_socket);
     while (trim(header) != "") {
@@ -92,6 +95,7 @@ void HttpServer::_handle_client(int client_socket) {
 
     auto request = HttpRequest(method, path, 0, headers);
 
+    // Read body of the request
     if (method == HttpMethod::POST || method == HttpMethod::PUT ||
         headers.find("content-length") != headers.end()) {
         if (headers.find("content-length") == headers.end()) {
@@ -114,16 +118,19 @@ void HttpServer::_handle_client(int client_socket) {
         request.content = content;
     }
 
+    // Find appropriate RouteKey for this path
     auto route_key = this->_get_route_key(method, path);
     if (route_key.with_id) {
         request.id = this->_extract_id_from_path(path);
     }
 
+    // Find handler by RouteKey, if not found, return 404
     if (this->routes.find(route_key) == this->routes.end()) {
         this->_return_http_error(client_socket, HttpStatusCode::NOT_FOUND);
         return;
     }
 
+    // Call handler!
     auto handler = this->routes[route_key];
     HttpResponse response;
     try {
@@ -136,6 +143,7 @@ void HttpServer::_handle_client(int client_socket) {
 
     printf("%s %s → %d\n", method_str.c_str(), path.c_str(), response.status_code);
 
+    // Send response to the client
     this->_send_headers(client_socket, response.status_code, response.get_all_headers());
     this->_send_body(client_socket, response.content);
     this->_close(client_socket);
@@ -148,6 +156,7 @@ void HttpServer::_send_headers(
     if (HttpStatusCodeMessages.find(status_code) != HttpStatusCodeMessages.end()) {
         status_code_message = HttpStatusCodeMessages[status_code];
     }
+    // Send status line: HTTP/1.1 200 OK
     this->_send(client_socket, string_format("HTTP/1.1 %d %s\n", (int) status_code, status_code_message.c_str()));
 
     bool has_content_type = false;
@@ -228,6 +237,7 @@ int HttpServer::_extract_id_from_path(const std::string & path) {
         return -1;
     }
     
+    // Id is always the last part of the path
     auto last_slash = path.find_last_of("/", path.length() - 2);
     assert(last_slash != std::string::npos);
 
@@ -241,4 +251,37 @@ int HttpServer::_extract_id_from_path(const std::string & path) {
     }
 
     return -1;
+}
+
+void HttpServer::add_static_routes(const std::filesystem::path & path) {
+    // Adds routes for files in some directory (i.e. static/)
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        auto path = std::string("/") + entry.path().filename().string();
+        if (path == "/index.html") {
+            path = "/";
+        }
+
+        this->add_route(
+            {HttpMethod::GET, path, false}, 
+            [entry](const auto & request) {
+                auto response = HttpResponse(get_file_content(entry.path()), HttpStatusCode::OK);
+                if (entry.path().string().ends_with(".html")) {
+                    response.set_header("Content-Type", "text/html");
+                } else if (entry.path().string().ends_with(".css")) {
+                    response.set_header("Content-Type", "text/css");
+                } else if (entry.path().string().ends_with(".js")) {
+                    response.set_header("Content-Type", "text/javascript");
+                } else {
+                    response.set_header("Content-Type", "application/octet-stream");
+                }
+                response.set_header("Cache-Control", "public");
+
+                return response;
+            }
+        );
+    }
 }
