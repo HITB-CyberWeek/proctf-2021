@@ -71,7 +71,6 @@ def add_link(host, link, session):
 
     if r.status_code != 200:
         verdict(MUMBLE, "Can't add new link", "Can't add new link: '%s'" % r.text)
-    #print(r.text)
 
 def register_flag(flag):
     headers = {"x-api-key": FLAGS_API_KEY}
@@ -114,9 +113,20 @@ def get(args):
     session = login(host, info["user_name"])
 
     p0ck37_url = f"http://{host}:{PORT}/"
-    # TODO check if page contains link to flag
-
     p0ck37_download_url = urljoin(p0ck37_url, f"/download/{info['secret_flag_id']}.pdf")
+
+    try:
+        r = session.get(p0ck37_url, timeout=TIMEOUT)
+    except requests.exceptions.ConnectionError as e:
+        verdict(DOWN, "Connection error", "Connection error during getting /: %s" % e)
+    except requests.exceptions.Timeout as e:
+        verdict(DOWN, "Timeout", "Timeout during getting /: %s" % e)
+
+    if r.status_code != 200:
+        verdict(MUMBLE, "Can't get /", "Can't get /: '%s'" % r.text)
+
+    if not f"/download/{info['secret_flag_id']}.pdf" in str(r.content):
+        verdict(CORRUPT, "Can't find flag", "Can't find '%s'" % p0ck37_download_url)
 
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
@@ -126,7 +136,7 @@ def get(args):
         verdict(DOWN, "Timeout", "Timeout during link publishing: %s" % e)
 
     if r.status_code != 200:
-        verdict(MUMBLE, "Can't download file", "Can't download file: '%s'" % r.text)
+        verdict(CORRUPT, "Can't download file", "Can't download file: '%s'" % r.text)
 
     with pdfplumber.open(io.BytesIO(r.content)) as pdf:
         page = pdf.pages[0]
