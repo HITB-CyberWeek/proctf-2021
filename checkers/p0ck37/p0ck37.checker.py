@@ -132,9 +132,9 @@ def get(args):
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
     except requests.exceptions.ConnectionError as e:
-        verdict(DOWN, "Connection error", "Connection error during link publishing: %s" % e)
+        verdict(DOWN, "Connection error", "Connection error during link download: %s" % e)
     except requests.exceptions.Timeout as e:
-        verdict(DOWN, "Timeout", "Timeout during link publishing: %s" % e)
+        verdict(DOWN, "Timeout", "Timeout during link download: %s" % e)
 
     if r.status_code != 200:
         verdict(CORRUPT, "Can't download file", "Can't download file: '%s'" % r.text)
