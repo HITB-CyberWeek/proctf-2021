@@ -68,9 +68,14 @@ namespace OAuthServer.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> Logout(string returnUrl = null)
         {
             await HttpContext.SignOutAsync();
+
+            if (returnUrl != null)
+            {
+                return Redirect(returnUrl);
+            }
 
             return RedirectToAction("Index", "Home");
         }

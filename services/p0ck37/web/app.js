@@ -9,6 +9,7 @@ const fs = require('fs');
 const process = require('process');
 const {Builder} = require('selenium-webdriver');
 const {Options} = require('selenium-webdriver/chrome');
+const querystring = require('querystring');
 
 const port = 3000;
 const clientId = 'p0ck37';
@@ -95,14 +96,13 @@ app.get('/auth/callback',
 
 app.get('/login', passport.authenticate('oauth2'));
 
-// TODO implement logout
-/*
 app.get('/logout', (req, res) => {
+  let oauthLogoutUrl = new URL('/account/logout', oauthEndpoint);
+  oauthLogoutUrl.search = `?${querystring.stringify({ returnUrl: req.protocol + '://' + req.get('host') })}`
   req.logout();
   req.session.destroy();
-  res.redirect('/');
+  res.redirect(oauthLogoutUrl);
 });
-*/
 
 function ensureLoggedIn(req, res, next) {
     if (req.isAuthenticated()) {

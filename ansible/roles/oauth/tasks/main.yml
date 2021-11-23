@@ -4,6 +4,7 @@
   copy:
     src: '../jury_services/oauth/oauth.tar'
     dest: '/root'
+  register: archive
 
 - name: Load docker image
   community.docker.docker_image:
@@ -11,6 +12,8 @@
     tag: latest
     load_path: /root/oauth.tar
     source: load
+    force_source: yes
+  when: archive.changed
 
 - name: Copy docker-compose.yml
   copy:
@@ -26,3 +29,11 @@
 
 - ansible.builtin.debug:
     var: output
+
+- name: Cleanup docker
+  community.docker.docker_prune:
+    containers: yes
+    images: yes
+    networks: yes
+    volumes: yes
+    builder_cache: yes
