@@ -52,7 +52,7 @@
 
 //#define DEBUG
 //#define DEBUG_INPUT
-#define MAX_SLOTS (17*30)
+#define MAX_SLOTS (25*30)
 // 17 teams x 1 max register(generate) per round x 30 rounds = 510
 #define RSA_KEY_SIZE_BITS   512
 #define RSA_PUB_EXP          17
@@ -535,6 +535,7 @@ bool handle_input(Input *input)
 rtems_task Init(rtems_task_argument ignored) {
   Input input;
   bool command_result;
+
 #ifdef DEBUG
   printf("ATTENTION! DEBUG BUILD!\n\n");
   printf("BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS) = %d\n",  BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS));

@@ -19,8 +19,12 @@ from users import UsersDB, UserAlreadyExists, AuthenticationError, USER_TTL_SECO
 DEFAULT_PORT = 9000
 FIRMWARE = "firmware.exe"
 AUTH_COOKIE = "auth"
-USERS_DB_DIR = "users"
+USERS_DB_DIR = "state/users"
 READ_BUF_SIZE = 256
+SLOT_AREA_START = 0x4002f530  # Keep in sync with firmware!
+SLOT_AREA_SIZE = 392*25*30    # Keep in sync with firmware!
+SLOT_AREA_FILE = "state/slots.dump"
+
 
 app = Sanic("HSM Web Application")
 
@@ -302,6 +306,7 @@ async def after_server_start(s: Sanic, loop: asyncio.AbstractEventLoop) -> None:
         loop.create_task(firmware_stdin_task()),
         loop.create_task(firmware_stdout_task()),
         loop.create_task(firmware_stderr_task()),
+        loop.create_task(firmware_state_dump_task())
     ]
 
 
@@ -400,10 +405,30 @@ async def firmware_communicate_task():
             query.finish("[com] Firmware communication problem. Try again later.")
 
 
+async def firmware_state_dump_task():
+    while True:
+        await asyncio.sleep(1)
+        try:
+            reader, writer = await asyncio.open_unix_connection("qemu-monitor-socket", limit=1024)
+            logger.info("[dmp] Connected to qemu monitor socket.")
+            while True:
+                cmd = "memsave 0x{:08x} {} {}\n".format(SLOT_AREA_START, SLOT_AREA_SIZE, SLOT_AREA_FILE)
+                writer.write(cmd.encode())
+                await writer.drain()
+                try:
+                    await asyncio.wait_for(reader.read(1024), 0.1)
+                except asyncio.TimeoutError:
+                    pass
+                await asyncio.sleep(1)
+        except Exception as e:
+            logger.warning("[dmp] Firmware dump state problem: %s.", e)
+
+
 async def run_firmware():
     env = os.environ.copy()
     env["QEMU_AUDIO_DRV"] = "none"
-    args = ["qemu-system-lm32", "-M", "milkymist", "-kernel", FIRMWARE, "-nographic"]
+    args = ["qemu-system-lm32", "-M", "milkymist", "-kernel", FIRMWARE, "-nographic",
+            "-monitor", "unix:qemu-monitor-socket,server,nowait"]
     proc = await asyncio.create_subprocess_exec(*args,
                                                 env=env,
                                                 limit=64*1024,

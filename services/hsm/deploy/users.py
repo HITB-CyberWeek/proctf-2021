@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import os.path
 import re
 import time
@@ -69,7 +70,10 @@ class UsersDB:
             for subdir in os.listdir(self._folder):
                 for file in os.listdir(os.path.join(self._folder, subdir)):
                     fullname = os.path.join(self._folder, subdir, file)
-                    user = await self._read(fullname)
+                    try:
+                        user = await self._read(fullname)
+                    except ValueError:
+                        continue
                     if not user.is_expired():
                         self._data[user.username] = user
 
