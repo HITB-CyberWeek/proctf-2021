@@ -69,7 +69,7 @@ def validated(form: sanic.request.RequestParameters, name: str, maxlen: int):
     if not value:
         raise sanic.exceptions.InvalidUsage("No value for required parameter: {!r}.".format(name))
     if len(value) > maxlen:
-        raise sanic.exceptions.PayloadTooLarge("Too big value: {!r}.".format(name))
+        raise sanic.exceptions.PayloadTooLarge("Too big value: {!r} ({}).".format(name,  len(value)))
     if not value.isalnum():
         raise sanic.exceptions.InvalidUsage("Value is not alphanumeric: {!r} [{}].".format(name, value))
     return value
