@@ -2,7 +2,7 @@ module connection_handler
   use iso_c_binding, only: c_char
   use tcp, only: tcp_read, tcp_write, tcp_close
   use database, only: db_store, db_load, id_size
-  use string_utils, only: to_int, to_char, to_string, parse_int, to_array
+  use string_utils, only: to_int, to_string, parse_int, to_array
   use sha256, only: sha256_calc, sha256_size
   use matrix, only: convolution
 
@@ -111,8 +111,7 @@ contains
 
     select case (self%connection_state)
       case(connection_read)
-        new_processed = tcp_read(self%socket, self%needed_bytes - self%processed, &
-          self%buffer(self%processed + 1 : self%needed_bytes))
+        new_processed = tcp_read(self%socket, self%buffer(self%processed + 1 : self%needed_bytes))
         if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
@@ -137,8 +136,7 @@ contains
           call self%handle_request()
         end if
       case(connection_write)
-        new_processed = tcp_write(self%socket, self%needed_bytes - self%processed, &
-          self%buffer(self%processed + 1 : self%needed_bytes))
+        new_processed = tcp_write(self%socket, self%buffer(self%processed + 1 : self%needed_bytes))
         if (new_processed.le.0) then
           call tcp_close(self%socket)
           self%connection_state = connection_dead
@@ -341,7 +339,6 @@ contains
     character, dimension(:), allocatable :: desc
     character, dimension(:), allocatable :: key
 
-
     n = self%extra%n
     m = self%extra%m
     ndesc = self%extra%desc
@@ -353,7 +350,7 @@ contains
 
     key_hash = sha256_calc(key)
 
-    id = db_store(self%buffer, int(n, 1), int(m, 1), matrix, int(ndesc, 1), desc, key_hash)
+    id = db_store(self%buffer, matrix, desc, key_hash)
 
     if (id(1).eq.achar(0)) then
       call self%set_error('problem with image uploading')
@@ -397,22 +394,20 @@ contains
     class(connection), intent(inout) :: self
 
     integer :: lkey
-    integer(1), pointer :: n
-    integer(1), pointer :: m
     integer(1), dimension(:,:), pointer :: matrix
-    integer(1), pointer :: ndesc
     character, dimension(:), pointer :: desc
     character, dimension(:), pointer :: stored_key_hash
     character, dimension(1:sha256_size) :: key_hash
     character, dimension(:), allocatable :: id
     logical :: success
     integer :: msize
+    integer, dimension(1:2) :: mshape
 
     lkey = self%extra%key
     id = self%buffer(1:id_size)
     key_hash = sha256_calc(self%buffer(id_size+1:id_size+lkey))
 
-    success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
+    success = db_load(self%buffer, id, matrix, desc, stored_key_hash)
     if (.not.success) then
       call self%set_error('image is not found')
       return
@@ -422,16 +417,17 @@ contains
       return
     end if
 
-    msize = int(n) * int(m)
+    msize = size(matrix)
+    mshape = shape(matrix)
 
     self%processed = 0
     self%needed_bytes = 0
     self%connection_state = connection_write
 
     call self%add_to_response_str(ok)
-    call self%add_to_response_int(int(n))
-    call self%add_to_response_int(int(m))
-    call self%add_to_response_int(int(ndesc))
+    call self%add_to_response_int(mshape(1))
+    call self%add_to_response_int(mshape(2))
+    call self%add_to_response_int(size(desc))
     call self%add_to_response(transfer(matrix, self%buffer(1), msize))
     call self%add_to_response(desc)
   end subroutine
@@ -493,10 +489,7 @@ contains
     integer :: kn
     integer :: km
 
-    integer(1), pointer :: n
-    integer(1), pointer :: m
     integer(1), dimension(:,:), pointer :: matrix
-    integer(1), pointer :: ndesc
     character, dimension(:), pointer :: desc
     character, dimension(:), pointer :: stored_key_hash
     integer, dimension(:,:), allocatable :: res
@@ -506,6 +499,7 @@ contains
     integer(1), dimension(:,:), allocatable :: kernel
     integer, dimension(1:2) :: rsizes
     integer :: rsize
+    integer, dimension(1:2) :: msize
 
     kn = self%extra%n
     km = self%extra%m
@@ -519,20 +513,22 @@ contains
       return
     end if
 
-    success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
+    success = db_load(self%buffer, id, matrix, desc, stored_key_hash)
     if (.not.success) then
       call self%set_error('image is not found')
       return
     end if
 
-    if (kn.gt.n.or.km.gt.m) then
+    msize = shape(matrix)
+
+    if (kn.gt.msize(1).or.km.gt.msize(2)) then
       call self%set_error('kernel is larger than image')
       return
     end if
 
     res = convolution(matrix, kernel)
     rsizes = shape(res)
-    rsize = 4 * rsizes(1) * rsizes(2)
+    rsize = 4 * size(res)
 
     self%processed = 0
     self%needed_bytes = 0
@@ -550,7 +546,7 @@ contains
     integer :: readed
 
     do
-      readed = tcp_read(socket, size(buffer), buffer)
+      readed = tcp_read(socket, buffer)
       if (readed.le.0) then
         return
       end if
