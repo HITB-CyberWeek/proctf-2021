@@ -158,7 +158,7 @@ app.get("/download/:name", ensureLoggedIn, (req, res) => {
             if (exists) {
                 res.writeHead(200, {
                     "Content-Type": "application/octet-stream",
-                    "Content-Disposition": "attachment; filename=" + fileName
+                    "Content-Disposition": "attachment; filename=" + encodeURIComponent(fileName)
                 });
                 fs.createReadStream(filePath).pipe(res);
                 return;
