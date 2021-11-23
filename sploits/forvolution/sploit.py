@@ -11,7 +11,7 @@ from numpy.linalg import lstsq
 from client import Client, Convolution, Delimiter, prepare_matrix, prepare_id, parse
 
 PORT = 12345
-FLAG = re.compile('[0-9A-Z]{31}=')
+FLAG_LENGTH = 32
 
 KERNEL = [[1, 1], [0, 0]]
 SPLOITS = [[[1, 1, 1, 1], [0, 0, 1, 0]], [[1, 1, 1, 0], [1, 0, 0, 1]]]
@@ -91,13 +91,11 @@ async def main(host, mid):
 
     data = []
     for y in range(m, m + 2):
-        for x in range(1, n):
-            data.append(original[x][y] if 0 <= original[x][y]  < 128 : 0)
+        for x in range(n):
+            data.append(original[x][y])
 
-    result = bytes(data).decode(encoding='ascii')
-
-    for m in FLAG.finditer(result):
-        print(m.group(0))
+    result = bytes(data[1:FLAG_LENGTH + 1]).decode(encoding='ascii')
+    print(result)
 
 if __name__ == '__main__':
     asyncio.run(main(*sys.argv[1:]))
