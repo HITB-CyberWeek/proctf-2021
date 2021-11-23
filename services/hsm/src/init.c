@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// FIXME
 #include "bearssl_rand.h"
 #include "bearssl_rsa.h"
 #include "rand/hmac_drbg.c"
@@ -371,8 +370,8 @@ void encrypt(char *pubkey_hex, char *plaintext) {
   br_rsa_public_key pk;
   pk.n = pubkey;
   pk.nlen = 64;
-  pk.e = pubkey + PUBKEY_SIZE - 1;  // Last byte of pubkey
-  pk.elen = 1;
+  pk.e = pubkey + 64;
+  pk.elen = 4;        // Note, 64 + 4 == 64 (PUBKEY_SIZE)
 #ifdef DEBUG
   print_public_key(&pk);
 #endif
@@ -461,7 +460,7 @@ bool handle_input(Input *input)
     printf("  GETMETA <SLOT>\n");
     printf("  DECRYPT <SLOT> <CIPHERTEXT_HEX>\n");
     printf("  GETPLAINTEXT <SLOT>");
-    // printf("  ENCRYPT <PUBKEY_HEX> <PLAINTEXT>\n"); // Private API, probably no user will need.
+    // printf("  ENCRYPT <PUBKEY_HEX> <PLAINTEXT>\n");
     return true;
   }
   else if (IS_COMMAND(input, "SETSLOT", 1)) {
