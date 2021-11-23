@@ -153,32 +153,45 @@ def login():
         ''')
 
 
-@app.route("/share", methods=["POST"])
+@app.route("/share", methods=["GET", "POST"])
 @login_required
 def share():
-    len = int(request.headers["Content-Length"])
+    if request.method == "POST":
+        len = int(request.headers["Content-Length"])
 
-    data = request.get_data()
-    share_request = ShareRequest(**loads(data))
+        data = request.get_data()
+        share_request = ShareRequest(**loads(data))
 
-    if not users_repository.is_phys_subpath(f"data/{current_user.username}", f"data/{share_request.location}"):
-        return f"You don't own the location '{share_request.location}' requested to share", 403
+        if not users_repository.is_phys_subpath(f"data/{current_user.username}", f"data/{share_request.location}"):
+            return f"You don't own the location '{share_request.location}' requested to share", 403
 
-    key = app.config["signing_key"]
-    h = MD5.new(data)
-    signature = pkcs1_15.new(key).sign(h)
-    result = url_for("access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
+        key = app.config["signing_key"]
+        h = MD5.new(data)
+        signature = pkcs1_15.new(key).sign(h)
+        result = url_for("access", request = base64.urlsafe_b64encode(data), signature = base64.urlsafe_b64encode(signature))
 
-    return f'\n<a href="{result}">click here to get access</a>\n'
+        return f'\n<a href="{result}">click here to get access</a>\n'
 
+    return '''
+    <!doctype html>
+    <h2>Come here POSTing someone's signed share request</h2>
+    '''
 
 @app.route("/access")
 @login_required
 def access():
-    data = base64.urlsafe_b64decode(request.args["request"])
+    req = request.args.get("request")
+    sign = request.args.get("signature")
+    if not req and not sign:
+        return '''
+    <!doctype html>
+    <h4>To get access to the shared path please specify 'request' and 'signature' params in query string</h4>
+    '''
+
+    data = base64.urlsafe_b64decode(req)
 
     h = MD5.new(data)
-    signature = base64.urlsafe_b64decode(request.args["signature"])
+    signature = base64.urlsafe_b64decode(sign)
 
     key = app.config["signing_key"]
     try:
@@ -227,7 +240,13 @@ def upload():
 @app.route("/download")
 @login_required
 def download_file():
-    file = request.args["file"]
+    file = request.args.get("file")
+    if not file:
+        return '''
+    <!doctype html>
+    <h4>To download a file please specify 'file' param in query string</h4>
+    '''
+
     filepath = f"data/{file}"
     if not users_repository.validate_access(current_user.username, filepath):
         return f"Access denied", 403
@@ -254,13 +273,20 @@ def load_user(userid):
 
 @app.route("/")
 def index():
-    return f"<h2>This is a next-gen file upload and sharing service</h2><a href='/login'>Login</a> here"
+    return f"<h3>This is an old-school file upload and sharing service</h3>You can <a href='/login'>register or log in</a> here. Or just check <a href='/whoami'>who you are</a>"
 
 
 @app.route("/whoami")
 @login_required
 def whoami():
-    return "<h1>'" + current_user.username + "' logged in</h1>"
+    return f"<h1>'{current_user.username}' logged in</h1>" + '''
+            Now you can:<br><br>
+            <a href="/upload">Upload</a><br>
+            <a href="/download">Download</a><br>
+            <a href="/share">Share</a><br>
+            <a href="/access">Get shared access</a><br>
+            <a href="/publickey">Get public key</a><br>
+        '''
 
 
 def bytes_to_str(b: bytes) -> str:
