@@ -75,12 +75,14 @@ unsigned long mix(unsigned long a, unsigned long b, unsigned long c) {
 
 int main(int argc, char **argv) {
     if (argc < 3) {
-        printf("Usage: %s PUBKEY_HEX PLAINTEXT\n", argv[0]);
+        printf("Usage: %s PUBKEY_HEX PLAINTEXT_HEX\n", argv[0]);
         return -1;
     }
 
     unsigned char pubkey[1024];
     unsigned char buf[1024];
+    unsigned char plaintext[1024];
+
     br_hmac_drbg_context rng;
     br_hmac_drbg_init(&rng, &br_sha256_vtable, "abcdef", strlen("abcdef"));
 
@@ -106,40 +108,13 @@ int main(int argc, char **argv) {
     br_rsa_oaep_encrypt menc = br_rsa_oaep_encrypt_get_default();
     int len = menc(&rng.vtable, &br_sha1_vtable, NULL, 0, &pk, buf, sizeof(buf), gamma, sizeof(gamma));
 
-    char *plaintext = argv[2];
+    memset((void *) plaintext, 0, sizeof(plaintext));
+    hextobin(plaintext, argv[2], sizeof(plaintext));
 
     for (i = 0; i <= strlen(plaintext); i++) {
-      buf[len + i] = plaintext[i] ^ gamma[i % sizeof(gamma)];
+        buf[len + i] = plaintext[i] ^ gamma[i % sizeof(gamma)];
     }
     print_int_text("", (unsigned char *)buf, len + strlen(plaintext) + 1);
-
-/*    br_hmac_drbg_context rng;
-    br_rsa_private_key sk;
-    br_rsa_public_key pk;
-    br_rsa_keygen kg;
-
-    char seed[] = "seed for RSA keygen2";
-
-    unsigned char kbuf_priv[BR_RSA_KBUF_PRIV_SIZE(2048)];
-    unsigned char kbuf_pub[BR_RSA_KBUF_PUB_SIZE(2048)];
-
-    unsigned size = 1024;
-    uint32_t pubexp = 17;
-
-    br_hmac_drbg_init(&rng, &br_sha256_vtable, seed, strlen(seed));
-    kg = br_rsa_keygen_get_default();
-
-    if (!kg(&rng.vtable, &sk, kbuf_priv, &pk, kbuf_pub, size, pubexp)) {
-        printf("ERROR: RSA key generation failed\n");
-        return -1;
-    }
-    print_rsa_key(&sk);
-
-    if (!kg(&rng.vtable, &sk, kbuf_priv, &pk, kbuf_pub, size, pubexp)) {
-        printf("ERROR: RSA key generation failed\n");
-        return -1;
-    }
-    print_rsa_key(&sk);*/
 
     return 0;
 }
