@@ -109,8 +109,8 @@ namespace checker.fs
         {
             baseUri = GetBaseUri(host);
 
-            //TODO sometimes not use cookie but login
-            var downloadedFileContent = await DownloadFile(state.FilePath, state.Cookie1);
+            var cookie1 = await RegisterOrLoginUser(state.Login1, state.Password1);
+            var downloadedFileContent = await DownloadFile(state.FilePath, cookie1);
             if (!downloadedFileContent.Contains(flag))
                 throw new CheckerException(ExitCode.CORRUPT, "Can't find flag in downloaded content");
         }
