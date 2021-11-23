@@ -11,6 +11,7 @@ import traceback
 import numpy as np
 import json
 import hashlib
+import base64
 
 from asyncio import open_connection, IncompleteReadError, LimitOverrunError
 from client import Error
@@ -198,7 +199,16 @@ async def put(host, flag_id, flag, vuln):
     mid = await client.upload(matrix, flag, key)
 
     n, m = get_size(matrix)
-    verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
+    verdict(OK, json.dumps({
+        'public_flag_id': mid,
+        'flag_id': flag_id,
+        'matrix': {
+            'n': n,
+            'm': m,
+            'hash': get_matrix_hash(matrix)
+            },
+        'key': base64.b64encode(key.encode(encoding='utf-8', errors='surrogateescape')).decode()
+    }))
 
 def generate_kernels(n, m):
     res = []
@@ -212,7 +222,7 @@ async def get(host, flag_id, flag, vuln):
     flag_id = d['flag_id']
     mid = d['public_flag_id']
     matrix = d['matrix']
-    key = d['key']
+    key = base64.b64decode(d['key']).decode(encoding='utf-8', errors='surrogateescape')
     mode = random.randint(0, 9)
 
     kernels = generate_kernels(matrix['n'], matrix['m'])
@@ -304,4 +314,4 @@ def main(args):
 
 if __name__ == '__main__':
     log('initialized')
-    main(sys.argv[1:]
+    main(sys.argv[1:])
