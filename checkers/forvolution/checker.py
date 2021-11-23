@@ -185,12 +185,16 @@ async def get(host, flag_id, flag, vuln):
     client = LoggedClient(host, PORT)
     await client.connect()
 
-    dmatrix, ddesc = await client.download(mid, key)
-    if flag != ddesc:
-        verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
-    compare(matrix, dmatrix)
+    try:
+        dmatrix, ddesc = await client.download(mid, key)
+        if flag != ddesc:
+            verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
+        compare(matrix, dmatrix)
 
-    dconvolution = await client.convolution(mid, kernel)
+        dconvolution = await client.convolution(mid, kernel)
+    except Error as e:
+        if e.error == 'image is not found':
+            verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
     convolution = calc_convolution(matrix, kernel)
 
     compare(convolution, dconvolution)
@@ -233,15 +237,15 @@ def main(args):
     except Error as E:
         verdict(MUMBLE, "Request error", "Request error: %s" % traceback.format_exc())
     except IncompleteReadError as E:
-        verdict(DOWN, "Reading error", "Reading error: %s" % traceback.format_exc())
+        verdict(MUMBLE, "Reading error", "Reading error: %s" % traceback.format_exc())
     except LimitOverrunError as E:
-        verdict(CORRUPT, "Reading error", "Reading error: %s" % traceback.format_exc())
+        verdict(MUMBLE, "Reading error", "Reading error: %s" % traceback.format_exc())
     except ConnectionRefusedError as E:
-        verdict(DOWN, "Connect refused", "Connect refused: %s" % E)
+        verdict(DOWN, "Connect refused", "Connect refused: %s" % traceback.format_exc())
     except ConnectionError as E:
-        verdict(MUMBLE, "Connection aborted", "Connection aborted: %s" % E)
+        verdict(MUMBLE, "Connection aborted", "Connection aborted: %s" % traceback.format_exc())
     except OSError as E:
-        verdict(DOWN, "Connect error", "Connect error: %s" % E)
+        verdict(DOWN, "Connect error", "Connect error: %s" % traceback.format_exc())
     except Exception as E:
         verdict(CHECKER_ERROR, "Checker error", "Checker error: %s" % traceback.format_exc())
     verdict(CHECKER_ERROR, "Checker error", "No verdict")
