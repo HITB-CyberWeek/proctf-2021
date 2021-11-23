@@ -26,7 +26,7 @@ def verdict(exit_code, public="", private=""):
     sys.exit(exit_code)
 
 def info():
-    verdict(OK, "vulns: 1\npublic_flag_description: Flag is a comment in user's profile, Flag ID is a user name")
+    verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is a user name, flag is a comment in user's profile")
 
 def check(host):
     verdict(OK)
