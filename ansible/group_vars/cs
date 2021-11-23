@@ -29,7 +29,7 @@ cs_nginx_workers: 4
 cs_nginx_listen: 10.10.10.10:80
 cs_static_path: /home/cs/ctf-scoreboard-client/scoreboard/build
 
-cs_base_url: http://ctf.hitb.org
+cs_base_url: https://ctf.hitb.org
 cs_admin_auth: root:***REMOVED***
 cs_ctf_name: PRO CTF 2021
 cs_flags_secret: ***REMOVED***
