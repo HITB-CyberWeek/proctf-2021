@@ -22,5 +22,13 @@ services:
     volumes:
       - data-volume:/data
 
+  cron:
+    image: 'p0ck37/cron'
+    build: cron
+    container_name: p0ck37-cron
+    restart: unless-stopped
+    volumes:
+      - data-volume:/data
+
 volumes:
   data-volume:

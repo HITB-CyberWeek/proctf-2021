@@ -17,3 +17,6 @@ cp chromedriver/{wrapper,Dockerfile,start.sh} .deploy/chromedriver/
 
 mkdir .deploy/web
 cp -r web/{Dockerfile,app.js,package.json,views,server.crt} .deploy/web/
+
+mkdir .deploy/cron
+cp -r cron/{Dockerfile,p0ck37.cron} .deploy/cron/
