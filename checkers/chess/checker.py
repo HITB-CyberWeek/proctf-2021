@@ -93,7 +93,7 @@ def verdict(exit_code, public="", private=""):
 
 
 def info():
-    verdict(OK, "vulns: 1\npublic_flag_description: Flag id is user name, flag is password\n")
+    verdict(OK, "vulns: 1\npublic_flag_description: Flag ID is user name, flag is password\n")
 
 
 def login(s, login, password):
