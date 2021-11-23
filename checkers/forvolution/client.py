@@ -81,8 +81,8 @@ class Client:
     async def __read_int(self) -> int:
         result_raw = await self.reader.readuntil(encode(Delimiter))
         return int(result_raw[:-1])
-    async def upload(self, matrix: list[list[int]], desc: str, key: str) -> str:
-        n, m, bmatrix = prepare_matrix(matrix)
+    async def upload(self, image: list[list[int]], desc: str, key: str) -> str:
+        n, m, bmatrix = prepare_matrix(image)
         bdesc = prepare_str(desc)
         bkey = prepare_str(key)
 
@@ -95,8 +95,8 @@ class Client:
         await self.__check_status()
         id_raw = await self.reader.readexactly(ID_BSIZE)
         return decode(id_raw)
-    async def download(self, mid: str, key: str) -> (list[list[int]], str):
-        bmid = prepare_id(mid)
+    async def download(self, _id: str, key: str) -> (list[list[int]], str):
+        bmid = prepare_id(_id)
         bkey = prepare_str(key)
 
         self.__write_fields(Download, str(len(bkey)))
@@ -114,8 +114,8 @@ class Client:
         desc = decode(desc_raw)
 
         return (matrix, desc)
-    async def convolution(self, mid: str, kernel: list[list[int]]) -> list[list[int]]:
-        bmid = prepare_id(mid)
+    async def convolution(self, _id: str, kernel: list[list[int]]) -> list[list[int]]:
+        bmid = prepare_id(_id)
         kn, km, bkernel = prepare_matrix(kernel)
 
         self.__write_fields(Convolution, str(kn), str(km))
