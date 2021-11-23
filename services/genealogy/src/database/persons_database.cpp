@@ -17,12 +17,6 @@ PersonsDatabase::PersonsDatabase(std::shared_ptr<tao::pq::transaction> tx): Data
         "get_person", "SELECT * FROM genealogy_tree_persons WHERE id = $1"
     );
     this->_tx->connection()->prepare(
-        "update_person",
-        "UPDATE genealogy_tree_persons "
-        "SET birth_date = $2, death_date = $3, title = $4, first_name = $5, middle_name = $6, last_name = $7, photo_url = $8"
-        "WHERE id = $1"
-    );
-    this->_tx->connection()->prepare(
         "mark_as_parent", "INSERT INTO genealogy_tree_person_parents (child_id, parent_id) VALUES ($1, $2)"
     );
     this->_tx->connection()->prepare(
@@ -76,21 +70,6 @@ Person PersonsDatabase::create_person(
     const auto person_id = result[0]["id"].as<unsigned long>();
 
     return this->find_person(person_id).value();
-}
-
-void PersonsDatabase::update_person(
-    unsigned long long person_id,
-    unsigned long long birth_date, unsigned long long death_date,
-    const std::string & title,
-    const std::string & first_name,
-    const std::string & middle_name,
-    const std::string & last_name,
-    const std::string & photo_url
-) {
-    this->_tx->execute(
-        "update_person", person_id, birth_date, death_date, 
-        title, first_name, middle_name, last_name, photo_url
-    );
 }
 
 void PersonsDatabase::delete_person(unsigned long long person_id) {

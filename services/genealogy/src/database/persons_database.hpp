@@ -39,15 +39,6 @@ public:
         const std::string & last_name,
         const std::string & photo_url
     );
-    void update_person(
-        unsigned long long person_id,
-        unsigned long long birth_date, unsigned long long death_date,
-        const std::string & title,
-        const std::string & first_name,
-        const std::string & middle_name,
-        const std::string & last_name,
-        const std::string & photo_url
-    );
     void delete_person(unsigned long long person_id);
     void mark_as_parent(unsigned long long child_id, unsigned long long parent_id);
     void delete_parents(unsigned long long child_id);

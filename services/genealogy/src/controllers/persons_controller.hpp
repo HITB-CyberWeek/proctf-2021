@@ -15,7 +15,6 @@ public:
     PersonsController();
 
     HttpResponse create_person(const HttpRequest & request);
-    HttpResponse update_person(const HttpRequest & request);
     HttpResponse delete_person(const HttpRequest & request);
 
 private:

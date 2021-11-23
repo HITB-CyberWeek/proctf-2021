@@ -61,9 +61,6 @@ int main() {
     server->add_route({HttpMethod::POST, "/tree/persons", false}, 
         [](auto const & request){ return PersonsController().create_person(request); }
     );
-    server->add_route({HttpMethod::PUT, "/tree/persons", true}, 
-        [](auto const & request){ return PersonsController().update_person(request); }
-    );
     server->add_route({HttpMethod::DELETE, "/tree/persons", true}, 
         [](auto const & request){ return PersonsController().delete_person(request); }
     );

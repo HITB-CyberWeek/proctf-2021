@@ -605,7 +605,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
+              $ref: '#/components/schemas/CreatePersonRequest'
             example:
               title: "Mr"
               first_name: "Andrew"
@@ -679,114 +679,6 @@ paths:
                   status: "error"
                   message: "Invalid first parent id"
   /tree/persons/{personId}:
-    put:
-      tags:
-      - person
-      summary: Update the person's information
-      description: Updates information about the person
-      operationId: updatePerson
-      security:
-        - userId
-        - userHash      
-      parameters:
-        - in: path
-          name: personId
-          schema:
-            type: integer
-          required: true
-          description: Numeric ID of the person to get
-      requestBody:
-        description: Person object
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateOrUpdatePersonRequest'
-            example:
-              title: "Mr"
-              first_name: "Andrew"
-              middle_name: "Crazy"
-              last_name: "Gein"
-              photo_url: "https://avatars.githubusercontent.com/u/1853477?v=4"
-              birth_date: 684460800
-              death_date: 7952342400
-              first_parent: 2
-              second_parent: null
-        required: true
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  person:              
-                    $ref: '#/components/schemas/Person'
-              example:
-                status: "ok"
-                person:
-                  id: 10
-                  title: "Mr"
-                  first_name: "Andrew"
-                  middle_name: "Crazy"
-                  last_name: "Gein"
-                  photo_url: "https://avatars.githubusercontent.com/u/1853477?v=4"
-                  birth_date: 684460800
-                  death_date: 7952342400
-                  parents:
-                    - id: 2
-                      title: "Mr"
-                      first_name: "Alexander"
-                      middle_name: ""
-                      last_name: "Gein"
-                      photo_url: ""
-                      birth_date: 2419200
-                      death_date: 7952342400
-                      parents: []
-        401:
-          description: You're not authenticated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  message:
-                    type: string
-                example:
-                  status: "error"
-                  message: "You're not authenticated"
-        404:
-          description: Person not found or is owned not by you
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  message:
-                    type: string
-              example:
-                status: "error"
-                message: "Person 10 not found or is owned not by you"
-        412:
-          description: Invalid parent id
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  message:
-                    type: string
-                example:
-                  status: "error"
-                  message: "Invalid first parent id"
     delete:
       tags:
       - person
@@ -935,7 +827,7 @@ components:
         person:
           type: integer
           format: int64
-    CreateOrUpdatePersonRequest:
+    CreatePersonRequest:
       type: object
       properties:
         title:

@@ -57,19 +57,6 @@ class GenealogyClient:
         r.raise_for_status()
         return r.json()["person"]["id"]
 
-    def update_person(
-        self, person_id: int, name: str, birth_date: int, death_date: int,
-        first_parent_id: Optional[int], second_parent_id: Optional[int],
-    ):
-        r = self.client.put(f"/tree/persons/{person_id}", json={
-            "name": name,
-            "birth_date": birth_date,
-            "death_date": death_date,
-            "first_parent": first_parent_id,
-            "second_parent": second_parent_id,
-        })
-        r.raise_for_status()
-
     def delete_person(self, person_id):
         r = self.client.delete(f"/tree/persons/{person_id}")
         r.raise_for_status()

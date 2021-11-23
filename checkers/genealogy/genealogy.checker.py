@@ -190,24 +190,6 @@ class GenealogyChecker(checklib.http.HttpJsonChecker):
         })
         return r["person"]["id"]
 
-    def update_person(
-        self, person_id: int, title: str, first_name: str, middle_name: str, last_name: str, photo_url: str,
-        birth_date: int, death_date: int, first_parent_id: Optional[int], second_parent_id: Optional[int],
-    ):
-        logging.info(f"Updating person {person_id}: {title} {first_name} {middle_name} {last_name}: {birth_date} - {death_date}, "
-                     f"parents: {first_parent_id}, {second_parent_id}")
-        self.try_http_put(f"/tree/persons/{person_id}", json={
-            "title": title,
-            "first_name": first_name,
-            "middle_name": middle_name,
-            "last_name": last_name,
-            "photo_url": photo_url,
-            "birth_date": birth_date,
-            "death_date": death_date,
-            "first_parent": first_parent_id,
-            "second_parent": second_parent_id,
-        })
-
     def delete_person(self, person_id):
         logging.info(f"Deleting person {person_id}")
         self.try_http_delete(f"/tree/persons/{person_id}")
