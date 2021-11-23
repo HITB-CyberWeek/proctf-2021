@@ -9,7 +9,7 @@ N = 64
 
 def gentoken(team, n=32):
  abc = "abcdef0123456789"
- return str(team) + "_" + "".join([secrets.choice(abc) for i in range(n)])
+ return "CLOUD_" + str(team) + "_" + "".join([secrets.choice(abc) for i in range(n)])
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 

@@ -44,7 +44,7 @@ FAIL_RATE_LIMIT = 10
 def authenticate_request_by_token(token):
     "Returns team number or None"
 
-    m = re.fullmatch(r"([0-9]+)_[0-9a-f]{32}", token)
+    m = re.fullmatch(r"CLOUD_([0-9]+)_[0-9a-f]{32}", token)
     if not m:
         return None
 
