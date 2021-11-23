@@ -15,7 +15,7 @@ from checker_helper import *
 PORT = 3000
 TIMEOUT = 20
 OAUTH_TOKEN = 'd7ae69cd-7e91-44de-8729-12cded47b3f2'
-OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org:5000/'
+OAUTH_ENDPOINT = 'https://auth.ctf.hitb.org/'
 FLAGS_API_KEY = '25807689-9ae1-4894-a6f8-940abd1c3a4a'
 FLAGS_ENDPOINT = 'http://jury-p0ck37.ctf.hitb.org:8080/'
 
@@ -113,7 +113,8 @@ def get(args):
     session = login(host, info["user_name"])
 
     p0ck37_url = f"http://{host}:{PORT}/"
-    p0ck37_download_url = urljoin(p0ck37_url, f"/download/{info['secret_flag_id']}.pdf")
+    p0ck37_download_url_path = f"/download/{info['secret_flag_id']}.pdf"
+    p0ck37_download_url = urljoin(p0ck37_url, p0ck37_download_url_path)
 
     try:
         r = session.get(p0ck37_url, timeout=TIMEOUT)
@@ -125,15 +126,15 @@ def get(args):
     if r.status_code != 200:
         verdict(MUMBLE, "Can't get /", "Can't get /: '%s'" % r.text)
 
-    if not f"/download/{info['secret_flag_id']}.pdf" in str(r.content):
-        verdict(CORRUPT, "Can't find flag", "Can't find '%s'" % p0ck37_download_url)
+    if not p0ck37_download_url_path in str(r.content):
+        verdict(CORRUPT, "Can't find flag", "Can't find '%s' in '%s'" % (p0ck37_download_url_path, str(r.content)))
 
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
     except requests.exceptions.ConnectionError as e:
-        verdict(DOWN, "Connection error", "Connection error during link publishing: %s" % e)
+        verdict(DOWN, "Connection error", "Connection error during link download: %s" % e)
     except requests.exceptions.Timeout as e:
-        verdict(DOWN, "Timeout", "Timeout during link publishing: %s" % e)
+        verdict(DOWN, "Timeout", "Timeout during link download: %s" % e)
 
     if r.status_code != 200:
         verdict(CORRUPT, "Can't download file", "Can't download file: '%s'" % r.text)

@@ -11,6 +11,7 @@ import traceback
 import numpy as np
 import json
 import hashlib
+import base64
 
 from asyncio import open_connection, IncompleteReadError, LimitOverrunError
 from client import Error
@@ -149,30 +150,29 @@ def generate_data_for_check(seed):
     random.seed(a=seed, version=2)
 
     matrix = get_rand_matrix(MIN_MATRIX_SIZE, MAX_MATRIX_SIZE)
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(len(matrix), len(matrix[0]), MAX_KERNEL_SIZE))
     desc = get_rand_text(MIN_TEXT_SIZE, MAX_TEXT_SIZE)
     key = get_rand_text(MIN_TEXT_SIZE, MAX_TEXT_SIZE)
-    return (matrix, kernel, desc, key)
+    kernels = generate_kernels(len(matrix), len(matrix[0]))
+    return (matrix, desc, key, kernels)
 
 async def check(host):
 
     seed = ''.join((random.choice(string.ascii_letters)) for _ in range(10))
-    matrix, kernel, desc, key = generate_data_for_check(seed)
+    matrix, desc, key, kernels = generate_data_for_check(seed)
+    mode = random.randint(0, 10)
 
     client = LoggedClient('default', host, PORT)
-    await client.connect()
-
     mid = await client.upload(matrix, desc, key)
 
-    dmatrix, ddesc = await client.download(mid, key)
+    dmatrix, ddesc, convolutions = await fire(mode, client, mid, key, kernels)
+
     if desc != ddesc:
         verdict(MUMBLE, 'Descriptions are different', 'Descriptions are different: checker "%s" vs service "%s"' % (desc, ddesc))
     compare(matrix, dmatrix)
 
-    dconvolution = await client.convolution(mid, kernel)
-    convolution = calc_convolution(matrix, kernel)
-
-    compare(convolution, dconvolution)
+    for i in range(len(kernels)):
+        convolution = calc_convolution(matrix, kernels[i])
+        compare(convolution, convolutions[i])
 
     verdict(OK, 'ok')
 
@@ -198,7 +198,16 @@ async def put(host, flag_id, flag, vuln):
     mid = await client.upload(matrix, flag, key)
 
     n, m = get_size(matrix)
-    verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
+    verdict(OK, json.dumps({
+        'public_flag_id': mid,
+        'flag_id': flag_id,
+        'matrix': {
+            'n': n,
+            'm': m,
+            'hash': get_matrix_hash(matrix)
+            },
+        'key': base64.b64encode(key.encode(encoding='utf-8', errors='surrogateescape')).decode()
+    }))
 
 def generate_kernels(n, m):
     res = []
@@ -207,36 +216,42 @@ def generate_kernels(n, m):
         log('use kernel %s' % json.dumps(res[-1]))
     return res
 
+async def fire(mode, client, mid, key, kernels):
+    if mode:
+        perm = list(range(-1, len(kernels)))
+        random.shuffle(perm)
+        convolutions = [0] * len(kernels)
+        for i in perm:
+            if i < 0:
+                matrix, desc = await client.download(mid, key)
+            else:
+                convolutions[i] = await client.convolution(mid, kernels[i])
+    else:
+        tasks = [asyncio.create_task(LoggedClient('download', client.host, client.port).download(mid, key))]
+        for i in range(len(kernels)):
+            tasks.append(asyncio.create_task(LoggedClient('convolution %d' % i, client.host, client.port).convolution(mid, kernels[i])))
+
+        _ = await asyncio.wait(tasks)
+
+        matrix, desc = await tasks[0]
+        convolutions = [await task for task in tasks[1:]]
+
+    return matrix, desc, convolutions
+
+
 async def get(host, flag_id, flag, vuln):
     d = json.loads(flag_id)
     flag_id = d['flag_id']
     mid = d['public_flag_id']
     matrix = d['matrix']
-    key = d['key']
+    key = base64.b64decode(d['key']).decode(encoding='utf-8', errors='surrogateescape')
     mode = random.randint(0, 9)
 
     kernels = generate_kernels(matrix['n'], matrix['m'])
+    client = LoggedClient('default', host, PORT)
 
     try:
-        if mode:
-            perm = list(range(-1, len(kernels)))
-            random.shuffle(perm)
-            convolutions = [0] * len(kernels)
-            client = LoggedClient('default', host, PORT)
-            for i in perm:
-                if i < 0:
-                    dmatrix, ddesc = await client.download(mid, key)
-                else:
-                    convolutions[i] = await client.convolution(mid, kernels[i])
-        else:
-            tasks = [asyncio.create_task(LoggedClient('download', host, PORT).download(mid, key))]
-            for i in range(len(kernels)):
-                tasks.append(asyncio.create_task(LoggedClient('convolution %d' % i, host, PORT).convolution(mid, kernels[i])))
-
-            _ = await asyncio.wait(tasks)
-
-            dmatrix, ddesc = await tasks[0]
-            convolutions = [await task for task in tasks[1:]]
+        dmatrix, ddesc, convolutions = await fire(mode, client, mid, key, kernels)
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
@@ -305,4 +320,3 @@ def main(args):
 if __name__ == '__main__':
     log('initialized')
     main(sys.argv[1:])
-
