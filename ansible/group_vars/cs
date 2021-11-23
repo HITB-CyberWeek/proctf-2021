@@ -31,7 +31,7 @@ cs_static_path: /home/cs/ctf-scoreboard-client/scoreboard/build
 
 cs_base_url: http://ctf.hitb.org
 cs_admin_auth: root:***REMOVED***
-cs_ctf_name: PROCTF 2021
+cs_ctf_name: PRO CTF 2021
 cs_flags_secret: ***REMOVED***
 cs_round_length: 60
 cs_flag_life_time: 15
