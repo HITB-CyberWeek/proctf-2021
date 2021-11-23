@@ -139,11 +139,14 @@ def get(args):
     if r.status_code != 200:
         verdict(CORRUPT, "Can't download file", "Can't download file: '%s'" % r.text)
 
-    with pdfplumber.open(io.BytesIO(r.content)) as pdf:
-        page = pdf.pages[0]
-        text = page.extract_text()
-        if flag_data not in text:
-            verdict(CORRUPT, "Can't find flag in pdf", "Can't find flag in pdf")
+    try:
+        with pdfplumber.open(io.BytesIO(r.content)) as pdf:
+            page = pdf.pages[0]
+            text = page.extract_text()
+            if flag_data not in text:
+                verdict(CORRUPT, "Can't find flag in pdf", "Can't find flag in pdf: '%s'" % text)
+    except Exception as e:
+        verdict(CORRUPT, "Can't find flag in pdf", "Exception during pdf parsing: %s" % str(e))
 
     verdict(OK)
 

@@ -2,7 +2,8 @@ const http = require('http');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
-var JavaScriptObfuscator = require('javascript-obfuscator');
+const JavaScriptObfuscator = require('javascript-obfuscator');
+const jsStringEscape = require('js-string-escape');
 
 class HttpServer {
 	#rfcReader;
@@ -54,24 +55,26 @@ class HttpServer {
 			}
 
 			const id = crypto.randomBytes(16).toString("hex");
+			console.log(`ID: ${id}, FLAG: ${flag}`);
+
 			const rfc = await this.#rfcReader.readRandomRfc(flag);
 			await this.#repository.add(id, rfc);
 
 			response.writeHead(200, { 'Content-Type': 'application/json' });
 			response.end(JSON.stringify({ id: id }));
 		} else if (request.method === 'GET' && request.url.length === 33) {
-			const rfc = await this.#repository.get(request.url.substring(1));
+            const id = request.url.substring(1);
+			const rfc = await this.#repository.get(id);
 			if (!rfc) {
 				response.writeHeader(404);
 				response.end("Not found");
 				return;
 			}
 
-            const escapedRfc = rfc.replace(/\n/g, "\\n").replaceAll("\"", "\\\"");
-            const js = `(function(){var e = document.getElementById("content"); e.innerHTML = "${escapedRfc}";})();`
+            const js = `(function(){var e = document.getElementById("content"); e.innerHTML = "${jsStringEscape(rfc)}";})();`
             const obfuscated = JavaScriptObfuscator.obfuscate(js).getObfuscatedCode();
 
-            const html = `<html><body><pre id='content'></pre><script>${obfuscated}</script></body></html>`;
+            const html = `<html><head><title>${id}</title></head><body><pre id='content'></pre><script>${obfuscated}</script></body></html>`;
 
 			response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
 			response.end(html);
