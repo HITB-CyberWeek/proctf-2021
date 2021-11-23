@@ -13,12 +13,12 @@ def id_gen(size=6, chars=string.ascii_uppercase+string.ascii_lowercase+ string.d
     return ''.join(random.choice(chars) for _ in range(size))
 
 app = Flask(__name__)
-app.secret_key="qweqweqwe"
+
 if os.path.isfile("sessionid.txt"):
     app.secret_key = open("sessionid.txt","r").read()
-else:
-    app.secret_key = id_gen()
-    open("sessionid.txt","w+").write(app.secret_key)
+
+if len(app.secret_key) == 0:
+    app.secret_key="qweqweqwe"
 
 def fs(s):
     result = re.sub(re.compile(r'[^%s%s%s=\._-]' % (string.ascii_uppercase,string.ascii_lowercase,string.digits)), '', s)
