@@ -19,7 +19,7 @@ namespace checker.fs
     internal class FsChecker : IChecker
     {
         private Uri baseUri;
-        public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: filepath\n");
+        public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: Flag ID is filepath, flag is inside that file\n");
 
         public async Task Check(string host)
         {
