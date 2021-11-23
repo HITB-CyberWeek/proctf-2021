@@ -2,7 +2,7 @@ import asyncio
 
 from aiofile import async_open
 
-LAST_SLOT_FILE = "last_slot"  # Contains last used slot.
+LAST_SLOT_FILE = "state/last_slot"  # Contains last used slot.
 
 
 class LastSlotStorage:

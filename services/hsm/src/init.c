@@ -103,6 +103,7 @@ void print_int_text(const char *name, const unsigned char *buf, size_t len);
 void generate(Slot *slot);
 void encrypt(char *pubkey_hex, char *plaintext);
 void decrypt(Slot *slot, char *ciphertext_hex);
+void restore(char *offset_str, char *value_hex);
 #ifdef DEBUG
 void rsa_test(void);
 #endif
@@ -450,6 +451,34 @@ void decrypt(Slot *slot, char *ciphertext_hex) {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+void restore(char *offset_str, char *value_hex) {
+  if (strlen(offset_str) > 8) {
+    printf("ERROR: offset string is too long");
+    return;
+  }
+  unsigned int offset = atoi(offset_str);
+  if (offset >= MAX_SLOTS * sizeof(Slot)) {
+    printf("ERROR: offset value is too big");
+    return;
+  }
+  if (strlen(value_hex) > 200) {
+    printf("ERROR: value hex is too long");
+    return;
+  }
+  int bytes_count = strlen(value_hex) / 2;
+
+  unsigned char value[512];
+  memset(value, 0, sizeof(value));
+  hextobin(value, value_hex, sizeof(value));
+  
+  char *start = (char*) slots;
+  memcpy((void*)(start + offset), value, bytes_count);
+  printf("OK");
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 bool handle_input(Input *input)
 {
   if (IS_COMMAND(input, "HELP", 0)) {
@@ -527,6 +556,10 @@ bool handle_input(Input *input)
     printf("OK");
     return true;
   }
+  else if (IS_COMMAND(input, "RESTORE", 2)) {
+    restore(input->arg1, input->arg2);
+    return true;
+  }
   return false;
 }
 
@@ -536,6 +569,7 @@ rtems_task Init(rtems_task_argument ignored) {
   Input input;
   bool command_result;
 
+  memset((void*) slots, 0, sizeof(slots));
 #ifdef DEBUG
   printf("ATTENTION! DEBUG BUILD!\n\n");
   printf("BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS) = %d\n",  BR_RSA_KBUF_PUB_SIZE(RSA_KEY_SIZE_BITS));
@@ -550,6 +584,7 @@ rtems_task Init(rtems_task_argument ignored) {
   printf("Slot %4d = %p\n",                   2, &slots[2]);
   printf("Slot %4d = %p\n",                   MAX_SLOTS-1, &slots[MAX_SLOTS-1]);
   printf("Input     = %p\n",                  &input);
+  printf("Slot area size: 0x%08x (%d)\n", sizeof(slots), sizeof(slots));
 #endif
 
   rand_init("DEFAULT SEED");
@@ -587,7 +622,7 @@ rtems_task Init(rtems_task_argument ignored) {
 //#define CONFIGURE_USE_DEVFS_AS_BASE_FILESYSTEM
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_INIT_TASK_STACK_SIZE (1024 * 1024)   // Very important! Otherwise memory corruption will occur if we use more stack.
+#define CONFIGURE_INIT_TASK_STACK_SIZE (2 * 1024 * 1024)   // Very important! Otherwise memory corruption will occur if we use more stack.
 //#define CONFIGURE_EXECUTIVE_RAM_SIZE (64*1024*1024)
 //#define CONFIGURE_MINIMUM_STACK_SIZE (2*1024*1024)
 //#define CONFIGURE_MAXIMUM_PTYS 4

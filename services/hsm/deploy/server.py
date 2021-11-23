@@ -8,6 +8,7 @@ import string
 import typing
 
 import sanic
+from aiofile import async_open
 from sanic import Sanic
 from sanic.log import logger
 from sanic.response import text, html, redirect
@@ -306,7 +307,7 @@ async def after_server_start(s: Sanic, loop: asyncio.AbstractEventLoop) -> None:
         loop.create_task(firmware_stdin_task()),
         loop.create_task(firmware_stdout_task()),
         loop.create_task(firmware_stderr_task()),
-        loop.create_task(firmware_state_dump_task())
+        loop.create_task(firmware_state_dump_restore_task()),
     ]
 
 
@@ -405,12 +406,29 @@ async def firmware_communicate_task():
             query.finish("[com] Firmware communication problem. Try again later.")
 
 
-async def firmware_state_dump_task():
+async def firmware_state_dump_restore_task():
+    logger.info("[sta] Starting dump restore...")
+    buf_size = 100
+    try:
+        offset = 0
+        async with async_open(SLOT_AREA_FILE, "rb") as f:
+            while offset < SLOT_AREA_SIZE:
+                data = await f.read(buf_size)
+                if data != b"\0" * buf_size:
+                    response = await fw_communicate("RESTORE {} {}".format(offset, data.hex().upper()))
+                    if response != "OK":
+                        logger.warning("[sta] Dump restore: unexpected response: %r, aborting.", response)
+                        break
+                offset += len(data)
+        logger.info("[sta] Dump restore completed.")
+    except Exception as e:
+        logger.warning("[sta] Dump restore problem: %s.", e)
+
     while True:
         await asyncio.sleep(1)
         try:
             reader, writer = await asyncio.open_unix_connection("qemu-monitor-socket", limit=1024)
-            logger.info("[dmp] Connected to qemu monitor socket.")
+            logger.info("[sta] Connected to qemu monitor socket.")
             while True:
                 cmd = "memsave 0x{:08x} {} {}\n".format(SLOT_AREA_START, SLOT_AREA_SIZE, SLOT_AREA_FILE)
                 writer.write(cmd.encode())
@@ -421,7 +439,7 @@ async def firmware_state_dump_task():
                     pass
                 await asyncio.sleep(1)
         except Exception as e:
-            logger.warning("[dmp] Firmware dump state problem: %s.", e)
+            logger.warning("[sta] Firmware dump state problem: %s.", e)
 
 
 async def run_firmware():
