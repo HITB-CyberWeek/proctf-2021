@@ -264,7 +264,7 @@ def cmd_get_vm_info(team, args):
     team_state = open("%s/team%d/team_state" % (DB_PATH, team)).read().strip()
 
     info = {"state": "not started", "ip": "none",
-            "root passwd": "none", "net": "disconnected from game"}
+            "root passwd": "none", "net": "disconnected from the game"}
 
     img_ready = (net_state == "READY" and image_state == "RUNNING")
     if img_ready:
@@ -275,7 +275,7 @@ def cmd_get_vm_info(team, args):
         info["root passwd"] = root_passwd
         
     if team_state == "CLOUD":
-        info["net"] = "connected to game"
+        info["net"] = "connected to the game"
 
     if open_state == "CLOSED":
         info["net"] = "isolated"
