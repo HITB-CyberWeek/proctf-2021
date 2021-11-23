@@ -46,7 +46,7 @@ cs_scoring: |
   dying_rounds => 120,
   dying_flag_price => 1
 
-cs_time: "['2021-11-13 12:00:00', '2021-11-28 12:00:00']"
+cs_time: "['2021-11-23 12:00:00', '2021-11-25 12:00:00']"
 
 teams: |
   {name => 'Bushwhackers', network => '10.60.1.0/24', host => '10.60.1.3', ip_prefix => '10.60.1.', token => '1_2c610e00b7c8c0e01db658dbbe1d87dd', country => 'NA', logo => '/data/logos/1.png', tags => ['PRO']},
