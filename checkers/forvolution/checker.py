@@ -95,22 +95,32 @@ def calc_convolution(matrix, kernel):
 
 
 class LoggedClient(client.Client):
+    def __init__(self, host, port):
+        super().__init__(host, port)
+        self.connected = False
     async def connect(self):
         log('try connect to %s:%d' % (self.host, self.port))
         await super().connect()
         log('connected')
+        self.connected = True
     async def upload(self, matrix, desc, key):
+        if not self.connected:
+            self.connect()
         log('try upload matrix %dx%d with desc %s and key %s' % (len(matrix), len(matrix[0]), repr(desc), repr(key)))
         mid = await super().upload(matrix, desc, key)
         log('uploaded to id %s' % (repr(mid)))
         return mid
     async def download(self, mid, key):
+        if not self.connected:
+            self.connect()
         log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
         matrix, desc = await super().download(mid, key)
         size = get_size(matrix)
         log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(desc)))
         return matrix, desc
     async def convolution(self, mid, kernel):
+        if not self.connected:
+            self.connect()
         log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
         convolution = await super().convolution(mid, kernel)
         size = get_size(convolution)
@@ -178,7 +188,6 @@ async def put(host, flag_id, flag, vuln):
     verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
 
 def generate_data_for_get(seed, n, m):
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE))
     return kernel
 
 async def get(host, flag_id, flag, vuln):
@@ -187,33 +196,44 @@ async def get(host, flag_id, flag, vuln):
     mid = d['public_flag_id']
     matrix = d['matrix']
     key = d['key']
+    mode = random.randint(10)
 
-    kernel = generate_data_for_get(flag_id, matrix['n'], matrix['m'])
+    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE))
     log('use kernel %s' % json.dumps(kernel))
 
-    client = LoggedClient(host, PORT)
-    await client.connect()
 
     try:
-        dmatrix, ddesc = await client.download(mid, key)
-        if flag != ddesc:
-            verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
+        if mode:
+            client = LoggedClient(host, PORT)
+            dmatrix, ddesc = await client.download(mid, key)
+            dconvolution = await client.convolution(mid, kernel)
+        else:
+            c1 = LoggedClient(host, PORT)
+            c2 = LoggedClient(host, PORT)
 
-        h = get_matrix_hash(dmatrix)
-        if h != matrix['hash']:
-            verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
+            download_task = asyncio.create_task(c1.download(mid, key))
+            convolution_task = asyncio.create_task(c2.convolution(mid, kernel))
 
-        dconvolution = await client.convolution(mid, kernel)
+            _, _ = asyncio.wait({download_task, convolution_task})
+
+            dmatrix, ddesc = await download_task
+            dconvolution = await convolution_task
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
         else:
             raise
-    convolution = calc_convolution(dmatrix, kernel)
 
+    if flag != ddesc:
+        verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
+    h = get_matrix_hash(dmatrix)
+    if h != matrix['hash']:
+        verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
+    convolution = calc_convolution(dmatrix, kernel)
     compare(convolution, dconvolution)
 
     verdict(OK, 'ok')
+
 
 async def print_debug(method, seed):
     if method == 'check':
