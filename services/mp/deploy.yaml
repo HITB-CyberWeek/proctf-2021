@@ -3,7 +3,7 @@ service: mp
 username: mp
 scripts:
   build_inside_vm: docker-compose -f /home/$USERNAME/docker-compose.yml build --pull
-  start_once: docker-compose -f /home/$USERNAME/docker-compose.yml up -d ; docker exec mp /app/init-opensearch.sh
+  start_once: sysctl -w vm.max_map_count=262144; docker-compose -f /home/$USERNAME/docker-compose.yml up -d ; docker exec mp /app/init-opensearch.sh
 files:
   - sources:
       - src/*.cs
