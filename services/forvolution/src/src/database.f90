@@ -63,7 +63,7 @@ contains
     character(kind=c_char), dimension(:), allocatable, target :: filename
 
     nsize = shape(matrix)
-    dsize = size(desc)
+    dsize = int(size(desc), 1)
     call rand_fill_hex(id)
     b = c_loc(buffer)
     b = c_write(b, c_loc(key), sha256_size)

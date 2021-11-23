@@ -2,7 +2,7 @@ module connection_handler
   use iso_c_binding, only: c_char
   use tcp, only: tcp_read, tcp_write, tcp_close
   use database, only: db_store, db_load, id_size
-  use string_utils, only: to_int, to_char, to_string, parse_int, to_array
+  use string_utils, only: to_int, to_string, parse_int, to_array
   use sha256, only: sha256_calc, sha256_size
   use matrix, only: convolution
 
