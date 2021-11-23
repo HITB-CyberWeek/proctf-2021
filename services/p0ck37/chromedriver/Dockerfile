@@ -1,7 +1,7 @@
 FROM debian:latest
 
 RUN  apt-get update \
-  && apt-get install -y wget gnupg2 curl unzip xvfb psmisc
+  && apt-get install -y wget gnupg2 curl unzip xvfb cron psmisc
 
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
@@ -24,8 +24,6 @@ VOLUME /data
 COPY chrome.cron /etc/cron.d/chrome
 RUN chmod 0644 /etc/cron.d/chrome
 RUN crontab /etc/cron.d/chrome
-
-USER chromedriver
 
 EXPOSE 4444
 
