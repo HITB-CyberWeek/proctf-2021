@@ -1,9 +1,13 @@
+using System;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Core;
 using OpenIddict.Server;
@@ -46,10 +50,17 @@ namespace OAuthServer
                     options.AllowAuthorizationCodeFlow()
                         .RequireProofKeyForCodeExchange();
 
-                    // TODO generate keys for openid & for cookie encryption
+                    var signingCert = new X509Certificate2("server.pfx", "",
+                        X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+                    var signingKey = new X509SecurityKey(signingCert);
+                    var privateKeyBytes = signingCert.Export(X509ContentType.Pkcs12, "");
+                    var keyBytes = new byte[256 >> 3];
+                    Array.Copy(privateKeyBytes, keyBytes, keyBytes.Length);
+                    var encryptionKey = new SymmetricSecurityKey(keyBytes);
+
                     options
-                        .AddEphemeralEncryptionKey()
-                        .AddEphemeralSigningKey();
+                        .AddEncryptionKey(encryptionKey)
+                        .AddSigningCertificate(signingCert);
 
                     options
                         .SetAuthorizationEndpointUris("/connect/authorize")

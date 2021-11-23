@@ -13,6 +13,9 @@ COPY --from=build /app/publish .
 COPY ./server.pfx .
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path "/app/server.pfx"
 
+RUN mkdir -p /root/.aspnet/DataProtection-Keys
+VOLUME /root/.aspnet/DataProtection-Keys
+
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "OAuthServer.dll"]
