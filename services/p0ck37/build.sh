@@ -16,4 +16,4 @@ mkdir .deploy/chromedriver
 cp chromedriver/{wrapper,Dockerfile,start.sh} .deploy/chromedriver/
 
 mkdir .deploy/web
-cp -r web/{Dockerfile,app.js,package.json,views} .deploy/web/
+cp -r web/{Dockerfile,app.js,package.json,views,server.crt} .deploy/web/

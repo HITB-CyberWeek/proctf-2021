@@ -42,9 +42,6 @@ function validURL(str) {
 app.set('views', './views')
 app.set('view engine', 'pug')
 
-// TODO add self-signed certificate to docker container
-require('https').globalAgent.options.rejectUnauthorized = false;
-
 app.use(session({
     secret: crypto.randomBytes(16).toString("hex"),
     resave: false,
