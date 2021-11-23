@@ -49,28 +49,28 @@ module database
   end interface
 contains
 
-  function db_store(buffer, n, m, matrix, dlen, desc, key) result(id)
+  function db_store(buffer, matrix, desc, key) result(id)
     character(kind=c_char), dimension(:), intent(in), target :: buffer
-    integer(1), intent(in), target :: n
-    integer(1), intent(in), target :: m
-    integer(1), dimension(1:n, 1:m), intent(in), target :: matrix
-    integer(1), intent(in), target :: dlen
-    character(kind=c_char), dimension(1:dlen), intent(in), target :: desc
+    integer(1), dimension(:,:), intent(in), target :: matrix
+    character(kind=c_char), dimension(:), intent(in), target :: desc
     character(kind=c_char), dimension(1:sha256_size), intent(in), target :: key
 
+    integer(1), dimension(1:2), target :: nsize
+    integer(1), target :: dsize
     character, dimension(1:id_size) :: id
     type(c_ptr) :: b
     integer(kind=c_int) :: res
     character(kind=c_char), dimension(:), allocatable, target :: filename
 
+    nsize = shape(matrix)
+    dsize = size(desc)
     call rand_fill_hex(id)
     b = c_loc(buffer)
     b = c_write(b, c_loc(key), sha256_size)
-    b = c_write(b, c_loc(n), 1)
-    b = c_write(b, c_loc(m), 1)
-    b = c_write(b, c_loc(matrix), int(n) * m)
-    b = c_write(b, c_loc(dlen), 1)
-    b = c_write(b, c_loc(desc), int(dlen))
+    b = c_write(b, c_loc(nsize), 2)
+    b = c_write(b, c_loc(matrix), size(matrix))
+    b = c_write(b, c_loc(dsize), 1)
+    b = c_write(b, c_loc(desc), int(dsize))
 
     filename = get_name(id)
     res = c_store(c_loc(buffer), b, c_loc(filename))
@@ -80,18 +80,18 @@ contains
     end if
   end function db_store
 
-  function db_load(buffer, id, n, m, matrix, dlen, desc, key) result(r)
+  function db_load(buffer, id, matrix, desc, key) result(r)
     character(kind=c_char), dimension(:), intent(in), target :: buffer
     character, dimension(1:id_size), intent(in) :: id
-    integer(1), intent(in), pointer :: n
-    integer(1), intent(in), pointer :: m
     integer(1), dimension(:,:), intent(in), pointer :: matrix
-    integer(1), intent(in), pointer :: dlen
     character(kind=c_char), dimension(:), intent(in), pointer :: desc
     character(kind=c_char), dimension(:), intent(in), pointer :: key
 
     logical :: r
 
+    integer(1), pointer :: n
+    integer(1), pointer :: m
+    integer(1), pointer :: dsize
     character(kind=c_char), dimension(:), allocatable, target :: filename
     type(c_ptr) :: b
     integer :: have
@@ -142,15 +142,15 @@ contains
       r = .false.
       return
     end if
-    call c_f_pointer(b, dlen)
+    call c_f_pointer(b, dsize)
     b = c_shift(b, 1)
 
-    have = have - int(dlen)
+    have = have - int(dsize)
     if (have.lt.0) then
       r = .false.
       return
     end if
-    call c_f_pointer(b, desc, (/int(dlen)/))
+    call c_f_pointer(b, desc, (/int(dsize)/))
 
     r = .true.
   end function db_load
