@@ -196,8 +196,12 @@ async def put(host, flag_id, flag, vuln):
     n, m = get_size(matrix)
     verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
 
-def generate_data_for_get(seed, n, m):
-    return kernel
+def generate_kernels(n, m):
+    res = []
+    for _ in range(max(1, random.randint(0, 15) - 10)):
+        res.append(get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE)))
+        log('use kernel %s' % json.dumps(res[-1]))
+    return res
 
 async def get(host, flag_id, flag, vuln):
     d = json.loads(flag_id)
@@ -207,25 +211,28 @@ async def get(host, flag_id, flag, vuln):
     key = d['key']
     mode = random.randint(0, 9)
 
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(matrix['n'], matrix['m'], MAX_KERNEL_SIZE))
-    log('use kernel %s' % json.dumps(kernel))
+    kernels = generate_kernels(matrix['n'], matrix['m'])
 
     try:
         if mode:
+            perm = list(range(-1, len(kernels)))
+            random.shuffle(perm)
+            convolutions = [0] * len(kernels)
             client = LoggedClient('default', host, PORT)
-            dmatrix, ddesc = await client.download(mid, key)
-            dconvolution = await client.convolution(mid, kernel)
+            for i in perm:
+                if i < 0:
+                    dmatrix, ddesc = await client.download(mid, key)
+                else:
+                    convolutions[i] = await client.convolution(mid, kernels[i])
         else:
-            c1 = LoggedClient('download', host, PORT)
-            c2 = LoggedClient('upload', host, PORT)
+            tasks = [asyncio.create_task(LoggedClient('download', host, PORT).download(mid, key))]
+            for i in range(len(kernels)):
+                tasks.append(asyncio.create_task(LoggedClient('convolution %d' % i, host, PORT).convolution(mid, kernels[i])))
 
-            download_task = asyncio.create_task(c1.download(mid, key))
-            convolution_task = asyncio.create_task(c2.convolution(mid, kernel))
+            _ = await asyncio.wait(tasks)
 
-            _ = await asyncio.wait({download_task, convolution_task})
-
-            dmatrix, ddesc = await download_task
-            dconvolution = await convolution_task
+            dmatrix, ddesc = await tasks[0]
+            convolutions = [await task for task in tasks[1:]]
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
@@ -237,8 +244,9 @@ async def get(host, flag_id, flag, vuln):
     h = get_matrix_hash(dmatrix)
     if h != matrix['hash']:
         verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
-    convolution = calc_convolution(dmatrix, kernel)
-    compare(convolution, dconvolution)
+    for i in range(len(kernels)):
+        convolution = calc_convolution(dmatrix, kernels[i])
+        compare(convolution, convolutions[i])
 
     verdict(OK, 'ok')
 
