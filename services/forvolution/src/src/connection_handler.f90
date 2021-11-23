@@ -405,8 +405,6 @@ contains
     character, dimension(:), allocatable :: id
     logical :: success
     integer :: msize
-    character, dimension(:), allocatable :: tmp
-    integer :: result_size
 
     lkey = self%extra%key
     id = self%buffer(1:id_size)
@@ -506,8 +504,6 @@ contains
     integer(1), dimension(:,:), allocatable :: kernel
     integer, dimension(1:2) :: rsizes
     integer :: rsize
-    character, dimension(:), allocatable :: tmp
-    integer :: result_size
 
     kn = self%extra%n
     km = self%extra%m

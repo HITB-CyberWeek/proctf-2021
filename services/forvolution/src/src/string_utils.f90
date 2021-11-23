@@ -143,7 +143,7 @@ contains
 
     r = 0
     do i = 1, size(s)
-      r = r * 10 + iachar(s(i)) - 48
+      r = r * 10_1 + iachar(s(i)) - 48_1
     end do
   end function parse_int
 
