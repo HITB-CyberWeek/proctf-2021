@@ -27,7 +27,7 @@ MAX_KERNEL_SIZE = 10
 MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
 
-printable = string.digits + string.ascii_letters
+printable = (string.digits + string.ascii_letters).encode()
 
 def verdict(exit_code, public="", private=""):
     if public:
@@ -52,7 +52,11 @@ def get_rand_square_matrix(l, r):
     return get_rand_matrix_content(n, n)
 
 def get_rand_text(l, r):
-    return ''.join((random.choice(printable) for _ in range(random.randint(l, r))))
+    if random.randint(0, 50):
+        data = [random.choice(printable) for _ in range(random.randint(l, r))]
+    else:
+        data = [random.randint(0, 255) for _ in range(random.randint(l, r))]
+    return bytes(data).decode(encoding='utf-8', errors='surrogateescape')
 
 def get_size(m):
     return (len(m), 0 if len(m) == 0 else len(m[0]))
@@ -302,4 +306,4 @@ def main(args):
 
 if __name__ == '__main__':
     log('initialized')
-    main(sys.argv[1:])
+    main(sys.argv[1:]
