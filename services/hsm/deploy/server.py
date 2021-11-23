@@ -222,7 +222,7 @@ async def decrypt_get(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    return html(html_form(action="decrypt", width_px=800, inputs=[("ciphertext", 200)]))
+    return html(html_form(action="decrypt", width_px=800, inputs=[("ciphertext", 260)]))
 
 
 @app.route("/decrypt", methods=["POST"])
@@ -230,7 +230,7 @@ async def decrypt_post(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
-    ciphertext = validated(request.form, "ciphertext", maxlen=200)
+    ciphertext = validated(request.form, "ciphertext", maxlen=260)
     response = await fw_communicate("DECRYPT {} {}".format(user.slot, ciphertext))
     return text(response)
 
