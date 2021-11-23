@@ -195,6 +195,7 @@ contains
     integer, intent(in) :: size
 
     self%processed = 0
+    self%buffer = achar(0)
     self%needed_bytes = size
     self%bytes_limit = size
     self%needed_fields = -1
@@ -208,6 +209,7 @@ contains
     integer, intent(in) :: fields_count
 
     self%processed = 0
+    self%buffer = achar(0)
     self%needed_bytes = min_size
     self%bytes_limit = max_size
     self%needed_fields = fields_count
