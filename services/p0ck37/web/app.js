@@ -12,7 +12,7 @@ const {Options} = require('selenium-webdriver/chrome');
 const querystring = require('querystring');
 
 const port = 3000;
-const TIMEOUT = 5000;
+const TIMEOUT = 10000;
 const clientId = 'p0ck37';
 const filesPath = '/data/';
 const webdriverServer = 'http://p0ck37-chromedriver:4444/wd/hub';
@@ -143,6 +143,7 @@ app.get('/add', ensureCanDownload, async (req, res) => {
             await driver.manage().setTimeouts({ implicit: TIMEOUT, pageLoad: TIMEOUT, script: TIMEOUT })
             await driver.get(link);
             await driver.executeScript('while (document.readyState != "complete"){}');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             await driver.executeScript('window.print();');
         } finally {
             await driver.quit();
