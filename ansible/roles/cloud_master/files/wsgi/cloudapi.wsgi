@@ -350,6 +350,7 @@ def cmd_help(team, args):
   get_vm_info <vm>                      - get info about vm
   take_snapshot <vm> <name>             - take a snapshot
   list_snapshots <vm>                   - list snapshots
+  restore_vm_from_snapshot <vm> init    - restore vm to the initial state
   restore_vm_from_snapshot <vm> <name>  - restore vm from the snapshot
   remove_snapshot <vm> <name>           - remove a snapshot
   reboot_vm <vm>                        - reboot vm
