@@ -113,7 +113,8 @@ def get(args):
     session = login(host, info["user_name"])
 
     p0ck37_url = f"http://{host}:{PORT}/"
-    p0ck37_download_url = urljoin(p0ck37_url, f"/download/{info['secret_flag_id']}.pdf")
+    p0ck37_download_url_path = f"/download/{info['secret_flag_id']}.pdf"
+    p0ck37_download_url = urljoin(p0ck37_url, p0ck37_download_url_path)
 
     try:
         r = session.get(p0ck37_url, timeout=TIMEOUT)
@@ -125,8 +126,8 @@ def get(args):
     if r.status_code != 200:
         verdict(MUMBLE, "Can't get /", "Can't get /: '%s'" % r.text)
 
-    if not f"/download/{info['secret_flag_id']}.pdf" in str(r.content):
-        verdict(CORRUPT, "Can't find flag", "Can't find '%s'" % p0ck37_download_url)
+    if not p0ck37_download_url_path in str(r.content):
+        verdict(CORRUPT, "Can't find flag", "Can't find '%s' in '%s'" % (p0ck37_download_url_path, str(r.content)))
 
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
