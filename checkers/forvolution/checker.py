@@ -304,4 +304,5 @@ def main(args):
 
 if __name__ == '__main__':
     log('initialized')
-    main(sys.argv[1:]
+    main(sys.argv[1:])
+
