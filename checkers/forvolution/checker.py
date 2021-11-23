@@ -61,7 +61,7 @@ def compare(m1, m2):
     s2 = get_size(m2)
 
     if s1 != s2:
-        verdict(CORRUPT, 'matrixes have different size', 'matrixes have different size: checker %s vs service %s' % (str(s1), str(s2)))
+        verdict(MUMBLE, 'matrixes have different size', 'matrixes have different size: checker %s vs service %s' % (str(s1), str(s2)))
 
     bads = 0
     last = None
@@ -72,7 +72,7 @@ def compare(m1, m2):
                 last = (x, y)
 
     if bads > 0:
-        verdict(CORRUPT, 'matrixes have different elements', 'matrixes have different elements at %d positions. Example: %s checker %d vs service %d' 
+        verdict(MUMBLE, 'matrixes have different elements', 'matrixes have different elements at %d positions. Example: %s checker %d vs service %d' 
                 % (bads, str(last), m1[last[0]][last[1]], m2[last[0]][last[1]]))
 
 def calc_convolution(matrix, kernel):
@@ -137,7 +137,7 @@ async def check(host):
 
     dmatrix, ddesc = await client.download(mid, key)
     if desc != ddesc:
-        verdict(CORRUPT, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
+        verdict(MUMBLE, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
     compare(matrix, dmatrix)
 
     dconvolution = await client.convolution(mid, kernel)
@@ -195,6 +195,8 @@ async def get(host, flag_id, flag, vuln):
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
+        else:
+            raise
     convolution = calc_convolution(matrix, kernel)
 
     compare(convolution, dconvolution)
