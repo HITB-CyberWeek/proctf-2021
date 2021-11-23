@@ -8,7 +8,6 @@ import logging
 import os
 import psycopg2
 from psycopg2.extras import Json
-import socket
 from urllib.parse import urlparse
 
 from minio import Minio
@@ -24,8 +23,7 @@ logging.basicConfig(
 pg_connection = psycopg2.connect(host="db", user=os.getenv('POSTGRES_USER'), password=os.getenv(
     'POSTGRES_PASSWORD'), dbname=os.getenv('POSTGRES_DB'))
 
-s3_client = Minio("s3:9000", os.getenv('MINIO_ROOT_USER'),
-                  os.getenv('MINIO_ROOT_PASSWORD'), secure=False)
+s3_client = Minio("s3:9000", os.getenv('MINIO_ROOT_USER'), os.getenv('MINIO_ROOT_PASSWORD'), secure=False)
 
 if not s3_client.bucket_exists("curl"):
     s3_client.make_bucket("curl")
@@ -68,12 +66,9 @@ class curl(caas_pb2_grpc.curlServicer):
 
         logging.info(request)
         host = urlparse(request.url).hostname
-        try:
-            ip = ipaddress.IPv4Address(host)
-        except:
-            ip = ipaddress.IPv4Address(socket.gethostbyname(host))
+        ip = ipaddress.IPv4Address(host)
         if ip.is_private:
-            raise Exception("Invalid hostname")
+            raise Exception("Invalid host")
 
         task_id = None
         with pg_connection:
@@ -85,10 +80,10 @@ class curl(caas_pb2_grpc.curlServicer):
 
                 user_id = user[0]
                 cursor.execute("""
-                    insert into tasks (user_id, method, url)
-                    values (%s, %s, %s)
+                    insert into tasks (user_id, url)
+                    values (%s, %s)
                     returning id
-                """, (user_id, request.method, request.url)
+                """, (user_id, request.url)
                 )
                 task_id = cursor.fetchone()[0]
                 pg_connection.commit()

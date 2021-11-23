@@ -12,8 +12,6 @@ services:
     ports:
       - 0.0.0.0:50051:50051
     entrypoint: ["/app/app.py"]
-    networks:
-      - app
     environment:
       - POSTGRES_PASSWORD
       - POSTGRES_USER
@@ -31,8 +29,6 @@ services:
       - s3
     scale: 4
     entrypoint: ["/app/worker.py"]
-    networks:
-      - app
     environment:
       - POSTGRES_PASSWORD
       - POSTGRES_USER
@@ -48,8 +44,6 @@ services:
       - "./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
       - "./data/db:/var/lib/postgresql/data"
     command: ["postgres", "-c", "config_file=/opt/postgresql.conf"]
-    networks:
-      - app
     environment:
       - POSTGRES_PASSWORD
       - POSTGRES_USER
@@ -64,14 +58,6 @@ services:
     volumes:
       - "./data/s3:/data"
     command: ["server", "/data"]
-    networks:
-      - app
     environment:
       - MINIO_ROOT_USER
       - MINIO_ROOT_PASSWORD
-
-networks:
-  app:
-    ipam:
-      config:
-        - subnet: 10.0.0.0/16

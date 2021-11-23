@@ -12,7 +12,6 @@ create table tasks (
   created  timestamptz not null default now(),
   started  timestamptz,
   finished timestamptz,
-  method   text not null,
   url      text not null,
   status   text not null default 'PENDING',
   result   boolean,

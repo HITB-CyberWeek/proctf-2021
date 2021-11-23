@@ -14,8 +14,7 @@ service curl {
 
 message EnqueueRequest {
   string token = 1;
-  string method = 2;
-  string url = 3;
+  string url = 2;
 }
 
 message EnqueueResponse {

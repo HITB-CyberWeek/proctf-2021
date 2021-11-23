@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ncaas.proto\x12\x04\x63\x61\x61s\"<\n\x0e\x45nqueueRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06method\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\"\"\n\x0f\x45nqueueResponse\x12\x0f\n\x07task_id\x18\x01 \x01(\x05\"/\n\rResultRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\x05\"7\n\x06Result\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"C\n\x13UserRegisterRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\x12\x0f\n\x07\x63omment\x18\x03 \x01(\t\"\"\n\x11UserRegisterReply\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x0fUserInfoRequest\x12\r\n\x05token\x18\x01 \x01(\t\"=\n\rUserInfoReply\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\x12\x0f\n\x07\x63omment\x18\x03 \x01(\t2~\n\x04user\x12@\n\x08Register\x12\x19.caas.UserRegisterRequest\x1a\x17.caas.UserRegisterReply\"\x00\x12\x34\n\x04Info\x12\x15.caas.UserInfoRequest\x1a\x13.caas.UserInfoReply\"\x00\x32r\n\x04\x63url\x12\x38\n\x07\x45nqueue\x12\x14.caas.EnqueueRequest\x1a\x15.caas.EnqueueResponse\"\x00\x12\x30\n\tGetReulst\x12\x13.caas.ResultRequest\x1a\x0c.caas.Result\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\ncaas.proto\x12\x04\x63\x61\x61s\",\n\x0e\x45nqueueRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\"\"\n\x0f\x45nqueueResponse\x12\x0f\n\x07task_id\x18\x01 \x01(\x05\"/\n\rResultRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\x05\"7\n\x06Result\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"C\n\x13UserRegisterRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\x12\x0f\n\x07\x63omment\x18\x03 \x01(\t\"\"\n\x11UserRegisterReply\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x0fUserInfoRequest\x12\r\n\x05token\x18\x01 \x01(\t\"=\n\rUserInfoReply\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\x12\x0f\n\x07\x63omment\x18\x03 \x01(\t2~\n\x04user\x12@\n\x08Register\x12\x19.caas.UserRegisterRequest\x1a\x17.caas.UserRegisterReply\"\x00\x12\x34\n\x04Info\x12\x15.caas.UserInfoRequest\x1a\x13.caas.UserInfoReply\"\x00\x32r\n\x04\x63url\x12\x38\n\x07\x45nqueue\x12\x14.caas.EnqueueRequest\x1a\x15.caas.EnqueueResponse\"\x00\x12\x30\n\tGetReulst\x12\x13.caas.ResultRequest\x1a\x0c.caas.Result\"\x00\x62\x06proto3'
 )
 
 
@@ -41,15 +41,8 @@ _ENQUEUEREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='method', full_name='caas.EnqueueRequest.method', index=1,
+      name='url', full_name='caas.EnqueueRequest.url', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='url', full_name='caas.EnqueueRequest.url', index=2,
-      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -67,7 +60,7 @@ _ENQUEUEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=20,
-  serialized_end=80,
+  serialized_end=64,
 )
 
 
@@ -98,8 +91,8 @@ _ENQUEUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=82,
-  serialized_end=116,
+  serialized_start=66,
+  serialized_end=100,
 )
 
 
@@ -137,8 +130,8 @@ _RESULTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=118,
-  serialized_end=165,
+  serialized_start=102,
+  serialized_end=149,
 )
 
 
@@ -183,8 +176,8 @@ _RESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=167,
-  serialized_end=222,
+  serialized_start=151,
+  serialized_end=206,
 )
 
 
@@ -229,8 +222,8 @@ _USERREGISTERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=224,
-  serialized_end=291,
+  serialized_start=208,
+  serialized_end=275,
 )
 
 
@@ -261,8 +254,8 @@ _USERREGISTERREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=293,
-  serialized_end=327,
+  serialized_start=277,
+  serialized_end=311,
 )
 
 
@@ -293,8 +286,8 @@ _USERINFOREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=329,
-  serialized_end=361,
+  serialized_start=313,
+  serialized_end=345,
 )
 
 
@@ -339,8 +332,8 @@ _USERINFOREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=363,
-  serialized_end=424,
+  serialized_start=347,
+  serialized_end=408,
 )
 
 DESCRIPTOR.message_types_by_name['EnqueueRequest'] = _ENQUEUEREQUEST
@@ -418,8 +411,8 @@ _USER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=426,
-  serialized_end=552,
+  serialized_start=410,
+  serialized_end=536,
   methods=[
   _descriptor.MethodDescriptor(
     name='Register',
@@ -454,8 +447,8 @@ _CURL = _descriptor.ServiceDescriptor(
   index=1,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=554,
-  serialized_end=668,
+  serialized_start=538,
+  serialized_end=652,
   methods=[
   _descriptor.MethodDescriptor(
     name='Enqueue',

@@ -7,6 +7,7 @@ import caas_pb2_grpc
 import json
 import random
 import sys
+import string
 import time
 import traceback
 import io
@@ -54,10 +55,11 @@ def put(host, flag_id, flag, vuln):
         ))
         state["token"] = response.token
 
-        state["url"] = "https://www.rfc-editor.org/rfc/rfc" + str(random.randint(1000, 1500)) + ".txt"
+        # mirror.yandex.ru
+        state["path"] = "/debian/pool/main/" + random.choice(string.ascii_lowercase) + "/"
+        state["url"] = "http://213.180.204.183" + state["path"]
         response = curl_stub.Enqueue(caas_pb2.EnqueueRequest(
             token=state["token"],
-            method="GET",
             url=state["url"]
         ))
         state["task_id"] = response.task_id
@@ -83,8 +85,18 @@ def get(host, flag_id, flag, vuln):
             verdict(CORRUPT, "Info: invalid comment for token", "Info: invalid comment for token")
         for attempt in range(5):
             task_result = curl_stub.GetReulst(caas_pb2.ResultRequest(token=state["token"], task_id=state["task_id"]))
-            if task_result.result and len(task_result.data) == 0:
-                verdict(MUMBLE, "GetResult: empty data", "GetResult: empty data")
+            if task_result.result:
+                if len(task_result.data) == 0:
+                    verdict(MUMBLE, "GetResult: empty data", "GetResult: empty data")
+                else:
+                    try:
+                        if state["path"] not in task_result.data.decode("utf-8"):
+                            verdict(MUMBLE, "Invalid content", "Invalid content")
+                        else:
+                            break
+                    except Exception as e:
+                        print(e, file=sys.stderr)
+                        verdict(MUMBLE, "Invalid content", "Invalid content")
             if not (task_result.result or task_result.message):
                 if attempt == 4:
                     verdict(MUMBLE, "GetResult: task not finished", "GetResult: task not finished")

@@ -32,7 +32,7 @@ while True:
                     order by id limit 1
                     for update skip locked
                 )
-                returning id, method, url
+                returning id, url
             """)
 
             task = cursor.fetchone()
@@ -42,11 +42,11 @@ while True:
                 continue
 
             logging.debug(task)
-            task_id, method, url = task
+            task_id, url = task
             result, message = False, None
             output = "/tmp/_" + str(task_id)
 
-            opts = ["-X", method, "--no-progress-meter", "-o", output,
+            opts = ["-X", "GET", "--no-progress-meter", "-o", output,
                     "--proto", "=http,https", "--max-time", "4", "--max-filesize", "10M"]
             cmd = ["/usr/bin/curl", *opts, url]
             try:

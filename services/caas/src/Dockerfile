@@ -1,8 +1,7 @@
-FROM python:3.8.10-slim
+FROM python:3-slim
 
-RUN echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y -t buster-backports curl libpq-dev build-essential
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y curl libpq-dev build-essential
 RUN pip install grpcio grpcio-tools psycopg2 minio
 
 WORKDIR /app
