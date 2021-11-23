@@ -10,6 +10,7 @@ import random
 import traceback
 import numpy as np
 import json
+import hashlib
 
 from asyncio import open_connection, IncompleteReadError, LimitOverrunError
 from client import Error
@@ -26,7 +27,7 @@ MAX_KERNEL_SIZE = 10
 MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
 
-printable = string.digits + string.ascii_letters + string.punctuation + ' '
+printable = string.digits + string.ascii_letters
 
 def verdict(exit_code, public="", private=""):
     if public:
@@ -56,12 +57,17 @@ def get_rand_text(l, r):
 def get_size(m):
     return (len(m), 0 if len(m) == 0 else len(m[0]))
 
+def get_matrix_hash(m):
+    h = hashlib.sha256()
+    h.update(json.dumps(m).encode())
+    return h.hexdigest()
+
 def compare(m1, m2):
     s1 = get_size(m1)
     s2 = get_size(m2)
 
     if s1 != s2:
-        verdict(CORRUPT, 'matrixes have different size', 'matrixes have different size: checker %s vs service %s' % (str(s1), str(s2)))
+        verdict(MUMBLE, 'matrixes have different size', 'matrixes have different size: checker %s vs service %s' % (str(s1), str(s2)))
 
     bads = 0
     last = None
@@ -72,7 +78,7 @@ def compare(m1, m2):
                 last = (x, y)
 
     if bads > 0:
-        verdict(CORRUPT, 'matrixes have different elements', 'matrixes have different elements at %d positions. Example: %s checker %d vs service %d' 
+        verdict(MUMBLE, 'matrixes have different elements', 'matrixes have different elements at %d positions. Example: %s checker %d vs service %d' 
                 % (bads, str(last), m1[last[0]][last[1]], m2[last[0]][last[1]]))
 
 def calc_convolution(matrix, kernel):
@@ -137,7 +143,7 @@ async def check(host):
 
     dmatrix, ddesc = await client.download(mid, key)
     if desc != ddesc:
-        verdict(CORRUPT, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
+        verdict(MUMBLE, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
     compare(matrix, dmatrix)
 
     dconvolution = await client.convolution(mid, kernel)
@@ -168,19 +174,22 @@ async def put(host, flag_id, flag, vuln):
 
     mid = await client.upload(matrix, flag, key)
 
-    verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id}))
+    n, m = get_size(matrix)
+    verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
 
-def generate_data_for_get(seed):
-    matrix, key = generate_data_for_put(seed)
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(len(matrix), len(matrix[0]), MAX_KERNEL_SIZE))
-    return matrix, kernel, key
+def generate_data_for_get(seed, n, m):
+    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE))
+    return kernel
 
 async def get(host, flag_id, flag, vuln):
     d = json.loads(flag_id)
     flag_id = d['flag_id']
     mid = d['public_flag_id']
+    matrix = d['matrix']
+    key = d['key']
 
-    matrix, kernel, key = generate_data_for_get(flag_id)
+    kernel = generate_data_for_get(flag_id, matrix['n'], matrix['m'])
+    log('use kernel %s' % json.dumps(kernel))
 
     client = LoggedClient(host, PORT)
     await client.connect()
@@ -189,13 +198,18 @@ async def get(host, flag_id, flag, vuln):
         dmatrix, ddesc = await client.download(mid, key)
         if flag != ddesc:
             verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
-        compare(matrix, dmatrix)
+
+        h = get_matrix_hash(dmatrix)
+        if h != matrix['hash']:
+            verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
 
         dconvolution = await client.convolution(mid, kernel)
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
-    convolution = calc_convolution(matrix, kernel)
+        else:
+            raise
+    convolution = calc_convolution(dmatrix, kernel)
 
     compare(convolution, dconvolution)
 
