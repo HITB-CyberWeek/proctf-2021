@@ -93,38 +93,47 @@ def calc_convolution(matrix, kernel):
 
     return output.tolist()
 
+async def sleep_rand(name, k):
+    t = random.random() * k
+    log('[%s] sleep for %.3f' % (name, t))
+    await asyncio.sleep(t)
 
 class LoggedClient(client.Client):
-    def __init__(self, host, port):
+    def __init__(self, name, host, port):
         super().__init__(host, port)
         self.connected = False
+        self.name = name
     async def connect(self):
-        log('try connect to %s:%d' % (self.host, self.port))
+        await sleep_rand(self.name, 1)
+        log('[%s] try connect to %s:%d' % (self.name, self.host, self.port))
         await super().connect()
-        log('connected')
+        log('[%s] connected' % self.name)
         self.connected = True
     async def upload(self, matrix, desc, key):
         if not self.connected:
-            self.connect()
-        log('try upload matrix %dx%d with desc %s and key %s' % (len(matrix), len(matrix[0]), repr(desc), repr(key)))
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try upload matrix %dx%d with desc %s and key %s' % (self.name, len(matrix), len(matrix[0]), repr(desc), repr(key)))
         mid = await super().upload(matrix, desc, key)
-        log('uploaded to id %s' % (repr(mid)))
+        log('[%s] uploaded to id %s' % (self.name, repr(mid)))
         return mid
     async def download(self, mid, key):
         if not self.connected:
-            self.connect()
-        log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try download matrix with id %s and key %s' % (self.name, repr(mid), repr(key)))
         matrix, desc = await super().download(mid, key)
         size = get_size(matrix)
-        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(desc)))
+        log('[%s] downloaded matrix %dx%d with desc %s' % (self.name, size[0], size[1], repr(desc)))
         return matrix, desc
     async def convolution(self, mid, kernel):
         if not self.connected:
-            self.connect()
-        log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try calculate convolution for id %s with kernel %dx%d' % (self.name, repr(mid), len(kernel), len(kernel[0])))
         convolution = await super().convolution(mid, kernel)
         size = get_size(convolution)
-        log('convolution calculated: result is %dx%d' % (size[0], size[1]))
+        log('[%s] convolution calculated: result is %dx%d' % (self.name, size[0], size[1]))
         return convolution
 
 async def info():
@@ -146,7 +155,7 @@ async def check(host):
     seed = ''.join((random.choice(string.ascii_letters)) for _ in range(10))
     matrix, kernel, desc, key = generate_data_for_check(seed)
 
-    client = LoggedClient(host, PORT)
+    client = LoggedClient('default', host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, desc, key)
@@ -179,7 +188,7 @@ def generate_data_for_put(seed):
 async def put(host, flag_id, flag, vuln):
     matrix, key = generate_data_for_put(flag_id)
 
-    client = LoggedClient(host, PORT)
+    client = LoggedClient('default', host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, flag, key)
@@ -196,25 +205,24 @@ async def get(host, flag_id, flag, vuln):
     mid = d['public_flag_id']
     matrix = d['matrix']
     key = d['key']
-    mode = random.randint(10)
+    mode = random.randint(0, 9)
 
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE))
+    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(matrix['n'], matrix['m'], MAX_KERNEL_SIZE))
     log('use kernel %s' % json.dumps(kernel))
-
 
     try:
         if mode:
-            client = LoggedClient(host, PORT)
+            client = LoggedClient('default', host, PORT)
             dmatrix, ddesc = await client.download(mid, key)
             dconvolution = await client.convolution(mid, kernel)
         else:
-            c1 = LoggedClient(host, PORT)
-            c2 = LoggedClient(host, PORT)
+            c1 = LoggedClient('download', host, PORT)
+            c2 = LoggedClient('upload', host, PORT)
 
             download_task = asyncio.create_task(c1.download(mid, key))
             convolution_task = asyncio.create_task(c2.convolution(mid, kernel))
 
-            _, _ = asyncio.wait({download_task, convolution_task})
+            _ = await asyncio.wait({download_task, convolution_task})
 
             dmatrix, ddesc = await download_task
             dconvolution = await convolution_task
