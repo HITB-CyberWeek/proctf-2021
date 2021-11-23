@@ -172,7 +172,7 @@ namespace checker.net
 				MaxResponseHeadersLength = 4096,
 				UseCookies = Cookies != null,
 				AllowAutoRedirect = true,
-				MaxAutomaticRedirections = 30
+				MaxAutomaticRedirections = 2
 			};
 
 			if(Cookies != null)
