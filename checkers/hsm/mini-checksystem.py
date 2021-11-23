@@ -30,7 +30,7 @@ for r in range(1, ROUNDS + 1):
     print("=" * 64)
 
     flag_id = out.decode().strip()
-    cmd = "./checker.py get %s %s %s 1" % (HOST, flag_id, flag_data)
+    cmd = "./checker.py get %s '%s' %s 1" % (HOST, flag_id, flag_data)
     print("RUN:", cmd)
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     (out, err) = proc.communicate()

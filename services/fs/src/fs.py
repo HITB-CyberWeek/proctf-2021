@@ -226,8 +226,14 @@ def download_file():
     file = request.args["file"]
     filepath = f"data/{file}"
     if not users_repository.validate_access(current_user.username, filepath):
-        return f"Access denied", 403    
-    return send_file(filepath)
+        return f"Access denied", 403
+
+    if os.path.isfile(filepath):
+        return send_file(filepath)
+    elif os.path.isdir(filepath):
+        return dumps(os.listdir(filepath))
+    else:
+        return "File not found", 404
 
 @app.errorhandler(401)
 def unauthorized(e):
@@ -262,4 +268,4 @@ def dumps(o):
     return str_to_bytes(json.dumps(o, ensure_ascii=False))
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=7777, debug = True)
+    app.run(host="127.0.0.1", port=7777)

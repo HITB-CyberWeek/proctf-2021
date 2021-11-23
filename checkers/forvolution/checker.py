@@ -118,7 +118,7 @@ class LoggedClient(client.Client):
         return convolution
 
 async def info():
-    verdict(OK, 'vulns: 1\npublic_flag_description: desc')
+    verdict(OK, 'vulns: 1\npublic_flag_description: image id')
 
 def generate_data_for_check(seed):
     log('seed:', seed)

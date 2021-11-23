@@ -53,7 +53,7 @@ ua = random.choice(USER_AGENTS)
 
 cmd = sys.argv[1]
 if cmd == "info":
-    print("vulns: 1")
+    print("vulns: 1\npublic_flag_description: Flag is message, which packed inside *.pk.cells under password\n")
     exit(101)
 ip=sys.argv[2]
 url = "http://"+ip+":5000/"
