@@ -33,7 +33,8 @@ def verdict(exit_code, public="", private=""):
 
 
 def info():
-    verdict(OK, "vulns: 1")
+    verdict(OK, "vulns: 1\npublic_flag_description: Flag id is user name, flag is flag\n")
+
 
 
 def send_pkt(s, data):
@@ -79,13 +80,14 @@ def put(host, flag_id, flag, vuln):
     if pkt != b'\x00':
         verdict(MUMBLE, "Failed to register", "Failed to register: %s %s %s" % (flag_id, flag, pkt))
 
-    flag_id = base64.b64encode(json.dumps([flag_id, password]).encode()).decode()
-    verdict(OK, flag_id)
+    verdict(OK, json.dumps({"public_flag_id": flag_id, "password": password}))
 
 
 def get(host, flag_id, flag, vuln):
     try:
-        flag_id, password = json.loads(base64.b64decode(flag_id))
+        info = json.loads(flag_id)
+        flag_id = info["public_flag_id"]
+        password = info["password"]
     except Exception:
         verdict(CHECKER_ERROR, "Bad flag id", "Bad flag_id: %s" % traceback.format_exc())
 

@@ -3,10 +3,10 @@ module string_utils
   implicit none
 
   private
-  public :: from_c_string, to_int, to_char, to_string, to_array, parse_int, is_hex
+  public from_c_string, to_int, to_string, to_array, parse_int, is_hex
  
 interface from_c_string
-  module procedure from_c_string, from_c_ptr, from_c_nptr
+  module procedure from_c_ptr, from_c_nptr
 end interface from_c_string
 
 interface to_array
@@ -14,22 +14,6 @@ interface to_array
 end interface
 
 contains
-  function from_c_string(c_str) result(f_str)
-    character(len=1), intent(in) :: c_str(:)
-    character(:), allocatable :: f_str
-    integer i, len
-
-    len = 0
-    do while (c_str(len + 1) .ne. c_null_char)
-      len = len + 1
-    end do
-
-    allocate(character(len) :: f_str)
-    do i = 1, len
-      f_str(i:i) = c_str(i)
-    end do
-  end function from_c_string
-
   function from_c_ptr(ptr) result(f_str)
     type(c_ptr), intent(in), value :: ptr
     character(len=:, kind=c_char), allocatable :: f_str
@@ -60,12 +44,6 @@ contains
     integer(1) :: r
     r = transfer(ch, r)
   end function to_int
-
-  elemental function to_char(i) result(r)
-    integer(1), intent(in) :: i
-    character :: r
-    r = transfer(i, r)
-  end function to_char
 
   function to_string(ar, len) result(r)
     character, dimension(:), intent(in) :: ar

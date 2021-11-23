@@ -80,9 +80,6 @@ namespace mp
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if(env.IsDevelopment())
-                app.UseDeveloperExceptionPage();
-
             app.UseSwagger(options => options.SerializeAsV2 = true);
             app.UseSwaggerUI(c =>
             {
