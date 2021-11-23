@@ -514,6 +514,13 @@ contains
 
     id = self%buffer(1:id_size)
 
+    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
+
+    if (count(kernel.ne.0).le.1) then
+      call self%set_error('kernel is too simple')
+      return
+    end if
+
     success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
     if (.not.success) then
       call self%set_error('image is not found')
@@ -522,13 +529,6 @@ contains
 
     if (kn.gt.n.or.km.gt.m) then
       call self%set_error('kernel is larger than image')
-      return
-    end if
-
-    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
-
-    if (count(kernel.ne.0).le.1) then
-      call self%set_error('kernel is too simple')
       return
     end if
 
