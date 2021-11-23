@@ -166,7 +166,7 @@ async def check(host):
 
     dmatrix, ddesc = await client.download(mid, key)
     if desc != ddesc:
-        verdict(MUMBLE, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
+        verdict(MUMBLE, 'Descriptions are different', 'Descriptions are different: checker "%s" vs service "%s"' % (desc, ddesc))
     compare(matrix, dmatrix)
 
     dconvolution = await client.convolution(mid, kernel)
@@ -260,8 +260,6 @@ async def print_debug(method, seed):
         data = generate_data_for_check(seed)
     elif method == 'put':
         data = generate_data_for_put(seed)
-    else:
-        data = generate_data_for_get(seed)
     print(json.dumps(data))
     verdict(OK)
 
