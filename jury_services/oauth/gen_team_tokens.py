@@ -4,6 +4,7 @@ import sys
 import os
 import secrets
 import hashlib
+import json
 
 N = 64
 
@@ -19,6 +20,15 @@ except FileExistsError:
     print("Remove ./tokens dir first")
     sys.exit(1)
 
-for i in range(1, N+1):
-    token = gentoken(i)
-    open("tokens/%d.txt" % i, "w").write(token + "\n")
+with open("appsettings.json", "r") as s:
+    appsettings = json.load(s)
+    for i in range(1, N+1):
+        token = gentoken(i)
+        open("tokens/%d.txt" % i, "w").write(token + "\n")
+
+        token_item = {"Token": token, "Name": "Token for Team %d" % i, "Type": "user"}
+        if token_item not in appsettings["Tokens"]:
+            appsettings["Tokens"].append(token_item)
+
+with open("appsettings.json", "w") as appsettings_file:
+    json.dump(appsettings, appsettings_file, indent=2)
