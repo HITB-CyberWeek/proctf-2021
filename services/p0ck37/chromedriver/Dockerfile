@@ -21,6 +21,8 @@ RUN adduser --system --uid=31337 --disabled-password --disabled-login --gecos ''
 RUN mkdir /data && chown -R chromedriver /data
 VOLUME /data
 
+RUN touch /var/log/chromedriver.log && chown chromedriver /var/log/chromedriver.log
+
 USER chromedriver
 
 EXPOSE 4444
