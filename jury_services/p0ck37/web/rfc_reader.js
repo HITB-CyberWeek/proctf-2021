@@ -22,8 +22,10 @@ class RfcReader {
 		const flagStr = flag ? `FLAG: ${flag}` : null;
 
 		var randomName = this.#names[Math.floor(Math.random()*this.#names.length)];
+		const rfcPath = path.join(this.#path, randomName)
+		console.log(`FLAG: ${flag}, RFC: ${rfcPath}`);
 
-		const fileStream = fs.createReadStream(path.join(this.#path, randomName));
+		const fileStream = fs.createReadStream(rfcPath);
 		const rl = readline.createInterface({
 			input: fileStream,
 			crlfDelay: Infinity

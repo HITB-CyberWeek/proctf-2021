@@ -2,7 +2,8 @@ const http = require('http');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
-var JavaScriptObfuscator = require('javascript-obfuscator');
+const JavaScriptObfuscator = require('javascript-obfuscator');
+const jsStringEscape = require('js-string-escape');
 
 class HttpServer {
 	#rfcReader;
@@ -54,6 +55,8 @@ class HttpServer {
 			}
 
 			const id = crypto.randomBytes(16).toString("hex");
+			console.log(`ID: ${id}, FLAG: ${flag}`);
+
 			const rfc = await this.#rfcReader.readRandomRfc(flag);
 			await this.#repository.add(id, rfc);
 
@@ -67,8 +70,7 @@ class HttpServer {
 				return;
 			}
 
-            const escapedRfc = rfc.replace(/\n/g, "\\n").replaceAll("\"", "\\\"");
-            const js = `(function(){var e = document.getElementById("content"); e.innerHTML = "${escapedRfc}";})();`
+            const js = `(function(){var e = document.getElementById("content"); e.innerHTML = "${jsStringEscape(rfc)}";})();`
             const obfuscated = JavaScriptObfuscator.obfuscate(js).getObfuscatedCode();
 
             const html = `<html><body><pre id='content'></pre><script>${obfuscated}</script></body></html>`;
