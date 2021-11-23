@@ -27,7 +27,7 @@ MAX_KERNEL_SIZE = 10
 MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
 
-printable = string.digits + string.ascii_letters
+printable = (string.digits + string.ascii_letters).encode()
 
 def verdict(exit_code, public="", private=""):
     if public:
@@ -52,7 +52,11 @@ def get_rand_square_matrix(l, r):
     return get_rand_matrix_content(n, n)
 
 def get_rand_text(l, r):
-    return ''.join((random.choice(printable) for _ in range(random.randint(l, r))))
+    if random.randint(0, 50):
+        data = [random.choice(printable) for _ in range(random.randint(l, r))]
+    else:
+        data = [random.randint(0, 255) for _ in range(random.randint(l, r))]
+    return bytes(data).decode(encoding='utf-8', errors='surrogateescape')
 
 def get_size(m):
     return (len(m), 0 if len(m) == 0 else len(m[0]))
@@ -93,28 +97,47 @@ def calc_convolution(matrix, kernel):
 
     return output.tolist()
 
+async def sleep_rand(name, k):
+    t = random.random() * k
+    log('[%s] sleep for %.3f' % (name, t))
+    await asyncio.sleep(t)
 
 class LoggedClient(client.Client):
+    def __init__(self, name, host, port):
+        super().__init__(host, port)
+        self.connected = False
+        self.name = name
     async def connect(self):
-        log('try connect to %s:%d' % (self.host, self.port))
+        await sleep_rand(self.name, 1)
+        log('[%s] try connect to %s:%d' % (self.name, self.host, self.port))
         await super().connect()
-        log('connected')
+        log('[%s] connected' % self.name)
+        self.connected = True
     async def upload(self, matrix, desc, key):
-        log('try upload matrix %dx%d with desc %s and key %s' % (len(matrix), len(matrix[0]), repr(desc), repr(key)))
+        if not self.connected:
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try upload matrix %dx%d with desc %s and key %s' % (self.name, len(matrix), len(matrix[0]), repr(desc), repr(key)))
         mid = await super().upload(matrix, desc, key)
-        log('uploaded to id %s' % (repr(mid)))
+        log('[%s] uploaded to id %s' % (self.name, repr(mid)))
         return mid
     async def download(self, mid, key):
-        log('try download matrix with id %s and key %s' % (repr(mid), repr(key)))
+        if not self.connected:
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try download matrix with id %s and key %s' % (self.name, repr(mid), repr(key)))
         matrix, desc = await super().download(mid, key)
         size = get_size(matrix)
-        log('downloaded matrix %dx%d with desc %s' % (size[0], size[1], repr(desc)))
+        log('[%s] downloaded matrix %dx%d with desc %s' % (self.name, size[0], size[1], repr(desc)))
         return matrix, desc
     async def convolution(self, mid, kernel):
-        log('try calculate convolution for id %s with kernel %dx%d' % (repr(mid), len(kernel), len(kernel[0])))
+        if not self.connected:
+            await self.connect()
+        await sleep_rand(self.name, 1)
+        log('[%s] try calculate convolution for id %s with kernel %dx%d' % (self.name, repr(mid), len(kernel), len(kernel[0])))
         convolution = await super().convolution(mid, kernel)
         size = get_size(convolution)
-        log('convolution calculated: result is %dx%d' % (size[0], size[1]))
+        log('[%s] convolution calculated: result is %dx%d' % (self.name, size[0], size[1]))
         return convolution
 
 async def info():
@@ -136,14 +159,14 @@ async def check(host):
     seed = ''.join((random.choice(string.ascii_letters)) for _ in range(10))
     matrix, kernel, desc, key = generate_data_for_check(seed)
 
-    client = LoggedClient(host, PORT)
+    client = LoggedClient('default', host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, desc, key)
 
     dmatrix, ddesc = await client.download(mid, key)
     if desc != ddesc:
-        verdict(MUMBLE, 'Descs is different', 'Descs is different: checker "%s" vs service "%s"' % (desc, ddesc))
+        verdict(MUMBLE, 'Descriptions are different', 'Descriptions are different: checker "%s" vs service "%s"' % (desc, ddesc))
     compare(matrix, dmatrix)
 
     dconvolution = await client.convolution(mid, kernel)
@@ -169,7 +192,7 @@ def generate_data_for_put(seed):
 async def put(host, flag_id, flag, vuln):
     matrix, key = generate_data_for_put(flag_id)
 
-    client = LoggedClient(host, PORT)
+    client = LoggedClient('default', host, PORT)
     await client.connect()
 
     mid = await client.upload(matrix, flag, key)
@@ -177,9 +200,12 @@ async def put(host, flag_id, flag, vuln):
     n, m = get_size(matrix)
     verdict(OK, json.dumps({'public_flag_id': mid, 'flag_id': flag_id, 'matrix': {'n': n, 'm': m, 'hash': get_matrix_hash(matrix)}, 'key': key}))
 
-def generate_data_for_get(seed, n, m):
-    kernel = get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE))
-    return kernel
+def generate_kernels(n, m):
+    res = []
+    for _ in range(max(1, random.randint(0, 15) - 10)):
+        res.append(get_rand_square_matrix(MIN_MATRIX_SIZE, min(n, m, MAX_KERNEL_SIZE)))
+        log('use kernel %s' % json.dumps(res[-1]))
+    return res
 
 async def get(host, flag_id, flag, vuln):
     d = json.loads(flag_id)
@@ -187,41 +213,53 @@ async def get(host, flag_id, flag, vuln):
     mid = d['public_flag_id']
     matrix = d['matrix']
     key = d['key']
+    mode = random.randint(0, 9)
 
-    kernel = generate_data_for_get(flag_id, matrix['n'], matrix['m'])
-    log('use kernel %s' % json.dumps(kernel))
-
-    client = LoggedClient(host, PORT)
-    await client.connect()
+    kernels = generate_kernels(matrix['n'], matrix['m'])
 
     try:
-        dmatrix, ddesc = await client.download(mid, key)
-        if flag != ddesc:
-            verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
+        if mode:
+            perm = list(range(-1, len(kernels)))
+            random.shuffle(perm)
+            convolutions = [0] * len(kernels)
+            client = LoggedClient('default', host, PORT)
+            for i in perm:
+                if i < 0:
+                    dmatrix, ddesc = await client.download(mid, key)
+                else:
+                    convolutions[i] = await client.convolution(mid, kernels[i])
+        else:
+            tasks = [asyncio.create_task(LoggedClient('download', host, PORT).download(mid, key))]
+            for i in range(len(kernels)):
+                tasks.append(asyncio.create_task(LoggedClient('convolution %d' % i, host, PORT).convolution(mid, kernels[i])))
 
-        h = get_matrix_hash(dmatrix)
-        if h != matrix['hash']:
-            verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
+            _ = await asyncio.wait(tasks)
 
-        dconvolution = await client.convolution(mid, kernel)
+            dmatrix, ddesc = await tasks[0]
+            convolutions = [await task for task in tasks[1:]]
     except Error as e:
         if e.error == 'image is not found':
             verdict(CORRUPT, 'Flag not found', 'Flag not found: %s' % traceback.format_exc())
         else:
             raise
-    convolution = calc_convolution(dmatrix, kernel)
 
-    compare(convolution, dconvolution)
+    if flag != ddesc:
+        verdict(CORRUPT, 'Flag is broken', 'Flag is broken: checker "%s" vs service "%s"' % (flag, ddesc))
+    h = get_matrix_hash(dmatrix)
+    if h != matrix['hash']:
+        verdict(MUMBLE, 'Matrixes are different', 'Matrixes are different: checker %s vs service %s' % (matrix['hash'], h))
+    for i in range(len(kernels)):
+        convolution = calc_convolution(dmatrix, kernels[i])
+        compare(convolution, convolutions[i])
 
     verdict(OK, 'ok')
+
 
 async def print_debug(method, seed):
     if method == 'check':
         data = generate_data_for_check(seed)
     elif method == 'put':
         data = generate_data_for_put(seed)
-    else:
-        data = generate_data_for_get(seed)
     print(json.dumps(data))
     verdict(OK)
 
@@ -267,3 +305,4 @@ def main(args):
 if __name__ == '__main__':
     log('initialized')
     main(sys.argv[1:])
+
