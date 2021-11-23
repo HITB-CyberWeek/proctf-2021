@@ -33,7 +33,7 @@ module connection_handler
 
   character(len=2), parameter :: ok = 'ok'
 
-  integer, parameter :: matrix_size = 50
+  integer, parameter :: matrix_size = 35
   integer, parameter :: text_size = 99
   integer, parameter :: convolution_size = 10
   integer, parameter :: buffer_size = 4 * matrix_size ** 2 + text_size + text_size
@@ -195,6 +195,7 @@ contains
     integer, intent(in) :: size
 
     self%processed = 0
+    self%buffer = achar(0)
     self%needed_bytes = size
     self%bytes_limit = size
     self%needed_fields = -1
@@ -208,6 +209,7 @@ contains
     integer, intent(in) :: fields_count
 
     self%processed = 0
+    self%buffer = achar(0)
     self%needed_bytes = min_size
     self%bytes_limit = max_size
     self%needed_fields = fields_count
@@ -405,8 +407,6 @@ contains
     character, dimension(:), allocatable :: id
     logical :: success
     integer :: msize
-    character, dimension(:), allocatable :: tmp
-    integer :: result_size
 
     lkey = self%extra%key
     id = self%buffer(1:id_size)
@@ -506,13 +506,18 @@ contains
     integer(1), dimension(:,:), allocatable :: kernel
     integer, dimension(1:2) :: rsizes
     integer :: rsize
-    character, dimension(:), allocatable :: tmp
-    integer :: result_size
 
     kn = self%extra%n
     km = self%extra%m
 
     id = self%buffer(1:id_size)
+
+    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
+
+    if (count(kernel.ne.0).le.1) then
+      call self%set_error('kernel is too simple')
+      return
+    end if
 
     success = db_load(self%buffer, id, n, m, matrix, ndesc, desc, stored_key_hash)
     if (.not.success) then
@@ -522,13 +527,6 @@ contains
 
     if (kn.gt.n.or.km.gt.m) then
       call self%set_error('kernel is larger than image')
-      return
-    end if
-
-    kernel = reshape(to_int(self%buffer(id_size + 1: id_size + kn * km)), (/kn, km/))
-
-    if (count(kernel.ne.0).le.1) then
-      call self%set_error('kernel is too simple')
       return
     end if
 

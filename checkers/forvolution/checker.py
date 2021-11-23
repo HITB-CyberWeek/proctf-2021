@@ -18,9 +18,10 @@ import client
 OK, CORRUPT, MUMBLE, DOWN, CHECKER_ERROR = 101, 102, 103, 104, 110
 
 PORT = 12345
-MIN_MATRIX_SIZE = 1
-MIN_PUT_MATRIX_SIZE = 40
-MAX_MATRIX_SIZE = 50
+MIN_MATRIX_SIZE = 2
+MAX_MATRIX_SIZE = 35
+MAX_PUT_MATRIX_SIZE_2 = 31
+MIN_PUT_MATRIX_SIZE_2 = 17
 MAX_KERNEL_SIZE = 10
 MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
@@ -151,7 +152,11 @@ def generate_data_for_put(seed):
 
     random.seed(a=seed, version=2)
 
-    matrix = get_rand_matrix(MIN_PUT_MATRIX_SIZE, MAX_MATRIX_SIZE)
+    mode = random.randint(0, 1)
+    if mode:
+        matrix = get_rand_matrix(MIN_PUT_MATRIX_SIZE_2, MAX_PUT_MATRIX_SIZE_2)
+    else:
+        matrix = get_rand_matrix(MAX_PUT_MATRIX_SIZE_2 + 1, MAX_MATRIX_SIZE)
     key = get_rand_text(MIN_TEXT_SIZE, MAX_TEXT_SIZE)
     return (matrix, key)
 
