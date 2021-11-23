@@ -33,7 +33,7 @@ module connection_handler
 
   character(len=2), parameter :: ok = 'ok'
 
-  integer, parameter :: matrix_size = 50
+  integer, parameter :: matrix_size = 35
   integer, parameter :: text_size = 99
   integer, parameter :: convolution_size = 10
   integer, parameter :: buffer_size = 4 * matrix_size ** 2 + text_size + text_size
