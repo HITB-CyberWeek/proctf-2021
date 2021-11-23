@@ -38,7 +38,7 @@ cs_flag_life_time: 15
 cs_checkers_hostname_cb: sub { my ($team, $service) = @_; $team->{ip_prefix} . $service->{ip_suffix} }
 cs_scoring: |
   start_flag_price => 10,
-  heating_speed => 1/12,
+  heating_speed => 1/18,
   max_flag_price => 30,
   cooling_down => 1/2,
   heating_flags_limit => 20 * 30,
