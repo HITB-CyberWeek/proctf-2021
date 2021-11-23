@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
+import json
 import logging
 import os
 import random
@@ -12,14 +13,13 @@ import traceback
 
 OK, CORRUPT, MUMBLE, DOWN, CHECKER_ERROR = 101, 102, 103, 104, 110
 
-SERVICE_PROTO = "http"  # FIXME: change to https!
+SERVICE_PROTO = "http"
 SERVICE_PORT = 9000
 HTTP_TIMEOUT = 10
 PASSWORD_LENGTH = 12
 OAUTH_LOCAL = True  # True if generate locally, False if make request to remote OAuth service
 OAUTH_SERVER_PORT = 8080
 OAUTH_SERVER_HOST = "localhost"
-MAX_SLOTS = 17*30  # keep in sync with init.c!
 
 
 class ProtocolViolationError(Exception):
@@ -41,7 +41,10 @@ def verdict(exit_code, public="", private=""):
 
 
 def info():
-    verdict(OK, "vulns: 1")
+    verdict(OK, "\n".join([
+        "vulns: 1",
+        "public_flag_description: Flag ID is SLOT:USERNAME, flag is plaintext."
+    ]))
 
 
 def assert_no_http_error(response: requests.Response, verdict_on_http_error: int, url: str = None):
@@ -184,11 +187,14 @@ def put(host, flag_id, flag, vuln):
     if remote_plaintext != plaintext:
         verdict(MUMBLE, public="Plaintext was modified")
 
-    verdict(OK, "{}:{}".format(slot, flag_id))  # Slot is helpful for exploitation
+    json_flag_id = json.dumps({
+        "public_flag_id": "{}:{}".format(slot, flag_id)  # Slot is helpful for exploitation
+    }).replace(" ", "")
+    verdict(OK, json_flag_id)
 
 
 def get(host, flag_id, flag, vuln):
-    slot, flag_id = flag_id.split(":")
+    slot, flag_id = json.loads(flag_id)["public_flag_id"].split(":")
 
     c = Client(host, SERVICE_PORT, get_oauth())
     c.login(username=flag_id, password=make_password(flag_id))
