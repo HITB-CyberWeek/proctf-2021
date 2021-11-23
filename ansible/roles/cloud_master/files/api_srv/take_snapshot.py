@@ -70,7 +70,7 @@ def main():
             log_stderr("take shapshot failed")
             return 1
 
-        print("msg: OK, snapshoting is in progress, it takes several minutes")
+        print("msg: OK, snapshoting is in progress, it takes about five minutes")
     return 0
 
 if __name__ == "__main__":
