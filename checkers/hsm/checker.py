@@ -3,6 +3,8 @@ import hashlib
 import logging
 import os
 import random
+import string
+
 import requests
 import subprocess
 import sys
@@ -25,7 +27,7 @@ class ProtocolViolationError(Exception):
 
 
 def gen_str(charset: str, length: int):
-    return "".join(random.choice(charset) for _ in range(length))
+    return "".join(random.choices(charset, k=length))
 
 
 def verdict(exit_code, public="", private=""):
@@ -103,11 +105,19 @@ class Client:
         return self.get("/getplaintext")
 
 
-def make_password(flag_id: str):
+def make_password(flag_id: str, length: int = PASSWORD_LENGTH):
     salt = "9cf53e9d-5f05-42c3-a04a-20b07be2b5fb"
     charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     digest = hashlib.sha256((salt + flag_id).encode()).digest()
-    return "".join(charset[b % len(charset)] for b in digest[:PASSWORD_LENGTH])
+    return "".join(charset[b % len(charset)] for b in digest[:length])
+
+
+def make_meta(flag_id: str):
+    long_meta = make_password(flag_id + "aa", length=64) + make_password(flag_id + "bb", length=64)
+    long_meta = long_meta[:33]
+    if len(long_meta) != 33:
+        raise ValueError("Invalid meta length: {!r}".format(long_meta))
+    return long_meta
 
 
 def get_oauth():
@@ -147,8 +157,12 @@ def put(host, flag_id, flag, vuln):
     c.register(username=flag_id, password=make_password(flag_id), token="nonce")
 
     slot, pubkey = c.generate()
-    long_meta = (flag_id + make_password(flag_id))[:33]  # Important to check all 33 chars!
+    long_meta = make_meta(flag_id)  # Important to check all 33 chars!
     c.set_meta(long_meta)
+
+    remote_meta = c.get_meta()
+    if remote_meta != long_meta:
+        verdict(MUMBLE, public="Corrupted meta-information")
 
     plaintext = flag
     ciphertext = encrypt(flag, pubkey)  # Local encryption
@@ -157,10 +171,6 @@ def put(host, flag_id, flag, vuln):
     remote_plaintext = c.get_plaintext()
     if remote_plaintext != plaintext:
         verdict(MUMBLE, public="Wrong decryption result")
-
-    remote_meta = c.get_meta()
-    if remote_meta != long_meta:
-        verdict(MUMBLE, public="Corrupted meta-information")
 
     verdict(OK, "{}:{}".format(slot, flag_id))  # Slot is helpful for exploitation
 
@@ -178,14 +188,33 @@ def get(host, flag_id, flag, vuln):
     verdict(OK, "Flag found")
 
 
+def exploit(host, slot):
+    credentials_filename = "sploit.credentials.txt"
+    c = Client(host, SERVICE_PORT, get_oauth())
+    try:
+        with open(credentials_filename) as f:
+            username, password = f.readline().strip().split(":")
+        c.login(username, password)
+    except FileNotFoundError:
+        username = gen_str(charset=string.ascii_lowercase + string.digits, length=12)
+        password = make_password(username)
+        c.register(username, password, get_oauth())
+        with open(credentials_filename, "w") as f:
+            f.writelines([username + ":" + password])
+    c.generate()
+    # c.set_meta(gen_str())
+    raise NotImplementedError()
+
+
 def main(args):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
     cmd_mapping = {
-        "info": (info, 0),
-        "check": (check, 1),
-        "put": (put, 4),
-        "get": (get, 4),
+        "info":     (info, 0),
+        "check":    (check, 1),
+        "put":      (put, 4),
+        "get":      (get, 4),
+        "exploit":  (exploit, 2),
     }
 
     if not args:
