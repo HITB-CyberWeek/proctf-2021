@@ -67,9 +67,9 @@
     - autoindex
   notify: restart apache2
 
-- name: copy apache2 sites-available
-  copy: src=apache2/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
-  notify: restart apache2
+#- name: copy apache2 sites-available
+#  copy: src=apache2/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
+#  notify: restart apache2
 
 - name: copy other apache2 configs
   copy: src=apache2/{{item}} dest=/etc/apache2/{{item}}
