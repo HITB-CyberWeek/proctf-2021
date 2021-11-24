@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using checker.net;
 using checker.rnd;
 using Newtonsoft.Json;
@@ -145,6 +148,36 @@ namespace checker.mp
                 // throw new CheckerException(ExitCode.CORRUPT, $"Can't find flag with id '{state.PublicFlagId}'");
                 throw new CheckerException(ExitCode.CORRUPT, $"Can't find flag");
 
+        }
+
+        private string GenerateSuffixForPOW(string prefix)
+        {
+	        prefix += "&r=00000";
+	        var buffer = Encoding.ASCII.GetBytes(prefix);
+	        for(byte c1 = 0x61; c1 < 0x7C; c1++)
+	        {
+		        for (byte c2 = 0x61; c2 < 0x7C; c2++)
+		        {
+			        for (byte c3 = 0x61; c3 < 0x7C; c3++)
+			        {
+				        for(byte c4 = 0x61; c4 < 0x7C; c4++)
+				        {
+					        for(byte c5 = 0x61; c5 < 0x7C; c5++)
+					        {
+						        buffer[buffer.Length - 5] = c1;
+						        buffer[buffer.Length - 4] = c2;
+						        buffer[buffer.Length - 3] = c3;
+						        buffer[buffer.Length - 2] = c4;
+						        buffer[buffer.Length - 1] = c5;
+						        var sha512 = new SHA512Managed().ComputeHash(buffer);
+						        if(sha512[0] == 0 && sha512[1] == 0)
+							        return Encoding.ASCII.GetString(new[] {c1, c2, c3, c4, c5});
+					        }
+				        }
+			        }
+                }
+            }
+	        return null;
         }
 
         private async Task<IEnumerable<OrderModel>> SearchOrders(string text, string cookies)
@@ -313,7 +346,15 @@ namespace checker.mp
             var client = new AsyncHttpClient(baseUri, randomDefaultHeaders, cookies: true);
             client.Cookies.SetCookies(baseUri, cookies);
 
-            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + $"?query={text}", null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            var utcNow = DateTime.UtcNow;
+
+            var query = $"?query={HttpUtility.UrlEncode(text)}&clientDt={utcNow:s}";
+            var sw = Stopwatch.StartNew();
+            var suffix = GenerateSuffixForPOW($"{baseUri.Host}{query}");
+            sw.Stop();
+            query += suffix;
+            Console.Error.WriteLine($"Generated POW: query '{query}' : suffix '{suffix}' in {sw.ElapsedMilliseconds}ms");
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + query, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
             if (result.StatusCode != HttpStatusCode.OK)
                 throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiProductsSearch} failed: {result.StatusCode.ToReadableCode()}");
 
