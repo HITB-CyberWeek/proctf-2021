@@ -19,32 +19,29 @@ namespace mp.Controllers
     {
         protected readonly OpenSearchService openSearchService;
 
-        private const int ThrottlingLimit = 2;
-        private static int ConcurrentSearchRequestsCount;
+        private readonly long ThrottlingIntervalMs = TimeSpan.FromMilliseconds(500).Ticks;
+        private static long lastRequestTime;
 
         protected IEnumerable<Document> SearchInternal(string query, int pageNum, DateTime? clientDt)
         {
-            try
-            {
-                var currentRequestsInProcess = Interlocked.Increment(ref ConcurrentSearchRequestsCount);
-                if(currentRequestsInProcess > ThrottlingLimit)
-                {
-                    if(clientDt == null)
-	                    throw new ApiException("Throttling is on, but POW not satisfied");
+	        var lrt = Interlocked.Read(ref lastRequestTime);
 
-                    var utcNow = DateTime.UtcNow;
-                    if(clientDt > utcNow.AddSeconds(10) || clientDt < utcNow.AddSeconds(-10))
-	                    throw new ApiException($"Client dt {clientDt.Value:s} is not synced with service dt {utcNow:s}");
+            var utcNowTicks = DateTime.UtcNow.Ticks;
+            Interlocked.Exchange(ref lastRequestTime, utcNowTicks);
 
-                    if (!IsProofOfWorkValid())
-		                throw new ApiException($"Proof of work is invalid");
-                }
-                return SearchInternalWithoutPOW(query, pageNum);
-            }
-            finally
+            if (utcNowTicks - lrt < ThrottlingIntervalMs)
             {
-                Interlocked.Decrement(ref ConcurrentSearchRequestsCount);
+                if(clientDt == null)
+                    throw new ApiException("Throttling is on, but POW not satisfied");
+
+                var utcNow = DateTime.UtcNow;
+                if(clientDt > utcNow.AddSeconds(30) || clientDt < utcNow.AddSeconds(-30))
+                    throw new ApiException($"Client dt {clientDt.Value:s} is not synced with service dt {utcNow:s}");
+
+                if (!IsProofOfWorkValid())
+	                throw new ApiException($"Proof of work is invalid");
             }
+            return SearchInternalWithoutPOW(query, pageNum);
         }
 
         protected IEnumerable<Document> SearchInternalWithoutPOW(string query, int pageNum)
@@ -59,7 +56,7 @@ namespace mp.Controllers
 
 	        var buf = Encoding.ASCII.GetBytes(HttpContext.Request.Host + HttpContext.Request.QueryString.Value!);
             var hash = new SHA512Managed().ComputeHash(buf);
-	        return hash[0] == 0 && hash[1] == 0 && (hash[2] & 0b11000000) == 0;
+	        return hash[0] == 0 && hash[1] == 0;
         }
 
         protected Document GetInternal(string id)
