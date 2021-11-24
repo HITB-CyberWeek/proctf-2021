@@ -1,6 +1,5 @@
 import asyncio
 import hashlib
-import logging
 import os.path
 import re
 import time
@@ -9,6 +8,7 @@ import typing
 from aiofile import async_open
 
 USER_TTL_SECONDS = 20 * 60
+MAX_OPS_PER_USER = 10
 
 username_re = re.compile("^[a-zA-Z0-9_-]+$")
 
@@ -38,6 +38,7 @@ class User:
             self.hash = hash
         self.timestamp = timestamp()
         self.slot = None
+        self.op_counter = MAX_OPS_PER_USER
 
     def is_expired(self) -> bool:
         return timestamp() - self.timestamp > USER_TTL_SECONDS
@@ -45,16 +46,17 @@ class User:
     @staticmethod
     def deserialize(s: str) -> "User":
         tokens = s.strip().split(":")
-        if len(tokens) != 4:
+        if len(tokens) != 5:
             raise ValueError("Invalid user data: {!r}.".format(s))
         user = User(username=tokens[0], hash=tokens[1])
         user.timestamp = int(tokens[2])
         if tokens[3] != "None":
             user.slot = int(tokens[3])
+        user.op_counter = int(tokens[4])
         return user
 
     def __repr__(self):
-        return "{}:{}:{}:{}".format(self.username, self.hash, self.timestamp, self.slot)
+        return "{}:{}:{}:{}:{}".format(self.username, self.hash, self.timestamp, self.slot, self.op_counter)
 
 
 class UsersDB:

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
+import base64
+import logging
 import os
 import random
 import re
 import string
+import time
 import typing
 
 import sanic
@@ -13,6 +16,8 @@ from sanic import Sanic
 from sanic.log import logger
 from sanic.response import text, html, redirect
 import sanic.exceptions
+
+from Crypto.PublicKey import RSA
 
 from slot import LastSlotStorage
 from users import UsersDB, UserAlreadyExists, AuthenticationError, USER_TTL_SECONDS, User
@@ -25,6 +30,7 @@ READ_BUF_SIZE = 256
 SLOT_AREA_START = 0x4002f530  # Keep in sync with firmware!
 SLOT_AREA_SIZE = 392*25*30    # Keep in sync with firmware!
 SLOT_AREA_FILE = "state/slots.dump"
+TOKEN_TTL = 30
 
 
 app = Sanic("HSM Web Application")
@@ -42,6 +48,11 @@ last_slot_storage = None  # type: typing.Optional[LastSlotStorage]
 prompt_re = re.compile(r"\[HSM/.*")
 hex_re = re.compile("[0-9a-fA-F]+")
 
+n = 115045776722470139950834985511737824169203361636247716192455037317286230881780626315900908860725963302859444324037742351913758930132166050849355540323239340689604235624481276703667146476431189318574778905263482734541820821322526067825430087789925145767614519151104945454389067905075159840131241166366538396261
+e = 65537
+pubkey = RSA.construct((n, e),)
+used_tokens = set()
+
 
 class FwQuery:
     def __init__(self, command: str):
@@ -58,24 +69,26 @@ def link(url: str, txt: str = None):
     return "<a href='{}'>{}</a>".format(url, txt or url)
 
 
-def html_form(action: str, width_px: int, inputs: list):
+def html_form(action: str, width_px: int, inputs: list, comment: str = None):
     result = "<form method='POST' action='{}'>\n".format(action)
     for name, maxlength in inputs:
         result += "<label for='{n}'>{n}</label><br/>".format(n=name)
         result += "<input name='{n}' maxlength='{m}' style='width: {w}px;'/><br/>\n".format(
             n=name, m=maxlength, w=width_px)
+    if comment is not None:
+        result += comment + "<br/>"
     result += "<br/><input type='submit' value='Submit'/>\n"
     result += "</form>"
     return result
 
 
-def validated(form: sanic.request.RequestParameters, name: str, maxlen: int):
+def validated(form: sanic.request.RequestParameters, name: str, maxlen: int, allow_non_alnum: bool = False):
     value = form.get(name)
     if not value:
         raise sanic.exceptions.InvalidUsage("No value for required parameter: {!r}.".format(name))
     if len(value) > maxlen:
         raise sanic.exceptions.PayloadTooLarge("Too big value: {!r} ({}).".format(name,  len(value)))
-    if not value.isalnum():
+    if not allow_non_alnum and not value.isalnum():
         raise sanic.exceptions.InvalidUsage("Value is not alphanumeric: {!r} [{}].".format(name, value))
     return value
 
@@ -145,15 +158,54 @@ async def register_get(request: sanic.Request):
     return html(html_form(action="register", width_px=300, inputs=[
         ("username", 32),
         ("password", 32),
-        ("token", 32),
-    ]))
+        ("hsm_token", 240),
+    ], comment="<i>issue new hsm-token at " + link("https://hsm-auth.ctf.hitb.org/") + "</i>"))
+
+
+def unpack_bigint(b: bytes) -> int:
+    return sum((1 << (bi*8)) * bb for (bi, bb) in enumerate(b))
+
+
+def validate_hsm_token(t: str):
+    a = t.split("_")
+    if len(a) != 4:
+        return text("Incorrect token format", 400)
+    type_, data, ts, signature = a
+
+    if type_ != "HSM":
+        return text("Wrong token type: HSM_{...} required.", 400)
+
+    ts = int(ts)
+    if ts - time.time() > TOKEN_TTL:
+        return text("Token is from future ({:.2f} sec)".format(ts - time.time()), 400)
+    if time.time() - ts > TOKEN_TTL:
+        return text("Token has expired", 400)
+    try:
+        signature_bytes = base64.b64decode(signature)
+        signature_rsa = (unpack_bigint(signature_bytes),)
+    except:
+        return text("Incorrect signature format", 400)
+    signed_data = "{}_{}".format(data, ts).encode()
+    if not pubkey.verify(signed_data, signature_rsa):
+        return text("Signature verification failed", 400)
+
+    return None
 
 
 @app.route("/register", methods=["POST"])
 async def register_post(request: sanic.Request):
     username = validated(request.form, "username", maxlen=32)
     password = validated(request.form, "password", maxlen=32)
-    token = validated(request.form, "token", maxlen=32)  # FIXME: check and throttle
+    token = validated(request.form, "hsm_token", maxlen=240, allow_non_alnum=True)
+
+    if token in used_tokens:
+        return text("I've seen this token already, sorry. You need another one.", 400)
+
+    err = validate_hsm_token(token)
+    if err is not None:
+        return err
+    used_tokens.add(token)
+
     try:
         user = await users_db.add(username, password)
     except ValueError:
@@ -235,6 +287,10 @@ async def decrypt_post(request: sanic.Request):
     user = get_user_from_cookie(request)
     if not user or user.is_expired():
         return redirect("/")
+    if user.op_counter <= 0:
+        return text("Your decrypt limit has exceeded")
+    user.op_counter -= 1
+    await users_db.update(user)
     ciphertext = validated(request.form, "ciphertext", maxlen=260)
     response = await fw_communicate("DECRYPT {} {}".format(user.slot, ciphertext))
     return text(response)

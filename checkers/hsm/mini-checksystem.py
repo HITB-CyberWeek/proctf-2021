@@ -2,9 +2,14 @@
 import subprocess
 import random
 import string
+import sys
 
-HOST="10.60.2.12"
-ROUNDS = 1
+if len(sys.argv) < 3:
+    print("Args: HOST ROUNDS")
+    sys.exit(1)
+
+HOST = sys.argv[1]
+ROUNDS = int(sys.argv[2])
 
 prefix = "".join(random.choices(string.ascii_lowercase, k=4))
 print("Flag ID Prefix:", prefix)

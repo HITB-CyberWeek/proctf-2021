@@ -5,6 +5,7 @@ import logging
 import os
 import random
 import string
+import time
 
 import requests
 import subprocess
@@ -56,12 +57,10 @@ def assert_no_http_error(response: requests.Response, verdict_on_http_error: int
 
 
 class Client:
-    def __init__(self, host: str, port: int, oauth: str = None, verdict_on_http_error: int = MUMBLE):
+    def __init__(self, host: str, port: int, verdict_on_http_error: int = MUMBLE):
         self.base_url = "{}://{}:{}".format(SERVICE_PROTO, host, port)
         self.session = requests.Session()
         self.verdict_on_http_error = verdict_on_http_error
-        if oauth is not None:
-            self.session.headers["RateLimitingToken"] = oauth
 
     def url(self, suffix: str):
         return self.base_url + suffix
@@ -83,8 +82,8 @@ class Client:
         logging.info("Success, response: %r.", text)
         return text
 
-    def register(self, username: str, password: str, token: str):
-        return self.post("/register", username=username, password=password, token=token)
+    def register(self, username: str, password: str, hsm_token: str):
+        return self.post("/register", username=username, password=password, hsm_token=hsm_token)
 
     def login(self, username, password):
         return self.post("/login", username=username, password=password, verdict_on_http_error=CORRUPT)
@@ -128,17 +127,6 @@ def make_plaintext(flag: str) -> str:
     return "Hello, Mr. John Doe! See: " + flag
 
 
-def get_oauth():
-    if OAUTH_LOCAL:
-        oauth = "FAKE_OAUTH"  # FIXME: implement as a backup? Separate service for teams will be required.
-    else:
-        c = Client(OAUTH_SERVER_HOST, OAUTH_SERVER_PORT, verdict_on_http_error=CHECKER_ERROR)
-        oauth = c.get("/")  # FIXME: implement it!
-    # FIXME: add token caching?
-    logging.info("Got new OAuth token: %r.", oauth)
-    return oauth
-
-
 def encrypt(plaintext: bytes, pubkey_hex: str):
     plaintext_hex = plaintext.hex().upper()
     logging.info("Encrypting %r (%s) with pubkey %r ...", plaintext, plaintext_hex, pubkey_hex)
@@ -152,18 +140,32 @@ def encrypt(plaintext: bytes, pubkey_hex: str):
 
 
 def check(host):
-    c = Client(host, SERVICE_PORT, get_oauth())
+    c = Client(host, SERVICE_PORT)
     if "To use Cloud HSM Service, you must:" in c.get("/"):
         verdict(OK)
     else:
         verdict(MUMBLE, public="Prompt not found")
 
 
+def get_hsm_token():
+    oauth_token = "***REMOVED***"
+    for t in range(20):
+        logging.info("Trying to get hsm-token ...")
+        response = requests.post("https://hsm-auth.ctf.hitb.org/", data=dict(oauth_token=oauth_token), timeout=2)
+        logging.info("Got %d response: %r.", response.status_code, response.text)
+        if response.status_code != 200 and response.status_code != 400:
+            time.sleep(3)
+            continue
+        return response.text
+    logging.error("Cannot issue hsm-token.")
+    verdict(CHECKER_ERROR)
+
+
 def put(host, flag_id, flag, vuln):
     flag_id = flag_id.replace("-", "")
 
-    c = Client(host, SERVICE_PORT, get_oauth())
-    c.register(username=flag_id, password=make_password(flag_id), token="nonce")
+    c = Client(host, SERVICE_PORT)
+    c.register(username=flag_id, password=make_password(flag_id), hsm_token=get_hsm_token())
 
     slot, pubkey = c.generate()
     long_meta = make_long_meta(flag_id)  # Important to check all 33 chars!
@@ -197,7 +199,7 @@ def put(host, flag_id, flag, vuln):
 def get(host, flag_id, flag, vuln):
     slot, flag_id = json.loads(flag_id)["public_flag_id"].split(":")
 
-    c = Client(host, SERVICE_PORT, get_oauth())
+    c = Client(host, SERVICE_PORT)
     c.login(username=flag_id, password=make_password(flag_id))
 
     plaintext = make_plaintext(flag)
@@ -214,27 +216,12 @@ def get(host, flag_id, flag, vuln):
 def exploit(host, slot):
     slot = int(slot)
 
-    credentials_filename = "exploit.credentials.txt"
-    pubkey_filename = "exploit.pubkey.txt"
-    pubkey = None
-    c = Client(host, SERVICE_PORT, get_oauth())
-    try:
-        with open(credentials_filename) as f:
-            username, password = f.readline().strip().split(":")
-        c.login(username, password)
-        with open(pubkey_filename) as f:
-            pubkey = f.readline().strip()
-    except FileNotFoundError:
-        username = gen_str(charset=string.ascii_lowercase + string.digits, length=12)
-        password = make_password(username)
-        c.register(username, password, token="nonce")
-        with open(credentials_filename, "w") as f:
-            f.writelines([username + ":" + password])
-    if pubkey is None:
-        _, pubkey = c.generate()
-        with open(pubkey_filename, "w") as f:
-            f.writelines([pubkey])
-        c.set_meta(gen_str(string.digits, 33))  # Length is important! Must be 33.
+    c = Client(host, SERVICE_PORT)
+    username = gen_str(charset=string.ascii_lowercase + string.digits, length=12)
+    password = make_password(username)
+    c.register(username, password, token="nonce")
+    _, pubkey = c.generate()
+    c.set_meta(gen_str(string.digits, 33))  # Length is important! Must be 33.
 
     slot0_offset = 0x4002f530
     slot_size = 392
