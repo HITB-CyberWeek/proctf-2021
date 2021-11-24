@@ -23,9 +23,16 @@ namespace mp.Controllers
         }
 
         [HttpGet("search")]
-        public ProductModel[] Search([FromQuery] string query, int pageNum)
+        public IActionResult Search([FromQuery] string query, int pageNum, DateTime? clientDt)
         {
-            return SearchInternal(query, pageNum).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray();
+	        try
+	        {
+		        return Ok(SearchInternal(query, pageNum, clientDt).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray());
+            }
+	        catch (ApiException ex)
+	        {
+		        return BadRequest(new { message = ex.Message });
+	        }
         }
 
         [HttpPut("create")]

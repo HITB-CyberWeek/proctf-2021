@@ -34,7 +34,7 @@ namespace mp.Controllers
         [HttpGet("search")]
         public OrderModel[] Search([FromQuery] string query, int pageNum)
         {
-            return SearchInternal(query, pageNum).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
+            return SearchInternalWithoutPOW(query, pageNum).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
         }
 
         [HttpPut("create")]
