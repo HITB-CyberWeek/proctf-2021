@@ -19,7 +19,8 @@ CLOUDS = {
         "sizes": {
             "default": "c-2",
             "router": "s-2vcpu-4gb",
-            "empty": "s-8vcpu-16gb"
+            "empty": "s-8vcpu-16gb",
+            "p0ck37": "c-4"
         }
     },
     "bay": {
