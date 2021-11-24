@@ -35,7 +35,7 @@ def login(host, user_name):
     p0ck37_url = f"http://{host}:{PORT}/"
     try:
         r = requests.get(f"http://{host}:{PORT}/", timeout=TIMEOUT, verify=False)
-    except requests.exceptions.ConnectionError as e:
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError) as e:
         return (DOWN, "Connection error", "Connection error during login: %s" % e, None)
     except requests.exceptions.Timeout as e:
         return (DOWN, "Timeout", "Timeout during login: %s" % e, None)
@@ -65,7 +65,7 @@ def add_link(host, link, session):
     p0ck37_url = f"http://{host}:{PORT}/"
     try:
         r = session.get(urljoin(p0ck37_url, "/add"), params={"link": link}, timeout=TIMEOUT)
-    except requests.exceptions.ConnectionError as e:
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError) as e:
         return (DOWN, "Connection error", "Connection error during link publishing: %s" % e)
     except requests.exceptions.Timeout as e:
         return (DOWN, "Timeout", "Timeout during link publishing: %s" % e)
@@ -138,7 +138,7 @@ def check_home_page(host, session, secret_flag_id):
 
     try:
         r = session.get(p0ck37_url, timeout=TIMEOUT)
-    except requests.exceptions.ConnectionError as e:
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError) as e:
         return (DOWN, "Connection error", "Connection error during getting /: %s" % e)
     except requests.exceptions.Timeout as e:
         return (DOWN, "Timeout", "Timeout during getting /: %s" % e)
@@ -158,7 +158,7 @@ def check_pdf(host, session, secret_flag_id, flag):
 
     try:
         r = session.get(p0ck37_download_url, timeout=TIMEOUT)
-    except requests.exceptions.ConnectionError as e:
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError) as e:
         return (DOWN, "Connection error", "Connection error during link download: %s" % e)
     except requests.exceptions.Timeout as e:
         return (DOWN, "Timeout", "Timeout during link download: %s" % e)
