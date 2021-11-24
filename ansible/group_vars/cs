@@ -56,7 +56,7 @@ teams: |
   {name => 'DiceGang', network => '10.60.5.0/24', host => '10.60.5.3', ip_prefix => '10.60.5.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/5.png', tags => []},
   {name => 'ZenHack', network => '10.60.6.0/24', host => '10.60.6.3', ip_prefix => '10.60.6.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/6.png', tags => []},
   {name => 'saarsec', network => '10.60.7.0/24', host => '10.60.7.3', ip_prefix => '10.60.7.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/7.png', tags => ['EDU']},
-  {name => 'C4T BuT S4D', network => '10.60.8.0/24', host => '10.60.8.3', ip_prefix => '10.60.8.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/8.png', tags => []},
+  {name => 'C4T BuT S4D', network => '10.60.8.0/24', host => '10.60.8.3', ip_prefix => '10.60.8.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/8.png', tags => ['EDU']},
   {name => 'HgbSec', network => '10.60.9.0/24', host => '10.60.9.3', ip_prefix => '10.60.9.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/9.png', tags => []},
   {name => 'ENOFLAG', network => '10.60.10.0/24', host => '10.60.10.3', ip_prefix => '10.60.10.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/10.png', tags => []},
   {name => 'STT', network => '10.60.11.0/24', host => '10.60.11.3', ip_prefix => '10.60.11.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/11.png', tags => ['EDU']},
