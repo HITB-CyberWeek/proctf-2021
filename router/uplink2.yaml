@@ -1,0 +1,100 @@
+network:
+  version: 2
+  ethernets:
+    enp3s0:
+      dhcp4: false
+  vlans:
+
+    vlan.101:    # team 101
+      id: 101
+      link: enp3s0
+      addresses: [192.168.101.1/24]
+    vlan.102:    # team 102
+      id: 102
+      link: enp3s0
+      addresses: [192.168.102.1/24]
+    vlan.103:    # team 103
+      id: 103
+      link: enp3s0
+      addresses: [192.168.103.1/24]
+    vlan.104:    # team 104
+      id: 104
+      link: enp3s0
+      addresses: [192.168.104.1/24]
+    vlan.105:    # team 105
+      id: 105
+      link: enp3s0
+      addresses: [192.168.105.1/24]
+    vlan.106:    # team 106
+      id: 106
+      link: enp3s0
+      addresses: [192.168.106.1/24]
+    vlan.107:    # team 107
+      id: 107
+      link: enp3s0
+      addresses: [192.168.107.1/24]
+    vlan.108:    # team 108
+      id: 108
+      link: enp3s0
+      addresses: [192.168.108.1/24]
+    vlan.109:    # team 109
+      id: 109
+      link: enp3s0
+      addresses: [192.168.109.1/24]
+    vlan.110:    # team 110
+      id: 110
+      link: enp3s0
+      addresses: [192.168.110.1/24]
+    vlan.111:    # team 111
+      id: 111
+      link: enp3s0
+      addresses: [192.168.111.1/24]
+    vlan.112:    # team 112
+      id: 112
+      link: enp3s0
+      addresses: [192.168.112.1/24]
+    vlan.113:    # team 113
+      id: 113
+      link: enp3s0
+      addresses: [192.168.113.1/24]
+    vlan.114:    # team 114
+      id: 114
+      link: enp3s0
+      addresses: [192.168.114.1/24]
+    vlan.115:    # team 115
+      id: 115
+      link: enp3s0
+      addresses: [192.168.115.1/24]
+    vlan.116:    # team 116
+      id: 116
+      link: enp3s0
+      addresses: [192.168.116.1/24]
+    vlan.117:    # team 117
+      id: 117
+      link: enp3s0
+      addresses: [192.168.117.1/24]
+    vlan.118:    # team 118
+      id: 118
+      link: enp3s0
+      addresses: [192.168.118.1/24]
+    vlan.199:     # jury
+      id: 199
+      link: enp3s0
+      addresses: [192.168.199.1/24]
+
+    vlan.201:     # uplink 1
+      optional: true
+      id: 201
+      link: enp3s0
+      dhcp4: true
+      #dhcp4-overrides:
+      #use-routes: false
+
+    vlan.202:     # uplink 2
+      optional: true
+      id: 202
+      link: enp3s0
+      dhcp4: true
+      dhcp4-overrides:
+        use-routes: false
+

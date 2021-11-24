@@ -1,0 +1,7 @@
+1. netplan config
+2. dhcp-server config
+3. iptables config
+4. sysctl tuning for nat
+5. apt update && upgrade
+6. timedatectl set-timezone Asia/Dubai
+7. /etc/systemd/logind.conf: HandleLidSwitch=ignore
