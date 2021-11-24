@@ -8,6 +8,7 @@ import hashlib
 import requests
 import io
 import pdfplumber
+import http.client
 requests.packages.urllib3.disable_warnings()
 from urllib.parse import urlparse, urljoin, parse_qs
 from checker_helper import *
