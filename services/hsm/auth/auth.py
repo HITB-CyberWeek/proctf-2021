@@ -15,7 +15,8 @@ from Crypto.PublicKey import RSA
 app = Sanic("HSM Auth Application")
 
 TOKENS_FILE = "tokens.txt"
-TOKEN_TTL = 30
+TOKEN_TTL = 60
+CHECKER_TOKEN = "***REMOVED***"
 
 n = 115045776722470139950834985511737824169203361636247716192455037317286230881780626315900908860725963302859444324037742351913758930132166050849355540323239340689604235624481276703667146476431189318574778905263482734541820821322526067825430087789925145767614519151104945454389067905075159840131241166366538396261
 e = 65537
@@ -90,6 +91,9 @@ async def root(request: sanic.Request):
     global lock
     global privkey
     oauth_token = validated(request.form, "oauth_token", 41)
+    if oauth_token == CHECKER_TOKEN:
+        return text(create_hsm_token())
+
     async with lock:
         ts = tokens.get(oauth_token)
         if ts is None:

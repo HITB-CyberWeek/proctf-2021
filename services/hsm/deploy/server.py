@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import base64
-import logging
 import os
 import random
 import re
@@ -30,7 +29,7 @@ READ_BUF_SIZE = 256
 SLOT_AREA_START = 0x4002f530  # Keep in sync with firmware!
 SLOT_AREA_SIZE = 392*25*30    # Keep in sync with firmware!
 SLOT_AREA_FILE = "state/slots.dump"
-TOKEN_TTL = 30
+TOKEN_TTL = 120
 
 
 app = Sanic("HSM Web Application")
