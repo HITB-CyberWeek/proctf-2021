@@ -57,7 +57,13 @@ def login(host, user_name):
 
     login_data = {"ReturnUrl": return_url, "Username": user_name, "Token": OAUTH_TOKEN}
     session = requests.Session()
-    r = session.post(urljoin(OAUTH_ENDPOINT, "/account/login"), data=login_data, verify=False)
+
+    try:
+        r = session.post(urljoin(OAUTH_ENDPOINT, "/account/login"), data=login_data, verify=False)
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError, http.client.RemoteDisconnected) as e:
+        return (DOWN, "Connection error", "Connection error during login: %s" % e, None)
+    except requests.exceptions.Timeout as e:
+        return (DOWN, "Timeout", "Timeout during login: %s" % e, None)
 
     return (OK, "", "", session)
 
@@ -78,7 +84,14 @@ def add_link(host, link, session):
 def register_flag(flag):
     headers = {"x-api-key": FLAGS_API_KEY}
     data = {"flag": flag}
-    r = requests.post(urljoin(FLAGS_ENDPOINT, "/urls"), headers=headers, json=data)
+
+    try:
+        r = requests.post(urljoin(FLAGS_ENDPOINT, "/urls"), headers=headers, json=data)
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError, http.client.RemoteDisconnected) as e:
+        return (DOWN, "Connection error", "Connection error during link publishing: %s" % e, None)
+    except requests.exceptions.Timeout as e:
+        return (DOWN, "Timeout", "Timeout during link publishing: %s" % e, None)
+
     if r.status_code != 200:
         return (CHECKER_ERROR, "Checker error", "Error during flag publishing: %s" % r.text, None)
 
