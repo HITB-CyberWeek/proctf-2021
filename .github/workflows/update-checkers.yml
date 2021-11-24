@@ -1,11 +1,12 @@
 name: Update Checkers at the Checking System
 on:
   workflow_dispatch: {}
-  push:
-    branches:
-      - main
-    paths:
-      - "checkers/**"
+### Disabled by @andgein for the game time
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - "checkers/**"
 jobs:
   update-checkers:
     runs-on: self-hosted
