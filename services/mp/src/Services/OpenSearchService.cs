@@ -28,17 +28,17 @@ namespace mp.Services
             return JsonConvert.DeserializeObject<IndexResponse>(await openSearchClient.IndexAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), JsonConvert.SerializeObject(document), routing))?.Id;
         }
 
-        public async Task<IEnumerable<Document>> SearchAsync(string queryString, int pageNum)
+        public async Task<IEnumerable<Document>> SearchAsync(string queryString)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? "", pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), queryString ?? ""))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
         }
 
-        public async Task<IEnumerable<Document>> SearchOrdersOfProductAsync(string productId, int pageNum)
+        public async Task<IEnumerable<Document>> SearchOrdersOfProductAsync(string productId)
         {
-            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId, pageNum * PageSize, PageSize))
+            return JsonConvert.DeserializeObject<SearchResponse>(await openSearchClient.SearchOrdersOfProductAsync(httpContextAccessor.HttpContext?.User.FindCurrentUserId(), productId))
                 ?.Hits
                 .Hits
                 .Select(hit => hit?.Source?.CloneAndSetId(hit.Id));
@@ -60,8 +60,6 @@ namespace mp.Services
 	        }
 	        return hit?.Source?.CloneAndSetId(hit.Id);
         }
-
-        private const int PageSize = 10;
     }
 
     class IndexResponse

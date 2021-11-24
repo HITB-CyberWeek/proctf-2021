@@ -23,18 +23,18 @@ namespace mp.Controllers
         }
 
         [HttpGet("searchForMyProduct")]
-        public IActionResult SearchForMyProduct([FromQuery] string productId, int pageNum)
+        public IActionResult SearchForMyProduct([FromQuery] string productId)
         {
             if(productId == null)
                 return BadRequest(new { message = $"{nameof(productId)} not specified" });
 
-            return Ok(openSearchService.SearchOrdersOfProductAsync(productId, pageNum).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
+            return Ok(openSearchService.SearchOrdersOfProductAsync(productId).Result.Where(document => document.IsOrder()).Select(OrderModel.FromDocument));
         }
 
         [HttpGet("search")]
-        public OrderModel[] Search([FromQuery] string query, int pageNum)
+        public OrderModel[] Search([FromQuery] string query)
         {
-            return SearchInternalWithoutPOW(query, pageNum).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
+            return SearchInternalWithoutPOW(query).Where(document => document.IsOrder()).Select(OrderModel.FromDocument).ToArray();
         }
 
         [HttpPut("create")]

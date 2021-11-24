@@ -23,11 +23,11 @@ namespace mp.Controllers
         }
 
         [HttpGet("search")]
-        public IActionResult Search([FromQuery] string query, int pageNum, DateTime? clientDt)
+        public IActionResult Search([FromQuery] string query, DateTime? clientDt)
         {
 	        try
 	        {
-		        return Ok(SearchInternal(query, pageNum, clientDt).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray());
+		        return Ok(SearchInternal(query, clientDt).Where(document => document.IsProduct()).Select(ProductModel.FromDocument).ToArray());
             }
 	        catch (ApiException ex)
 	        {

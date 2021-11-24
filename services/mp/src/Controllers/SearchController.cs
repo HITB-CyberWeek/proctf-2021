@@ -22,7 +22,7 @@ namespace mp.Controllers
         private readonly long ThrottlingIntervalMs = TimeSpan.FromMilliseconds(500).Ticks;
         private static long lastRequestTime;
 
-        protected IEnumerable<Document> SearchInternal(string query, int pageNum, DateTime? clientDt)
+        protected IEnumerable<Document> SearchInternal(string query, DateTime? clientDt)
         {
 	        var lrt = Interlocked.Read(ref lastRequestTime);
 
@@ -41,12 +41,12 @@ namespace mp.Controllers
                 if (!IsProofOfWorkValid())
 	                throw new ApiException($"Proof of work is invalid");
             }
-            return SearchInternalWithoutPOW(query, pageNum);
+            return SearchInternalWithoutPOW(query);
         }
 
-        protected IEnumerable<Document> SearchInternalWithoutPOW(string query, int pageNum)
+        protected IEnumerable<Document> SearchInternalWithoutPOW(string query)
         {
-	        return openSearchService.SearchAsync(query, pageNum).Result;
+	        return openSearchService.SearchAsync(query).Result;
         }
 
         private bool IsProofOfWorkValid()
