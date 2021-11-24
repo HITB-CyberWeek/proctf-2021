@@ -170,7 +170,7 @@ namespace checker.mp
 					        {
 						        buffer[buffer.Length - 1] = c5;
 						        var sha512 = new SHA512Managed().ComputeHash(buffer);
-						        if(sha512[0] == 0 && sha512[1] == 0 && (sha512[2] & 0b11000000) == 0)
+						        if(sha512[0] == 0 && sha512[1] == 0)
 							        return "&r=" + Encoding.ASCII.GetString(new[] {c1, c2, c3, c4, c5});
 					        }
 				        }
