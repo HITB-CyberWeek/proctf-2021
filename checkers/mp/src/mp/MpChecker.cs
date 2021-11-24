@@ -156,22 +156,22 @@ namespace checker.mp
 	        var buffer = Encoding.ASCII.GetBytes(prefix);
 	        for(byte c1 = 0x61; c1 < 0x7C; c1++)
 	        {
-		        for (byte c2 = 0x61; c2 < 0x7C; c2++)
+		        buffer[buffer.Length - 5] = c1;
+                for (byte c2 = 0x61; c2 < 0x7C; c2++)
 		        {
-			        for (byte c3 = 0x61; c3 < 0x7C; c3++)
+			        buffer[buffer.Length - 4] = c2;
+                    for (byte c3 = 0x61; c3 < 0x7C; c3++)
 			        {
-				        for(byte c4 = 0x61; c4 < 0x7C; c4++)
+				        buffer[buffer.Length - 3] = c3;
+                        for (byte c4 = 0x61; c4 < 0x7C; c4++)
 				        {
-					        for(byte c5 = 0x61; c5 < 0x7C; c5++)
+					        buffer[buffer.Length - 2] = c4;
+                            for (byte c5 = 0x61; c5 < 0x7C; c5++)
 					        {
-						        buffer[buffer.Length - 5] = c1;
-						        buffer[buffer.Length - 4] = c2;
-						        buffer[buffer.Length - 3] = c3;
-						        buffer[buffer.Length - 2] = c4;
 						        buffer[buffer.Length - 1] = c5;
 						        var sha512 = new SHA512Managed().ComputeHash(buffer);
-						        if(sha512[0] == 0 && sha512[1] == 0)
-							        return Encoding.ASCII.GetString(new[] {c1, c2, c3, c4, c5});
+						        if(sha512[0] == 0 && sha512[1] == 0 && (sha512[2] & 0b11000000) == 0)
+							        return "&r=" + Encoding.ASCII.GetString(new[] {c1, c2, c3, c4, c5});
 					        }
 				        }
 			        }
@@ -352,9 +352,8 @@ namespace checker.mp
             var sw = Stopwatch.StartNew();
             var suffix = GenerateSuffixForPOW($"{baseUri.Host}{query}");
             sw.Stop();
-            query += suffix;
-            Console.Error.WriteLine($"Generated POW: query '{query}' : suffix '{suffix}' in {sw.ElapsedMilliseconds}ms");
-            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + query, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
+            await Console.Error.WriteLineAsync($"Generated POW: query '{query}' : suffix '{suffix}' in {sw.ElapsedMilliseconds}ms");
+            var result = await client.DoRequestAsync(HttpMethod.Get, ApiProductsSearch + query + suffix, null, null, NetworkOpTimeout, MaxHttpBodySize).ConfigureAwait(false);
             if (result.StatusCode != HttpStatusCode.OK)
                 throw new CheckerException(result.StatusCode.ToExitCode(), $"get {ApiProductsSearch} failed: {result.StatusCode.ToReadableCode()}");
 

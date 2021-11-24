@@ -52,7 +52,6 @@ namespace mp.Controllers
 	        return openSearchService.SearchAsync(query, pageNum).Result;
         }
 
-        private readonly byte[] expectedPOWprefix = { 0, 0 };
         private bool IsProofOfWorkValid()
         {
 	        if(HttpContext.Request.QueryString.Value == null)
@@ -60,7 +59,7 @@ namespace mp.Controllers
 
 	        var buf = Encoding.ASCII.GetBytes(HttpContext.Request.Host + HttpContext.Request.QueryString.Value!);
             var hash = new SHA512Managed().ComputeHash(buf);
-	        return Array.IndexOf(hash, expectedPOWprefix) == 0;
+	        return hash[0] == 0 && hash[1] == 0 && (hash[2] & 0b11000000) == 0;
         }
 
         protected Document GetInternal(string id)
