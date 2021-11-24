@@ -12,6 +12,7 @@ import numpy as np
 import json
 import hashlib
 import base64
+import re
 
 from asyncio import open_connection, IncompleteReadError, LimitOverrunError
 from client import Error
@@ -27,6 +28,8 @@ MIN_PUT_MATRIX_SIZE_2 = 17
 MAX_KERNEL_SIZE = 10
 MIN_TEXT_SIZE = 1
 MAX_TEXT_SIZE = 99
+
+ID_FORMAT = re.compile('[0-9a-f]{%d}' % client.ID_BSIZE)
 
 printable = (string.digits + string.ascii_letters).encode()
 
@@ -155,6 +158,10 @@ def generate_data_for_check(seed):
     kernels = generate_kernels(len(matrix), len(matrix[0]))
     return (matrix, desc, key, kernels)
 
+def check_id(mid):
+    if not ID_FORMAT.fullmatch(mid):
+        verdict(MUMBLE, 'Incorrect id format', 'Incorrect id format: %s' % repr(mid))
+
 async def check(host):
 
     seed = ''.join((random.choice(string.ascii_letters)) for _ in range(10))
@@ -163,6 +170,8 @@ async def check(host):
 
     client = LoggedClient('default', host, PORT)
     mid = await client.upload(matrix, desc, key)
+
+    check_id(mid)
 
     dmatrix, ddesc, convolutions = await fire(mode, client, mid, key, kernels)
 
@@ -196,6 +205,8 @@ async def put(host, flag_id, flag, vuln):
     await client.connect()
 
     mid = await client.upload(matrix, flag, key)
+
+    chech_id(mid)
 
     n, m = get_size(matrix)
     verdict(OK, json.dumps({
