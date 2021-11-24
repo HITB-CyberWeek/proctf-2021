@@ -206,7 +206,7 @@ async def put(host, flag_id, flag, vuln):
 
     mid = await client.upload(matrix, flag, key)
 
-    chech_id(mid)
+    check_id(mid)
 
     n, m = get_size(matrix)
     verdict(OK, json.dumps({
