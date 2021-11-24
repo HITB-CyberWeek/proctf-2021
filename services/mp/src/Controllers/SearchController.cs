@@ -19,7 +19,7 @@ namespace mp.Controllers
     {
         protected readonly OpenSearchService openSearchService;
 
-        private const int ThrottlingLimit = 5;
+        private const int ThrottlingLimit = 2;
         private static int ConcurrentSearchRequestsCount;
 
         protected IEnumerable<Document> SearchInternal(string query, int pageNum, DateTime? clientDt)

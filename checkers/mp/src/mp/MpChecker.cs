@@ -154,19 +154,19 @@ namespace checker.mp
         {
 	        prefix += "&r=00000";
 	        var buffer = Encoding.ASCII.GetBytes(prefix);
-	        for(byte c1 = 0x61; c1 < 0x7C; c1++)
+	        for(byte c1 = 0x61; c1 < 0x7B; c1++)
 	        {
 		        buffer[buffer.Length - 5] = c1;
-                for (byte c2 = 0x61; c2 < 0x7C; c2++)
+                for (byte c2 = 0x61; c2 < 0x7B; c2++)
 		        {
 			        buffer[buffer.Length - 4] = c2;
-                    for (byte c3 = 0x61; c3 < 0x7C; c3++)
+                    for (byte c3 = 0x61; c3 < 0x7B; c3++)
 			        {
 				        buffer[buffer.Length - 3] = c3;
-                        for (byte c4 = 0x61; c4 < 0x7C; c4++)
+                        for (byte c4 = 0x61; c4 < 0x7B; c4++)
 				        {
 					        buffer[buffer.Length - 2] = c4;
-                            for (byte c5 = 0x61; c5 < 0x7C; c5++)
+                            for (byte c5 = 0x61; c5 < 0x7B; c5++)
 					        {
 						        buffer[buffer.Length - 1] = c5;
 						        var sha512 = new SHA512Managed().ComputeHash(buffer);
@@ -348,7 +348,7 @@ namespace checker.mp
 
             var utcNow = DateTime.UtcNow;
 
-            var query = $"?query={HttpUtility.UrlEncode(text)}&clientDt={utcNow:s}";
+            var query = $"?query={HttpUtility.UrlEncode(text)}&clientDt={HttpUtility.UrlEncode(utcNow.ToString("s"))}";
             var sw = Stopwatch.StartNew();
             var suffix = GenerateSuffixForPOW($"{baseUri.Host}{query}");
             sw.Stop();
