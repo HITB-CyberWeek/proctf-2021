@@ -55,42 +55,28 @@ if ip.is_private:
     raise Exception("Invalid host")
 ```
 
-You can pass several hosts in URL in a special braces notation like this: `http://{@host1#,host2}/`.
+You can pass multiple URLs in a cURL braces notation like this `http://yandex.{ru,ua,by}`, which was parsed by `urlparse` as 1 URL with hostname `yandex.{ru,ua,by}`. Also you can pass user credentials and query string or fragment to avoid using `{` and `}` in hostname which was parsed by `urlparse`. For example:
 
-Python gets only the first hostname and you can bypass `ip.is_private` check.
 ```
->>> urlparse("http://{@host1#,host2}/").hostname
-'host1'
+>>> u = urlparse("http://{er:pass@yandex.ru#,yandex.by}")
+>>> u.username
+'{er'
+>>> u.hostname
+'yandex.ru'
+>>> u.fragment
+',yandex.by}'
 >>>
 ```
 
-But `curl` will do requests for all hosts in this URL:
+But `curl` will detect 2 URL and make 2 requests: to yandex.ru with basic auth `{er:pass` and to yandex.by:
 
 ```
-$ curl http://{@apple.com#,google.com}/
-<HTML>
-<HEAD>
-<TITLE>Document Has Moved</TITLE>
-</HEAD>
-
-<BODY BGCOLOR="white" FGCOLOR="black">
-<H1>Document Has Moved</H1>
-<HR>
-
-<FONT FACE="Helvetica,Arial"><B>
-Description: The document you requested has moved to a new location.  The new location is "https://www.apple.com/".
-</B></FONT>
-<HR>
-</BODY>
-<HTML><HEAD><meta http-equiv="content-type" content="text/html;charset=utf-8">
-<TITLE>301 Moved</TITLE></HEAD><BODY>
-<H1>301 Moved</H1>
-The document has moved
-<A HREF="http://www.google.com/">here</A>.
-</BODY></HTML>
+$ curl -v -s http://{er:pass@yandex.ru#,yandex.by} 2>&1 | grep Host
+> Host: yandex.ru
+> Host: yandex.by
 ```
 
-So, for now, you can make any GET requests in the docker network.
+So, for now, you can pass 2 URL in gRPC query, first from the internet (to bypass `ip.is_private` check) and second from the docker network.
 
 2. There is a public bucket `wal` where PostgreSQL archives WAL files.
 
