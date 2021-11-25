@@ -88,10 +88,10 @@ Intended way of solution is next
 1. Enter any random symbol on search field. Download all user's cell-programs
 2. Run cell-program in virtual machine. Build execution trace.  
     Participants must reverse their cells.elf file to find, how to build execution trace of 
-    cell-program. As I have tracing mode, so I use it to get sequence of commands which 
-    receives key_flow from password. Also extrace bytes of encoded_flag. It lies right after our password
+    cell-program. As we have tracing mode in cells virtual machine, so we can use it to find sequence of commands which 
+    computes key_flow from password. Also we can extract bytes of encoded_flag from memory. It lies right after our password
     in memory of program and continues till end of program
-3. We will use z3py to compute password.  
+3. We uses z3py to compute password.  
 3.1 Make symbols with each byte of password (p0,p1,..,p7)  
 3.2 Take formulas which computes key_flow from password and create new symbols with appropriate operations 
     between password symbols (p0 ^ p1 and so on)  
