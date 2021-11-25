@@ -58,7 +58,7 @@ teams: |
   {name => 'saarsec', network => '10.60.7.0/24', host => '10.60.7.3', ip_prefix => '10.60.7.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/7.png', tags => ['EDU']},
   {name => 'C4T BuT S4D', network => '10.60.8.0/24', host => '10.60.8.3', ip_prefix => '10.60.8.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/8.png', tags => ['EDU']},
   {name => 'HgbSec', network => '10.60.9.0/24', host => '10.60.9.3', ip_prefix => '10.60.9.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/9.png', tags => []},
-  {name => 'ENOFLAG', network => '10.60.10.0/24', host => '10.60.10.3', ip_prefix => '10.60.10.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/10.png', tags => []},
+  {name => 'ENOFLAG', network => '10.60.10.0/24', host => '10.60.10.3', ip_prefix => '10.60.10.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/10.png', tags => ['EDU']},
   {name => 'STT', network => '10.60.11.0/24', host => '10.60.11.3', ip_prefix => '10.60.11.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/11.png', tags => ['EDU']},
   {name => 'organizers', network => '10.60.12.0/24', host => '10.60.12.3', ip_prefix => '10.60.12.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/12.png', tags => []},
   {name => 'FAUST', network => '10.60.13.0/24', host => '10.60.13.3', ip_prefix => '10.60.13.', token => '***REMOVED***', country => 'NA', logo => '/data/logos/13.png', tags => ['EDU']},
