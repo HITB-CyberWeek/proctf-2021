@@ -147,3 +147,7 @@ what means
 ### Hack step III: reconstruct description
 
 Each item of convolution is linear combination of items original matrix. For take original image by convolution result and kernel It simple needs solve [system of linear equations](https://en.wikipedia.org/wiki/System_of_linear_equations). As example there is Gauss's methods to solve it. But one convolution result is not enough to it. Author's sploit use three different kernels for reconstructing one image and memory after it.
+
+## Patching
+
+For fix vulnerability it needs to replace compairing of `ns` and `ms` to compairing `n` and `m`
