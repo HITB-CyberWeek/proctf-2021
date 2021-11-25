@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using checker.timecapsule;
 
-var baseUri = new Uri("http://10.60.2.8:7007/");
+var baseUri = new Uri("http://127.0.0.1:7007/");
 
 const string signUpRelative = "/signup";
 const string signInRelative = "/signin";
