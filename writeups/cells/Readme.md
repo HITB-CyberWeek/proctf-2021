@@ -85,8 +85,8 @@ Also some self-modifying instructions was inserted. So encoded flag was not full
 
 There was no intended bugs on site, all values were filtered.
 Intended way of solution is next
-1. Inter any random symbol on search field. Download all user's cell-programs
-2. Run cell-program in virtual machine. Build execution trace of 
+1. Enter any random symbol on search field. Download all user's cell-programs
+2. Run cell-program in virtual machine. Build execution trace.  
     Participants must reverse their cells.elf file to find, how to build execution trace of 
     cell-program. As I have tracing mode, so I use it to get sequence of commands which 
     receives key_flow from password. Also extrace bytes of encoded_flag. It lies right after our password
