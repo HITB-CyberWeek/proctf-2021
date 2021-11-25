@@ -4,7 +4,7 @@
 
 
 P0ck37 is a service that allows downloading web pages to pdf files, very similar to [Pocket](https://getpocket.com/).
-The service consists of two components: the web application and chromedriver service. The web application used chromedriver service to convert web pages to pdfs using a chrome web browser.
+The service consists of two components: the web application and chromedriver service. The web application uses chromedriver service to convert web pages to pdfs using a Google Chrome web browser.
 
 ## Architecture
 
@@ -22,6 +22,7 @@ Flags are pdf files stored in the directory `/data`.
 The wrapper for the chromedriver is vulnerable to the CSRF attack too. And it allows achieving a remote command execution via the running chromedriver.
 
 The attack consists of the three steps:
+
 0. Through the main functionality of the service ask chromedriver to open an attacker's webpage in chrome.
 1. Configure chrome to download files to a specific folder (`/tmp`).
 2. Download a payload file to the location known to the attacker.
