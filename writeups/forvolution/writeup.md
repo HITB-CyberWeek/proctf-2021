@@ -11,9 +11,11 @@ The service have 3 commands: UPLOAD, DOWNLOAD and CONVOLUTION
 
 It allows to upload image with description and access key to service and returns an ID of the uploaded image. The ID consists 32 hexadecimal digits.
 
-Example request:
+#### Example request
 `UPLOAD;2;3;4;6;abcdefdescsecret` will upload image
 
+|     |     |     |
+|-----|-----|-----|
 |  97 |  99 | 101 |
 |  98 | 100 | 102 |
 
@@ -27,35 +29,39 @@ In fortran [array elements are stored in column-major order](https://docs.oracle
 
 ---
 
-Example response:
+#### Example response
 `ok;0123456789abcdef0123456789abcdef`. Image is uploaded successfully and received ID `0123456789abcdef0123456789abcdef`
 
 ### DOWNLOAD
 
 It allows to download image by ID and access key. 
 
-Example request:
+#### Example request
 `DOWNLOAD;5;0123456789abcdef0123456789abcdefsecret` will try to download image with ID `0123456789abcdef0123456789abcdef` using access key `secret`
 
-Example response:
+#### Example response
 `ok;2;3;abcdef`. Image download successfully. It has 2 rows and 3 columns
 
 ### CONVOLUTION
 
 It applies chosen convolution to chosen image. It requires ID of image and kernel of convolutions. Kernel must be square. Result will be returned by 4 bits per element little-endian.
 
-Example request:
+#### Example request
 `CONVOLUTION;2;2;0123456789abcdef0123456789abcdef\1\1\0\0` will apply convolution with kernel
 
-|1|0|
-|1|0|
+|   |   |
+|---|---|
+| 1 | 0 |
+| 1 | 0 |
 
 to image with ID `0123456789abcdef0123456789abcdef`
 
-Example response:
+#### Example response
 `ok;1;2;\0\0\0\195\0\0\0\199\0\0\0\203`
 It corresponds to convolution
 
+|   |   |   |
+|---|---|---|
 |195|199|203|
 
 ## Vulnerability:
@@ -107,25 +113,35 @@ Example:
 
 For image
 
+|   |   |   |   |
+|---|---|---|---|
 | 1 | 3 | 5 | 7 |
 | 2 | 4 | 6 | 8 |
 
 memory looks like
 
+|   |   |        |         |         |         |         |         |         |         |        |      |      |      |      |
+|---|---|--------|---------|---------|---------|---------|---------|---------|---------|--------|------|------|------|------|
 | 2 | 3 |     1  |       2 |       3 |       4 |       5 |       6 |       7 |       8 |      4 |  100 |  101 |  115 |   99 |
 | n | m | a(1,1) | a(2, 1) | a(1, 2) | a(2, 2) | a(1, 3) | a(2, 3) | a(1, 4) | a(2, 4) | len(d) | d(1) | d(2) | d(3) | d(4) |
 
 After using kernel
 
+|   |   |   |   |
+|---|---|---|---|
 | 1 | 0 | 0 | 0 |
 | 0 | 0 | 0 | 1 |
 
 convolution will be equal to
 
+|                   |                   |                   |
+|-------------------|-------------------|-------------------|
 | a(1, 1) + a(2, 4) | a(1, 2) + a(2, 5) | a(1, 3) + a(2, 6) |
 
 what means
 
+|                   |                 |                |
+|-------------------|-----------------|----------------|
 | a(1, 1) + a(2, 4) | a(1, 2) +  d(1) | a(1, 3) + d(3) |
 
 ### Hack step III: reconstruct description
