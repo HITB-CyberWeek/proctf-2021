@@ -67,6 +67,7 @@ Weak check of convolution sizes equality what allows to read data outsize the im
 
 Explanation: 
 [Code what try to check if kernel is square](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/forvolution/src/src/connection_handler.f90#L460-L465), looks like:
+
 ```fortran
     ns = to_string(self%buffer(1:npos-1), npos-1)
     ms = to_string(self%buffer(npos+1:mpos-1), mpos-npos-1)
@@ -77,16 +78,20 @@ Explanation:
 ```
 
 where function [to_string](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/forvolution/src/src/string_utils.f90#L48-L65) just converts array of character to string of equal length and [`ns` and `ms` declared](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/forvolution/src/src/connection_handler.f90#L443-L444) as
+
 ```fortran
     character(len=2) :: ns
     character(len=2) :: ms
 ```
+
 what means "string with length two exactly".
 
 ---
+
 **NOTE 2**
 
 In fortran if value of string is less that declared length then string is [padding with spaces](https://fortranwiki.org/fortran/files/character_handling_in_Fortran.html)
+
 ---
 
 `to_sting(self%buffer(1:npos-1), npos-1)` returns `'2'`, but when this value assigned to variable `ns` it is padded and goes to `'2 '`. Value `ns` is equal to `ms` after it.
@@ -116,6 +121,7 @@ After using kernel
 | 0 | 0 | 0 | 1 |
 
 convolution will be equal to
+
 | a(1, 1) + a(2, 4) | a(1, 2) + a(2, 5) | a(1, 3) + a(2, 6) |
 
 what means
