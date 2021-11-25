@@ -74,7 +74,7 @@ Also cell addresses changes on remove attributes. Password comes from input queu
 Program for this machine is intended to decrypt flag using password. It worsk by next algorithm
 1. At python-site compute xor of 4-byte pieces of flag, at end of flag place ',' and hex of this csum.
     So now flag has checksum to verify that it was properly decrypted
-2. User enters 8-symbol password, it places into some memory in program
+2. User enters 8-symbol password, it stores to some memory in program
 3. Program generates 32+1+8 numbers (key_flow) using some binary operation (ADD,XOR,MUL)
 4. Decrypt Flag with csum and output
 5. At python-side split flag by ',' and veryfy csum. If it is valid then flag is valid
