@@ -18,7 +18,7 @@ namespace checker.mp
 	internal class MpChecker : IChecker
 	{
         private Uri baseUri;
-        public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: Flag ID is order id, flag is inside order description\n");
+        public Task<string> Info() => Task.FromResult("vulns: 1\npublic_flag_description: Flag ID is in the order description, flag is also there\n");
 
 		public async Task Check(string host)
         {

