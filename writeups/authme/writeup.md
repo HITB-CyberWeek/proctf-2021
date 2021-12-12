@@ -11,14 +11,14 @@ To authenticate the client sends the value of
 pow(sha256(password), sha256(random)) by modulo pow(2, 64). The server compares
 the expected value with obtained value and if they are equal the user is authenticated.
 
-The service wrote in C language and has client and server parts.
+The service is written in C language and has client and server parts.
 
 ## The vuln
 
 The authentication algorithm is insecure because if sha256(password) is even, the
 pow result is zero. So half of the flags could be stolen just by asking the client to
 authenticate a user with a random password. Sounds simple, but it took more then
-2 hours for the first team to exploit the service.
+2 hours for the first team to exploit the service. This vuln was unintended.
 
 
 # Exploitation
