@@ -58,7 +58,7 @@ You can get your tree as a JSON (see `/tree` endpoint) or download it as a signe
 
 As I also said before, trees are just encoded to the binary archive by the `brotobuf` serializer. It's also responsible for the archive's decoding. As well as you didn't have the source code of the encoder and decoder during the game, you had to decompile them from the binary. Thank God, now we can read C++ sources: https://github.com/HITB-CyberWeek/proctf-2021/tree/main/services/genealogy/src/brotobuf
 
-The encoding algorithm is really **very similar** to [Google's protobuf](https://developers.google.com/protocol-buffers). Each structure (`GenealogyTree` and `Person`) has some fields, see [messages.proto](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/genealogy/src/messages.broto] for details (this file has been deployed with the service):
+The encoding algorithm is really **very similar** to [Google's protobuf](https://developers.google.com/protocol-buffers). Each structure (`GenealogyTree` and `Person`) has some fields, see [messages.proto](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/genealogy/src/messages.broto) for details (this file has been deployed with the service):
 
 ```
 /*
