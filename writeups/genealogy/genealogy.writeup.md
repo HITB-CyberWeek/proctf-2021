@@ -44,19 +44,19 @@ It uses Mersenne Twister engine `std::mt19937` from the C++11 (see [https://en.c
 
 As described at [https://en.cppreference.com/w/cpp/numeric/random/random_device/entropy](https://en.cppreference.com/w/cpp/numeric/random/random_device/entropy) `std::random_device` has an entropy equal to 32, so only 2 ^ 32 different values are possible!
 
-So, if you register a new user, get a cookie for them, and bruteforce all 2 ^ 32 different values of the seed, you can find out which seed has been used. It means you can build the same cookie key and hijack the cookie for any user id.
+So, if you register a new user, retrieve a cookie for him, and bruteforce all 2 ^ 32 different values of the seed, you can find out which seed has been used. It means you can build the same cookie key and hijack the cookie for any user id.
 
 ## Second vulnerability
 
-As I said before, the second vulnerability is harder enough. It is a combination of CMAC algorithm weakness and Heap Buffer Overflow.
+As I said before, the second vulnerability is significantly harder. It is a combination of CMAC algorithm weakness and Heap Buffer Overflow.
 
-Firstly I need to describe the service functionality. You're able to register a new user and create a genealogy tree. You can also create "persons", which are nodes of the genealogy tree. Each person has meta information (such as a title, first name, last name, etc) and two optional links to its parents.
+Firstly, it's needed to describe the service functionality. You're able to register a new user and create a genealogy tree. You can also create "person" objects, which are nodes of the genealogy tree. Each person has meta information (such as a title, first name, last name, etc) and two optional links to its parents.
 
-You can get your tree as a JSON (see `/tree` endpoint) or download it as a signed binary archive (`/tree/archive`). If you prefer the second way, you can check your archive later by sending the POST request to the same `/tree/archive` with your archive. This endpoint checks the signature, unpack the archive, and returns the JSON with a tree for you.
+You can get your tree as a JSON (see `/tree` endpoint) or download it as a signed binary archive (`/tree/archive`). If you prefer the second way, you can check your archive later by sending the POST request to the same `/tree/archive` with your archive. This endpoint checks the signature, unpack the archive, and returns the JSON with the tree for you.
 
 ### Brotobuf
 
-As I also said before, trees are just encoded to the binary archive by the `brotobuf` serializer. It's also responsible for the archive's decoding. As well as you didn't have the source code of the encoder and decoder during the game, you had to decompile them from the binary. Thank God, now we can read C++ sources: https://github.com/HITB-CyberWeek/proctf-2021/tree/main/services/genealogy/src/brotobuf
+As I also said before, trees are just encoded to the binary archive by the `brotobuf` serializer. It's also responsible for the archive's decoding. As you didn't have the source code of the encoder and decoder during the game, you had to decompile them from the binary. Thank God, now we can read C++ sources: https://github.com/HITB-CyberWeek/proctf-2021/tree/main/services/genealogy/src/brotobuf
 
 The encoding algorithm is really **very similar** to [Google's protobuf](https://developers.google.com/protocol-buffers). Each structure (`GenealogyTree` and `Person`) has some fields, see [messages.proto](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/genealogy/src/messages.broto) for details (this file has been deployed with the service):
 
@@ -88,7 +88,7 @@ message GenealogyTree {
 }
 ```
 
-Each field has a type, index, and probably some modifier (such as `optional`, `required` or `repeated`) with the possibility to specify the limit of objects amount for each repeated field. You may note that Google Protobufs has a similar syntax except the `max_amount` modifier (but it has another).
+Each field has a type, index, and probably some modifier (such as `optional`, `required` or `repeated`) with the possibility to specify the limit of objects for each repeated field. You may note that Google Protobufs has a similar syntax except the `max_amount` modifier (but it has another).
 
 During the encoding, each **non-empty field** is encoded in the order they're described in the `.broto` file.
 So, for the `Person` model, `birth_date` is encoded first (if it's not equal to 0), `death_date` — second, etc.
@@ -106,22 +106,22 @@ is decoded to `GenealogyTree(id=1, title="My tree")`, because it's splitted as `
 
 Also, the decoding library has an additional feature: if you have a `BROTOBUF_DEBUG_MEMORY` environment variable and its value is equal to "1", the library will print debugging logs about memory manipulations such as allocating and freeing the memory. It can be useful further during the heap overflowing.
 
-### Read of the Uninitialized Memory
+### Reading of the Uninitialized Memory
 
 Okay, what about vulnerabilities?
 
-First, there is a bug in the decoding algorithm. As you can see in [protobuf/person.cpp#L14](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/genealogy/src/brotobuf/person.cpp#L14), only complex fields (such as strings or other models) are initialized in the constructor, but integer fields stay uninitialized. They initialize when we meet them in the encoded stream, but if the value was equal to zero, it has not been encoded at all!
+First, there is a bug in the decoding algorithm. As you can see in [protobuf/person.cpp#L14](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/services/genealogy/src/brotobuf/person.cpp#L14), only complex fields (such as strings or other models) are initialized in the constructor, but integer fields stay uninitialized. They initialize when we meet them in the encoded stream, but if the value is equal to zero, it has not been encoded at all!
 
-So our steps should be the following: create a user, create a person with a zero `birth_date`, create a tree with this person, encode and send it back to the checking endpoint. In this case, the field of `Person.birth_date` is left uninitialized. As soon as a memory for the `person` field is allocated from the heap, and `birth_date` is the first field of this structure, it will contain the internal data from malloc's chunk. 
+So our steps should be the following: create a user, create a person with a zero `birth_date`, create a tree with this person, encode and send it back to the checking endpoint. In this case, the field of `Person.birth_date` is left uninitialized. Whem memory of the field `person` is allocated on the heap, the `birty_date` will contain the internal data from malloc chunk, because it's the first field of the structure. 
 
 Here, if you know nothing about memory allocation at glibc, you have to read the following links:
 
 - [MallocInternals](https://sourceware.org/glibc/wiki/MallocInternals)
 - [Heap Exploitation](https://guyinatuxedo.github.io/25-heap/index.html)
 
-The First 8 bytes in freed malloc's chunk is an address of the previous chunk, or the address of pointer in the `main_arena` if this chunk is the first chunk in the linked list in `tcache` bin. So if we allocate the chunk again and don't initialize these bytes, the address of the `main_arena` can leak via the `birth_date` field.
+The first 8 bytes in freed malloc's chunk is an address of the previous chunk, or the address of pointer in the `main_arena` if this chunk is the first chunk in the linked list in `tcache` bin. So, if we allocate the chunk again and don't initialize these bytes, the address of the `main_arena` can leak via the `birth_date` field.
 
-Why it is useful? Because thanks to the address of `main_arena` we can get the base address of libc, which will be used later.
+Why is it useful? Thanks to the address of `main_arena` we can get the base address of libc, which will be used later.
 
 You can see the code for this vulnerability here: [genealogy.sploit.py#L25-L53](https://github.com/HITB-CyberWeek/proctf-2021/blob/main/sploits/genealogy/genealogy.sploit.py#L25-L53).
 
@@ -169,7 +169,7 @@ And the steps should be following:
 2. Allocate the second chunk, which is located just behind the first one.
 3. Allocate the third chunk.
 4. Free third chunk.
-5. Free the second chunk, now its memory particularly contains a pointer to the third chunk. The unsorted bin has at least two chunks (second and third) at this moment.
+5. Free the second chunk, now particularly its memory contains a pointer to the third chunk. The unsorted bin has at least two chunks (second and third) at this moment.
 6. Overflow first chunk, rewrite this pointer by address X.
 7. Allocate the next chunk, we should get the second one.
 8. Allocate one more chunk. We should get address X for this.
