@@ -1,47 +1,47 @@
 ## Image builder
 
-This tools builds DigitalOcean's images for each service
-with respect of its deployment config (aka `deploy.yaml`).
+This tool builds DigitalOcean's image for every service
+with respect of it's deployment config (aka `deploy.yaml`).
 
 ## How it works
 
-Basically, this scripts just runs the packer tool (https://packer.io/) with DigitalOcean builder,
+Basically, this script runs the packer tool (https://packer.io/) with DigitalOcean builder,
 which launches a VM (aka Droplet) in DigitalOcean, installs updates, deploys your service,
 shutdowns it and creates a snapshot for further copying.
 
 ## Example of deploy.yaml
 
-Write your own `deploy.yaml` and put it to the service folder (in `services/<service-name>`).
+Write your own `deploy.yaml` and put it into the service folder (in `services/<service-name>`).
 
 ```yaml
-# Just a version of the file format. For now, it's always equal to 1.
+# Just a version of the file format. For now, it's always 1.
 version: 1
 
 # Name of the service. Required field. Available as $SERVICE in some places below.
 service: test
 
-# Name of the user. Specify it if you want to create a user and a home directory for him.
+# Name of the user. Specify it if you want to create a user and a home directory.
 # Most probably, you want.
 # Available as $USERNAME in some places below.
 username: test
 
 # Scripts/commands for running on different build stages.
-# If you build instructions are complicated, extract them into a separate file, and
-# run it from this field, i.e.:
+# If your build instructions are complicated, extract them into a separate file, and
+# run it as a script here, i.e.:
 #
 # scripts:
 #   build_outside_vm: ./build.sh
 # 
-# Moreover, you should run your build inside prepared docker environment, because
-# there we don't guarantee that compilers or other tools will be installed on the 
+# Moreover, you should run your build scripts inside of the prepared docker environment, because
+# we don't guarantee that compilers or other tools will be installed in the 
 # building environment.
 #
-# All paths here are relative to the folder contains deploy.yaml, so you can write 
-# ./build.sh, and it will be 
+# All paths here are relative to the folder contained deploy.yaml, so you can write 
+# ./build.sh it build.sh is in the same folder as deploy.yaml.
 scripts:
   # First command: build_outside_vm
   # This command will be run outside the target VM. Here you can compile you code, 
-  # if you don't want to deploy source codes to participants.
+  # if you don't want to deploy source codes to VM.
   build_outside_vm: make -j4
   # Second command: build_inside_vm
   # This command will be run inside the target VM. DON'T RUN YOUR SERVICE HERE,
