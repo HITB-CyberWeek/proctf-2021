@@ -175,7 +175,7 @@ And the steps should be following:
 8. Allocate one more chunk. We should get address X for this.
 9. Write any data to the latest chunk. Congratulations! You have an arbitrary write to any memory. 
 
-How we can achieve this sequence in our decoder? Simple!
+How can we achieve this sequence in our decoder? Easy!
 
 Let's create the following tree object:
 
