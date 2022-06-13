@@ -19,7 +19,7 @@ This repository contains:
 Also, we bring to you some of our internal infrastructure magic:
 * CI for Digital Ocean's images services' packing. See [vuln_images/](vuln_images/).
 * our CTF Cloud Infrastructure in [ansible/roles/cloud_master](ansible/roles/cloud_master).
-* on-site routers configuration in [routers/](routers/) — it's really simple this year.
+* on-site router configuration in [router/](router/) — it's really simple this year.
 
 Final scoreboard:
 
@@ -50,7 +50,7 @@ This CTF is brought to you by these amazing guys:
 * Andrey Khozov aka `and`, the author of the service `caas`, also our checksystem master
 * Artem Zinenko aka `art`, the author of the service `p0ck37`
 * Artur Khanov aka `awengar`, the author of the service `cells`
-* Bulay Zaynullin aka `tinkturianec`, the author of the service `forvolution`
+* Bulat Zaynullin aka `tinkturianec`, the author of the service `forvolution`
 * Dmitry Simonov aka `dimmo`, the author of the service `hsm`, also our on-site network master
 * Dmitry Titarenko aka `dscheg`, the author of the service `timecapsule`, and our techleader
 * Konstantin Plotnikov aka `kost`, the author of services `fs` and `mp`, and our teamleader
