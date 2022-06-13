@@ -215,7 +215,7 @@ However, our implementation has protection from it, because it appends the messa
 
 - https://crypto.stackexchange.com/questions/11125/why-does-only-length-prepending-improve-the-security-of-cbc-mac/11152#11152
 
-In other words, we can construct three messages `M1`, `M2`, `M3`, request to sign them, and later build the signature for another message (`M4`) which our service didn't sign. How does it work? Simple enough!
+In other words, we can construct three messages `M1`, `M2`, `M3`, request to sign them, and later build the signature for another message (`M4`) which our service didn't sign. How does it work? Easy enough!
 
 1. Choose `M1` randomly.
 1. Choose `M2` randomly, but with the same length.
